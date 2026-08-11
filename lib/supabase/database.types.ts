@@ -356,6 +356,9 @@ export type Database = {
           status: Database["public"]["Enums"]["order_status"]
           stripe_checkout_session_id: string | null
           stripe_customer_id: string | null
+          stripe_hosted_invoice_url: string | null
+          stripe_invoice_id: string | null
+          stripe_invoice_pdf_url: string | null
           tax_cents: number | null
           total_cents: number
           user_id: string
@@ -375,6 +378,9 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           stripe_checkout_session_id?: string | null
           stripe_customer_id?: string | null
+          stripe_hosted_invoice_url?: string | null
+          stripe_invoice_id?: string | null
+          stripe_invoice_pdf_url?: string | null
           tax_cents?: number | null
           total_cents: number
           user_id: string
@@ -394,6 +400,9 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           stripe_checkout_session_id?: string | null
           stripe_customer_id?: string | null
+          stripe_hosted_invoice_url?: string | null
+          stripe_invoice_id?: string | null
+          stripe_invoice_pdf_url?: string | null
           tax_cents?: number | null
           total_cents?: number
           user_id?: string
@@ -848,6 +857,18 @@ export type Database = {
         Returns: Json
       }
       purge_expired_operational_data: { Args: never; Returns: Json }
+      record_stripe_invoice: {
+        Args: {
+          p_customer_id: string
+          p_event_type: string
+          p_hosted_invoice_url: string
+          p_invoice_id: string
+          p_invoice_pdf_url: string
+          p_order_id: string
+          p_provider_event_id: string
+        }
+        Returns: Json
+      }
       remove_custom_domain: { Args: { p_domain_id: string }; Returns: Json }
       reorder_gallery_assets: {
         Args: { p_asset_ids: string[]; p_site_id: string }

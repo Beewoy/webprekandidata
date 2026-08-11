@@ -9,6 +9,10 @@ import {
   getStripePriceId,
   isStripeConfigured,
 } from "@/lib/payments/stripe";
+import {
+  buildCheckoutSessionParams,
+  buildStripeCustomerParams,
+} from "@/lib/payments/stripe-invoice";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { createCheckoutSchema, toBuyerSnapshot } from "@/lib/validation/checkout";
@@ -92,29 +96,25 @@ export async function createCheckoutSessionAction(input: unknown): Promise<Creat
 
   try {
     const stripe = getStripeClient();
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      integration_identifier: createIntegrationIdentifier(),
-      customer_email: billing.email,
-      client_reference_id: order.id,
-      line_items: [{ price: getStripePriceId(planCode), quantity: 1 }],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      metadata: {
-        order_id: order.id,
-        site_id: siteId,
-        plan_code: planCode,
-        user_id: authData.user.id,
-      },
-      payment_intent_data: {
-        metadata: {
-          order_id: order.id,
-          site_id: siteId,
-          plan_code: planCode,
-          user_id: authData.user.id,
-        },
-      },
-    });
+    const customer = await stripe.customers.create(
+      buildStripeCustomerParams(buyerSnapshot, order.id),
+    );
+    const metadata = {
+      order_id: order.id,
+      site_id: siteId,
+      plan_code: planCode,
+      user_id: authData.user.id,
+    };
+    const session = await stripe.checkout.sessions.create(buildCheckoutSessionParams({
+      buyer: buyerSnapshot,
+      cancelUrl,
+      customerId: customer.id,
+      integrationIdentifier: createIntegrationIdentifier(),
+      metadata,
+      priceId: getStripePriceId(planCode),
+      seller: sellerSnapshot,
+      successUrl,
+    }));
 
     if (!session.url) {
       await admin.from("orders").update({ status: "failed" }).eq("id", order.id);
@@ -125,7 +125,7 @@ export async function createCheckoutSessionAction(input: unknown): Promise<Creat
       .from("orders")
       .update({
         stripe_checkout_session_id: session.id,
-        stripe_customer_id: typeof session.customer === "string" ? session.customer : null,
+        stripe_customer_id: customer.id,
       })
       .eq("id", order.id)
       .eq("status", "pending");

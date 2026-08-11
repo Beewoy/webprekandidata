@@ -89,8 +89,8 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - výber a ukladanie tematických občianskych ikoniek pre hodnoty, dôvody a program vrátane zobrazenia v náhľade,
 - základná databázová schéma a RLS politiky,
 - cloudový Supabase projekt `Webprekandidata` linkovaný cez CLI,
-- cloudové migrácie `0001` až `0015` aplikované; `0015_production_operations.sql` rezervuje platformové slugy a pridáva service-role retenčnú RPC,
-- append-only migrácia `0016_reserve_marketing_slugs.sql` je pripravená lokálne a dopĺňa rezervácie piatich kampanových ciest, reklamačného poriadku a systémovej stránky pre neznámu doménu,
+- cloudové migrácie `0001` až `0017` aplikované; `0015_production_operations.sql` rezervuje platformové slugy a pridáva service-role retenčnú RPC,
+- `0016_reserve_marketing_slugs.sql` dopĺňa rezervácie marketingových a systémových ciest; `0017_stripe_invoices.sql` pridáva nullable Stripe Invoice referencie a idempotentné `record_stripe_invoice`,
 - reálna verejná Supabase konfigurácia v ignorovanom `.env.local` a vypnutý demo režim,
 - cloudové Auth callbacky, okamžitá relácia po registrácii a bezpečnostné limity zosynchronizované z `supabase/config.toml`,
 - samostatný Brevo SMTP key `WebPreKandidata.sk` vytvorený a bezpečne pripojený k Supabase Auth,
@@ -180,16 +180,18 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 
 - výber Basic 49,99 € / Plus 89,99 € ako konečných cien na stránke Publikovanie,
 - fakturačné údaje kupujúceho a súhlas pred Checkoutom,
-- server vytvorí pending `orders` a Stripe Checkout Session,
+- server vytvorí pending `orders`, reálneho Stripe Customer s fakturačnou adresou a Stripe Checkout Session,
+- jednorazový Checkout používa post-purchase invoice; po úspešnej platbe Stripe automaticky vytvorí paid Invoice s voliteľným zákazníckym IČO a dodávateľským footerom bez výpočtu DPH,
 - podpísaný webhook `/api/webhooks/stripe` idempotentne splní objednávku a nastaví `sites.plan_code`,
+- samostatný `invoice.paid` webhook idempotentne uloží Invoice ID, PDF URL a Hosted Invoice URL bez vplyvu na aktiváciu balíka,
 - návrat do aplikácie obnoví Publikovanie; aktivácia balíka čaká na webhook,
 - história objednávok na stránke Publikovanie (vlastník cez RLS),
 - demo režim platbu neponúka,
-- migrácia `0012_stripe_fulfillment.sql` (`fulfill_stripe_checkout`, `mark_checkout_session_status`).
+- migrácia `0012_stripe_fulfillment.sql` (`fulfill_stripe_checkout`, `mark_checkout_session_status`) a append-only migrácia `0017_stripe_invoices.sql` (`record_stripe_invoice` a nullable invoice referencie).
 
 ### Overenie
 
-- 86 jednotkových testov,
+- 93 jednotkových testov,
 - TypeScript bez chýb,
 - ESLint bez chýb a varovaní,
 - úspešný produkčný build,

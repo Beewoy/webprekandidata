@@ -12,12 +12,23 @@ const fulfillResultSchema = z.object({
   retryable: z.boolean().optional(),
 });
 
-function customerId(session: Stripe.Checkout.Session) {
-  if (typeof session.customer === "string") return session.customer;
-  if (session.customer && typeof session.customer === "object" && "id" in session.customer) {
-    return session.customer.id;
+function stripeObjectId(value: string | { id: string } | null) {
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object" && "id" in value) {
+    return value.id;
   }
   return "";
+}
+
+function throwRpcFailure(data: unknown) {
+  const parsed = fulfillResultSchema.safeParse(data);
+  if (!parsed.success || !parsed.data.ok) {
+    const retryable = parsed.success ? parsed.data.retryable === true : true;
+    const reason = parsed.success ? parsed.data.error ?? "stripe_webhook_failed" : "stripe_webhook_parse_failed";
+    const err = new Error(reason) as Error & { retryable?: boolean };
+    err.retryable = retryable;
+    throw err;
+  }
 }
 
 async function fulfillCheckoutSession(event: Stripe.Event, session: Stripe.Checkout.Session) {
@@ -26,7 +37,7 @@ async function fulfillCheckoutSession(event: Stripe.Event, session: Stripe.Check
     p_provider_event_id: event.id,
     p_event_type: event.type,
     p_session_id: session.id,
-    p_customer_id: customerId(session),
+    p_customer_id: stripeObjectId(session.customer),
     p_amount_total: session.amount_total ?? 0,
     p_currency: session.currency ?? "",
   });
@@ -34,15 +45,7 @@ async function fulfillCheckoutSession(event: Stripe.Event, session: Stripe.Check
   if (error) {
     throw new Error(error.message);
   }
-
-  const parsed = fulfillResultSchema.safeParse(data);
-  if (!parsed.success || !parsed.data.ok) {
-    const retryable = parsed.success ? parsed.data.retryable === true : true;
-    const reason = parsed.success ? parsed.data.error ?? "fulfill_failed" : "fulfill_parse_failed";
-    const err = new Error(reason) as Error & { retryable?: boolean };
-    err.retryable = retryable;
-    throw err;
-  }
+  throwRpcFailure(data);
 }
 
 async function markSessionStatus(
@@ -58,6 +61,58 @@ async function markSessionStatus(
     p_status: status,
   });
   if (error) throw new Error(error.message);
+}
+
+async function recordPaidInvoice(event: Stripe.Event, invoice: Stripe.Invoice) {
+  const orderId = z.string().uuid().safeParse(invoice.metadata?.order_id);
+  if (!orderId.success) {
+    const error = new Error("missing_invoice_order_id") as Error & { retryable?: boolean };
+    error.retryable = false;
+    throw error;
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin.rpc("record_stripe_invoice", {
+    p_provider_event_id: event.id,
+    p_event_type: event.type,
+    p_order_id: orderId.data,
+    p_customer_id: stripeObjectId(invoice.customer),
+    p_invoice_id: invoice.id,
+    p_invoice_pdf_url: invoice.invoice_pdf ?? "",
+    p_hosted_invoice_url: invoice.hosted_invoice_url ?? "",
+  });
+  if (error) throw new Error(error.message);
+  throwRpcFailure(data);
+}
+
+export async function processStripeEvent(event: Stripe.Event) {
+  switch (event.type) {
+    case "checkout.session.completed":
+    case "checkout.session.async_payment_succeeded": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      if (event.type === "checkout.session.completed" && session.payment_status !== "paid") {
+        break;
+      }
+      await fulfillCheckoutSession(event, session);
+      break;
+    }
+    case "checkout.session.async_payment_failed": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      await markSessionStatus(event, session, "failed");
+      break;
+    }
+    case "checkout.session.expired": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      await markSessionStatus(event, session, "cancelled");
+      break;
+    }
+    case "invoice.paid": {
+      await recordPaidInvoice(event, event.data.object as Stripe.Invoice);
+      break;
+    }
+    default:
+      break;
+  }
 }
 
 export async function POST(request: Request) {
@@ -77,29 +132,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    switch (event.type) {
-      case "checkout.session.completed":
-      case "checkout.session.async_payment_succeeded": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        if (event.type === "checkout.session.completed" && session.payment_status !== "paid") {
-          break;
-        }
-        await fulfillCheckoutSession(event, session);
-        break;
-      }
-      case "checkout.session.async_payment_failed": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        await markSessionStatus(event, session, "failed");
-        break;
-      }
-      case "checkout.session.expired": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        await markSessionStatus(event, session, "cancelled");
-        break;
-      }
-      default:
-        break;
-    }
+    await processStripeEvent(event);
   } catch (error) {
     const retryable = error instanceof Error && "retryable" in error
       ? (error as Error & { retryable?: boolean }).retryable !== false
