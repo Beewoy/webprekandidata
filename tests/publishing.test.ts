@@ -43,4 +43,17 @@ describe("publication snapshots", () => {
     expect(parsePublicationMedia([{ kind: "script", storagePath: "x" }])).toEqual([]);
     expect(parsePublicationPosts([{ title: "Bez zvyšku dát" }])).toEqual([]);
   });
+
+  it("accepts PostgreSQL timestamps with a UTC offset in published posts", () => {
+    const post = {
+      bodyHtml: "<p>Obsah článku</p>",
+      coverAssetId: null,
+      excerpt: "Krátky popis",
+      id: "d1579332-16cb-4ad7-9844-29648ad40035",
+      publishedAt: "2026-08-11T10:16:39.427+00:00",
+      title: "Novinka z kampane",
+    };
+
+    expect(parsePublicationPosts([post])).toEqual([post]);
+  });
 });

@@ -7,12 +7,24 @@ import { NewsEditor } from "@/components/editor/news-editor";
 import { PublishingEditor } from "@/components/editor/publishing-editor";
 import { SectionForm } from "@/components/editor/section-form";
 import { SitePreview } from "@/components/editor/site-preview";
-import { editorFields, getSection } from "@/lib/site-sections";
-import { getSectionDraft, getSiteGallery, getSiteMedia, getSitePreviewData, getSiteThemeDraft } from "@/lib/data/sites";
+import { getEmailVerificationStatus } from "@/lib/data/account";
+import { getSiteDomainState } from "@/lib/data/domains";
+import { listSiteOrders } from "@/lib/data/orders";
 import { getSitePosts } from "@/lib/data/posts";
 import { getPublishingState } from "@/lib/data/publishing";
+import { getSectionDraft, getSiteGallery, getSiteMedia, getSitePreviewData, getSiteThemeDraft } from "@/lib/data/sites";
+import { isDemoMode } from "@/lib/env";
+import { parseCheckoutReturnState } from "@/lib/payments/checkout-return";
+import { isStripeConfigured } from "@/lib/payments/stripe";
+import { editorFields, getSection } from "@/lib/site-sections";
 
-export default async function EditorSectionPage({ params }: { params: Promise<{ siteId: string; section: string }> }) {
+export default async function EditorSectionPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ siteId: string; section: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { siteId, section: slug } = await params;
   const section = getSection(slug);
   if (!section) notFound();
@@ -37,16 +49,36 @@ export default async function EditorSectionPage({ params }: { params: Promise<{ 
     if (!news) notFound();
     return <NewsEditor ai={news.ai} initialPosts={news.posts} siteId={siteId} />;
   }
-  if (slug === "domena") return <DomainEditor />;
+  if (slug === "domena") {
+    const domainState = await getSiteDomainState(siteId);
+    if (!domainState) notFound();
+    return <DomainEditor siteId={siteId} state={domainState} />;
+  }
   if (slug === "nahlad") {
     const preview = await getSitePreviewData(siteId);
     if (!preview) notFound();
     return <SitePreview data={preview} siteId={siteId} />;
   }
   if (slug === "publikovanie") {
-    const publishingState = await getPublishingState(siteId);
+    const [publishingState, orders, account, query] = await Promise.all([
+      getPublishingState(siteId),
+      listSiteOrders(siteId),
+      getEmailVerificationStatus(),
+      searchParams,
+    ]);
     if (!publishingState) notFound();
-    return <PublishingEditor publishingState={publishingState} siteId={siteId} />;
+    return (
+      <PublishingEditor
+        checkoutEnabled={isStripeConfigured()}
+        checkoutNotice={parseCheckoutReturnState({ checkout: query.checkout, entitled: publishingState.entitled })}
+        defaultEmail={account.email}
+        defaultFullName={account.fullName}
+        isDemo={isDemoMode() || siteId === "demo"}
+        orders={orders}
+        publishingState={publishingState}
+        siteId={siteId}
+      />
+    );
   }
   if (editorFields[slug]) {
     const draft = await getSectionDraft(siteId, slug);

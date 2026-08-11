@@ -611,11 +611,14 @@ export type Database = {
           content: Json
           id: string
           media_manifest: Json
+          posts: Json
           published_at: string
           published_by: string
           schema_version: number
           seo: Json
           site_id: string
+          source_fingerprint: string
+          source_revision: number
           theme: Json
           unpublished_at: string | null
           version_number: number
@@ -624,11 +627,14 @@ export type Database = {
           content: Json
           id?: string
           media_manifest?: Json
+          posts?: Json
           published_at?: string
           published_by: string
           schema_version?: number
           seo: Json
           site_id: string
+          source_fingerprint?: string
+          source_revision?: number
           theme: Json
           unpublished_at?: string | null
           version_number: number
@@ -637,11 +643,14 @@ export type Database = {
           content?: Json
           id?: string
           media_manifest?: Json
+          posts?: Json
           published_at?: string
           published_by?: string
           schema_version?: number
           seo?: Json
           site_id?: string
+          source_fingerprint?: string
+          source_revision?: number
           theme?: Json
           unpublished_at?: string | null
           version_number?: number
@@ -665,6 +674,9 @@ export type Database = {
       }
       sites: {
         Row: {
+          admin_hold: boolean
+          admin_hold_at: string | null
+          admin_hold_by: string | null
           campaign_ends_at: string | null
           candidate_name: string
           created_at: string
@@ -680,6 +692,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_hold?: boolean
+          admin_hold_at?: string | null
+          admin_hold_by?: string | null
           campaign_ends_at?: string | null
           candidate_name?: string
           created_at?: string
@@ -695,6 +710,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_hold?: boolean
+          admin_hold_at?: string | null
+          admin_hold_by?: string | null
           campaign_ends_at?: string | null
           candidate_name?: string
           created_at?: string
@@ -710,6 +728,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "sites_admin_hold_by_fkey"
+            columns: ["admin_hold_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sites_current_publication_fk"
             columns: ["current_publication_id"]
@@ -731,6 +756,43 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_dashboard_metrics: { Args: never; Returns: Json }
+      admin_grant_site_plan: {
+        Args: {
+          p_plan_code: Database["public"]["Enums"]["plan_code"]
+          p_reason: string
+          p_site_id: string
+        }
+        Returns: Json
+      }
+      admin_search_users: {
+        Args: { p_limit?: number; p_query?: string }
+        Returns: {
+          created_at: string
+          email: string
+          email_verified_at: string
+          full_name: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          site_count: number
+        }[]
+      }
+      admin_set_site_hold: {
+        Args: {
+          p_candidate_message: string
+          p_category: string
+          p_duration_days: number
+          p_hold: boolean
+          p_reason: string
+          p_scope: string
+          p_site_id: string
+        }
+        Returns: Database["public"]["Enums"]["site_status"]
+      }
+      attach_custom_domain: {
+        Args: { p_hostname: string; p_site_id: string }
+        Returns: Json
+      }
       create_candidate_post: { Args: { p_site_id: string }; Returns: string }
       create_candidate_site: {
         Args: {
@@ -742,13 +804,51 @@ export type Database = {
         }
         Returns: string
       }
+      fulfill_stripe_checkout: {
+        Args: {
+          p_amount_total: number
+          p_currency: string
+          p_customer_id: string
+          p_event_type: string
+          p_provider_event_id: string
+          p_session_id: string
+        }
+        Returns: Json
+      }
       has_plus_entitlement: { Args: { p_site_id: string }; Returns: boolean }
+      has_publish_entitlement: { Args: { p_site_id: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
       issue_email_verification_token: {
         Args: { p_token_hash: string; p_user_id: string }
         Returns: string
       }
+      mark_checkout_session_status: {
+        Args: {
+          p_event_type: string
+          p_provider_event_id: string
+          p_session_id: string
+          p_status: Database["public"]["Enums"]["order_status"]
+        }
+        Returns: Json
+      }
       owns_site: { Args: { target_site_id: string }; Returns: boolean }
+      publish_candidate_site: {
+        Args: {
+          p_content: Json
+          p_media_manifest: Json
+          p_posts: Json
+          p_publication_id: string
+          p_schema_version: number
+          p_seo: Json
+          p_site_id: string
+          p_source_fingerprint: string
+          p_source_revision: number
+          p_theme: Json
+        }
+        Returns: Json
+      }
+      purge_expired_operational_data: { Args: never; Returns: Json }
+      remove_custom_domain: { Args: { p_domain_id: string }; Returns: Json }
       reorder_gallery_assets: {
         Args: { p_asset_ids: string[]; p_site_id: string }
         Returns: undefined
@@ -762,11 +862,34 @@ export type Database = {
         }
         Returns: string
       }
+      resolve_active_custom_domain: {
+        Args: { p_hostname: string }
+        Returns: {
+          site_id: string
+          slug: string
+        }[]
+      }
       revoke_email_verification_token: {
         Args: { p_token_hash: string; p_user_id: string }
         Returns: undefined
       }
+      set_candidate_site_visibility: {
+        Args: { p_site_id: string; p_visible: boolean }
+        Returns: Database["public"]["Enums"]["site_status"]
+      }
+      set_primary_domain: { Args: { p_domain_id: string }; Returns: Json }
       storage_object_site_id: { Args: { object_name: string }; Returns: string }
+      sync_domain_provider_state: {
+        Args: {
+          p_domain_id: string
+          p_make_primary?: boolean
+          p_ssl_metadata: Json
+          p_status: string
+          p_verification_metadata: Json
+          p_verified_at?: string
+        }
+        Returns: Json
+      }
       update_site_section: {
         Args: {
           p_expected_revision: number

@@ -143,6 +143,7 @@ export async function loadPublicationSource(siteId: string): Promise<Publication
 export const getPublishingState = cache(async (siteId: string): Promise<PublishingState | null> => {
   if (siteId === "demo" && isDemoMode()) {
     return {
+      adminHold: false,
       currentPublication: null,
       entitled: false,
       hasUnpublishedChanges: false,
@@ -157,6 +158,7 @@ export const getPublishingState = cache(async (siteId: string): Promise<Publishi
   const readiness = getPublishReadiness({ content: source.content, mediaKinds: source.assets.map((asset) => asset.kind), seo: source.seo });
 
   return {
+    adminHold: source.site.adminHold,
     currentPublication: source.currentPublication ? {
       publishedAt: source.currentPublication.publishedAt,
       sourceRevision: source.currentPublication.sourceRevision,

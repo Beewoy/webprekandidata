@@ -1,34 +1,125 @@
 "use client";
 
-import { AlertTriangle, Check, CircleCheckBig, ExternalLink, Eye, LockKeyhole, PauseCircle, Rocket, Sparkles } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  CircleCheckBig,
+  ExternalLink,
+  Eye,
+  LoaderCircle,
+  LockKeyhole,
+  PauseCircle,
+  Rocket,
+  Sparkles,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { createCheckoutSessionAction } from "@/app/actions/checkout";
 import { publishSiteAction, setSiteVisibilityAction, type PublishSiteResult } from "@/app/actions/publishing";
 import { cn } from "@/lib/cn";
+import type { SiteOrderRow } from "@/lib/data/orders";
+import type { CheckoutReturnNotice } from "@/lib/payments/checkout-return";
+import { PLAN_LABELS, PLAN_PRICE_LABELS, type PaidPlanCode } from "@/lib/payments/plans";
+import type { PublishingState } from "@/lib/publishing";
 import { PageHeading } from "@/components/ui/page-heading";
 import { PlanBadge } from "@/components/ui/plan-badge";
-import type { PublishingState } from "@/lib/publishing";
 
 const plans = [
-  { id: "basic", name: "Basic", price: "49,99 €", note: "Jednoduchý volebný web", features: ["Web na našej doméne", "Všetky sekcie editora", "Aktuality a kontaktný formulár", "Základná AI pomoc s obsahom"] },
-  { id: "plus", name: "Plus", price: "89,99 €", note: "Vlastná značka a viac AI", features: ["Všetko z balíka Basic", "Vlastná doména", "AI generovanie článkov", "Prioritná podpora"] },
-] as const;
-
-type PaidPlan = Exclude<PublishingState["planCode"], null>;
+  {
+    id: "basic" as const,
+    name: PLAN_LABELS.basic,
+    price: PLAN_PRICE_LABELS.basic,
+    note: "Jednoduchý volebný web",
+    features: ["Web na našej doméne", "Všetky sekcie editora", "Aktuality a kontaktný formulár", "Základná AI pomoc s obsahom"],
+  },
+  {
+    id: "plus" as const,
+    name: PLAN_LABELS.plus,
+    price: PLAN_PRICE_LABELS.plus,
+    note: "Vlastná značka a viac AI",
+    features: ["Všetko z balíka Basic", "Vlastná doména", "AI generovanie článkov", "Prioritná podpora"],
+  },
+];
 
 type PublishingEditorProps = {
+  checkoutEnabled: boolean;
+  checkoutNotice: CheckoutReturnNotice | null;
+  defaultEmail: string;
+  defaultFullName: string;
+  isDemo: boolean;
+  orders: SiteOrderRow[];
   publishingState: PublishingState;
   siteId: string;
 };
 
-export function PublishingEditor({ publishingState, siteId }: PublishingEditorProps) {
-  const [plan, setPlan] = useState<PaidPlan>("basic");
+const orderStatusLabels: Record<SiteOrderRow["status"], string> = {
+  pending: "Čaká na platbu",
+  paid: "Zaplatená",
+  failed: "Zlyhaná",
+  refunded: "Vrátená",
+  cancelled: "Zrušená",
+};
+
+function formatOrderDate(value: string) {
+  return new Intl.DateTimeFormat("sk-SK", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Europe/Bratislava",
+  }).format(new Date(value));
+}
+
+function OrderHistory({ orders }: { orders: SiteOrderRow[] }) {
+  if (orders.length === 0) return null;
+  return (
+    <section aria-labelledby="order-history-title" className="order-history">
+      <div className="order-history__heading">
+        <p className="eyebrow">Objednávky</p>
+        <h2 id="order-history-title">História objednávok</h2>
+      </div>
+      <div className="order-history__list" role="list">
+        {orders.map((order) => (
+          <div className="order-history__item" key={order.id} role="listitem">
+            <div>
+              <strong>{order.planLabel}</strong>
+              <small>{formatOrderDate(order.createdAt)}</small>
+            </div>
+            <div className="order-history__meta">
+              <span>{order.priceLabel}</span>
+              <span className={cn("order-status", `order-status--${order.status}`)}>{orderStatusLabels[order.status]}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function PublishingEditor({
+  checkoutEnabled,
+  checkoutNotice,
+  defaultEmail,
+  defaultFullName,
+  isDemo,
+  orders,
+  publishingState,
+  siteId,
+}: PublishingEditorProps) {
+  const [plan, setPlan] = useState<PaidPlanCode>("basic");
   const [result, setResult] = useState<PublishSiteResult | null>(null);
+  const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [pending, startTransition] = useTransition();
+  const [checkoutPending, startCheckout] = useTransition();
   const router = useRouter();
   const selected = plans.find((item) => item.id === plan)!;
   const currentPlan = publishingState.planCode ? plans.find((item) => item.id === publishingState.planCode)! : null;
+
+  useEffect(() => {
+    if (checkoutNotice?.kind !== "success_pending" || publishingState.entitled) return;
+    const timer = window.setTimeout(() => router.refresh(), 2500);
+    return () => window.clearTimeout(timer);
+  }, [checkoutNotice?.kind, publishingState.entitled, router]);
 
   function runAction(action: () => Promise<PublishSiteResult>) {
     setResult(null);
@@ -39,18 +130,50 @@ export function PublishingEditor({ publishingState, siteId }: PublishingEditorPr
     });
   }
 
+  function submitCheckout(formData: FormData) {
+    setCheckoutMessage(null);
+    setFieldErrors({});
+    startCheckout(async () => {
+      const payload = {
+        siteId,
+        planCode: plan,
+        billing: {
+          fullName: String(formData.get("fullName") ?? ""),
+          email: String(formData.get("email") ?? ""),
+          street: String(formData.get("street") ?? ""),
+          city: String(formData.get("city") ?? ""),
+          postalCode: String(formData.get("postalCode") ?? ""),
+          country: "SK" as const,
+          companyName: String(formData.get("companyName") ?? ""),
+          ico: String(formData.get("ico") ?? ""),
+          acceptTerms: formData.get("acceptTerms") === "on",
+        },
+      };
+      const response = await createCheckoutSessionAction(payload);
+      if (!response.ok) {
+        setCheckoutMessage(response.message);
+        setFieldErrors(response.fieldErrors ?? {});
+        return;
+      }
+      window.location.assign(response.url);
+    });
+  }
+
   if (currentPlan) {
     const isPublished = publishingState.siteStatus === "published";
     const isSuspended = publishingState.siteStatus === "suspended";
+    const adminHold = publishingState.adminHold;
     const primaryLabel = !publishingState.currentPublication
       ? "Zverejniť web"
       : isSuspended
-        ? publishingState.hasUnpublishedChanges ? "Publikovať zmeny a obnoviť" : "Obnoviť web"
+        ? adminHold
+          ? null
+          : publishingState.hasUnpublishedChanges ? "Publikovať zmeny a obnoviť" : "Obnoviť web"
         : publishingState.hasUnpublishedChanges ? "Publikovať zmeny" : null;
     const primaryAction = isSuspended && !publishingState.hasUnpublishedChanges
       ? () => setSiteVisibilityAction({ siteId, visible: true })
       : () => publishSiteAction({ siteId });
-    const canPublish = publishingState.entitled && publishingState.readiness.ready;
+    const canPublish = publishingState.entitled && publishingState.readiness.ready && !adminHold;
     const publishedDate = publishingState.currentPublication
       ? new Intl.DateTimeFormat("sk-SK", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Bratislava" }).format(new Date(publishingState.currentPublication.publishedAt))
       : null;
@@ -62,6 +185,11 @@ export function PublishingEditor({ publishingState, siteId }: PublishingEditorPr
           title="Zverejnenie webu"
           description="Skontrolujte pripravenosť a rozhodnite, ktorá uložená verzia má byť verejná."
         />
+        {checkoutNotice && (
+          <p className={cn("checkout-notice", checkoutNotice.kind === "cancelled" ? "checkout-notice--cancelled" : "checkout-notice--success")} role="status">
+            {checkoutNotice.message}
+          </p>
+        )}
         <div className={cn("readiness-card", !publishingState.readiness.ready && "readiness-card--warning")}>
           <span>{publishingState.readiness.ready ? <CircleCheckBig size={23} /> : <AlertTriangle size={23} />}</span>
           <div>
@@ -105,7 +233,7 @@ export function PublishingEditor({ publishingState, siteId }: PublishingEditorPr
             <div className={cn("publication-status__indicator", isPublished && "publication-status__indicator--live", isSuspended && "publication-status__indicator--suspended")}>
               <span aria-hidden="true" />
               <div>
-                <strong>{isPublished ? "Web je verejný" : isSuspended ? "Web je pozastavený" : "Web ešte nie je verejný"}</strong>
+                <strong>{isPublished ? "Web je verejný" : isSuspended ? (adminHold ? "Web je pozastavený prevádzkovateľom" : "Web je pozastavený") : "Web ešte nie je verejný"}</strong>
                 <small>{publishedDate ? `Posledná publikácia ${publishedDate} · verzia ${publishingState.currentPublication?.versionNumber}` : "Prvá verejná verzia ešte nebola vytvorená."}</small>
               </div>
             </div>
@@ -117,6 +245,7 @@ export function PublishingEditor({ publishingState, siteId }: PublishingEditorPr
           </div>
 
           {!publishingState.entitled && <div className="publication-entitlement-warning" role="alert"><AlertTriangle size={18} /><span><strong>Balík nie je potvrdený objednávkou</strong><small>Publikovanie sa sprístupní po priradení platnej objednávky Basic alebo Plus.</small></span></div>}
+          {adminHold && <div className="publication-entitlement-warning" role="alert"><LockKeyhole size={18} /><span><strong>Administrátorské pozastavenie</strong><small>Web skryl prevádzkovateľ platformy. Obnovenie je možné až po uvoľnení zo strany admina.</small></span></div>}
 
           <div className="active-plan-card__next publication-actions">
             <div>
@@ -132,13 +261,21 @@ export function PublishingEditor({ publishingState, siteId }: PublishingEditorPr
           </div>
           {result && <p className={cn("publication-result", result.ok ? "publication-result--success" : "publication-result--error")} role={result.ok ? "status" : "alert"}>{result.message}</p>}
         </section>
+        <OrderHistory orders={orders} />
       </div>
     );
   }
 
+  const canCheckout = checkoutEnabled && !isDemo;
+
   return (
     <div className="page-container">
       <PageHeading eyebrow="Posledný krok" title="Zverejnenie webu" description="Vyberte si balík. O platbu požiadame až po kontrole údajov." />
+      {checkoutNotice && (
+        <p className={cn("checkout-notice", checkoutNotice.kind === "cancelled" ? "checkout-notice--cancelled" : "checkout-notice--success")} role="status">
+          {checkoutNotice.message}
+        </p>
+      )}
       <div className="readiness-card"><span><CircleCheckBig size={23} /></span><div><h2>Web je pripravený na kontrolu</h2><p>Pred platbou môžete obsah ešte ľubovoľne meniť. Web zverejníme až po potvrdení objednávky.</p></div></div>
       <div className="pricing-grid">
         {plans.map((item) => (
@@ -151,12 +288,80 @@ export function PublishingEditor({ publishingState, siteId }: PublishingEditorPr
           </button>
         ))}
       </div>
-      <section className="order-summary">
-        <div><p className="eyebrow">Vybraný balík</p><h2>{selected.name}</h2><p>{selected.note}. Jednorazová platba za jedno volebné obdobie.</p></div>
-        <div className="order-total"><small>Celkom s DPH</small><strong>{selected.price}</strong></div>
-        <button className="button button--primary button--large" type="button"><Rocket size={18} /> Pokračovať k objednávke</button>
-        <span className="secure-note"><LockKeyhole size={14} /> Bezpečnú platbu bude spracúvať Stripe</span>
-      </section>
+
+      <form
+        className="checkout-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          submitCheckout(new FormData(event.currentTarget));
+        }}
+      >
+        <section className="order-summary order-summary--checkout" aria-labelledby="billing-title">
+          <div>
+            <p className="eyebrow">Vybraný balík</p>
+            <h2 id="billing-title">{selected.name}</h2>
+            <p>{selected.note}. Jednorazová platba za jedno volebné obdobie.</p>
+          </div>
+          <div className="order-total"><small>Celkom s DPH</small><strong>{selected.price}</strong></div>
+
+          <div className="checkout-form__fields">
+            <label className="field">
+              <span>Meno a priezvisko / názov</span>
+              <input autoComplete="name" defaultValue={defaultFullName} name="fullName" required type="text" />
+              {fieldErrors["billing.fullName"] && <span className="field-error" role="alert">{fieldErrors["billing.fullName"][0]}</span>}
+            </label>
+            <label className="field">
+              <span>Fakturačný e-mail</span>
+              <input autoComplete="email" defaultValue={defaultEmail} name="email" required type="email" />
+              {fieldErrors["billing.email"] && <span className="field-error" role="alert">{fieldErrors["billing.email"][0]}</span>}
+            </label>
+            <label className="field">
+              <span>Ulica a číslo</span>
+              <input autoComplete="street-address" name="street" required type="text" />
+              {fieldErrors["billing.street"] && <span className="field-error" role="alert">{fieldErrors["billing.street"][0]}</span>}
+            </label>
+            <div className="checkout-form__row">
+              <label className="field">
+                <span>PSČ</span>
+                <input autoComplete="postal-code" inputMode="numeric" name="postalCode" placeholder="123 45" required type="text" />
+                {fieldErrors["billing.postalCode"] && <span className="field-error" role="alert">{fieldErrors["billing.postalCode"][0]}</span>}
+              </label>
+              <label className="field">
+                <span>Mesto</span>
+                <input autoComplete="address-level2" name="city" required type="text" />
+                {fieldErrors["billing.city"] && <span className="field-error" role="alert">{fieldErrors["billing.city"][0]}</span>}
+              </label>
+            </div>
+            <label className="field">
+              <span>Firma <small>(voliteľné)</small></span>
+              <input autoComplete="organization" name="companyName" type="text" />
+            </label>
+            <label className="field">
+              <span>IČO <small>(voliteľné)</small></span>
+              <input inputMode="numeric" name="ico" type="text" />
+              {fieldErrors["billing.ico"] && <span className="field-error" role="alert">{fieldErrors["billing.ico"][0]}</span>}
+            </label>
+            <label className="checkout-terms">
+              <input name="acceptTerms" type="checkbox" />
+              <span>
+                Súhlasím s <a href="/obchodne-podmienky" target="_blank" rel="noreferrer">obchodnými podmienkami</a>{" "}
+                a beriem na vedomie, že balík sa aktivuje až po potvrdení platby.
+              </span>
+            </label>
+            {fieldErrors["billing.acceptTerms"] && <span className="field-error" role="alert">{fieldErrors["billing.acceptTerms"][0]}</span>}
+          </div>
+
+          <button className="button button--primary button--large" disabled={!canCheckout || checkoutPending} type="submit">
+            {checkoutPending ? <LoaderCircle className="spin" size={18} /> : <Rocket size={18} />}
+            {checkoutPending ? "Presmerúvam na platbu…" : "Pokračovať k platbe"}
+          </button>
+          <span className="secure-note"><LockKeyhole size={14} /> Bezpečnú platbu spracúva Stripe. Aktivácia balíka prebehne až po potvrdení webhookom.</span>
+          {isDemo && <p className="checkout-disabled-note" role="status">V demo režime platba nie je dostupná.</p>}
+          {!isDemo && !checkoutEnabled && <p className="checkout-disabled-note" role="status">Platobná brána ešte nie je nakonfigurovaná.</p>}
+          {checkoutMessage && <p className="publication-result publication-result--error" role="alert">{checkoutMessage}</p>}
+        </section>
+      </form>
+      <OrderHistory orders={orders} />
     </div>
   );
 }

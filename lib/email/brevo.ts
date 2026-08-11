@@ -136,3 +136,66 @@ export async function sendCandidateContactEmail({
     `,
   });
 }
+
+type SupportEmail = {
+  accountEmail?: string | null;
+  message: string;
+  recipientEmails: readonly string[];
+  replyEmail: string;
+  userId: string;
+};
+
+export function isBrevoSmtpConfigured() {
+  return Boolean(process.env.BREVO_SMTP_USER && process.env.BREVO_SMTP_KEY);
+}
+
+export async function sendSupportEmail({
+  accountEmail,
+  message,
+  recipientEmails,
+  replyEmail,
+  userId,
+}: SupportEmail) {
+  const transporter = createTransporter();
+  const headerReplyEmail = replyEmail.replace(/[\r\n]+/g, " ").trim();
+  const safeMessage = escapeHtml(message).replaceAll("\n", "<br>");
+  const safeReplyEmail = escapeHtml(replyEmail);
+  const safeAccountEmail = accountEmail ? escapeHtml(accountEmail) : null;
+  const safeUserId = escapeHtml(userId);
+
+  await transporter.sendMail({
+    from: { name: "Web pre kandidáta", address: "noreply@webprekandidata.sk" },
+    replyTo: headerReplyEmail,
+    to: [...recipientEmails],
+    subject: "Žiadosť o podporu – WebPreKandidata.sk",
+    text: [
+      "Nová žiadosť o podporu z dashboardu",
+      "",
+      `Odpovedný e-mail: ${replyEmail}`,
+      accountEmail && accountEmail !== replyEmail ? `Účet: ${accountEmail}` : null,
+      `ID používateľa: ${userId}`,
+      "",
+      "Správa:",
+      message,
+      "",
+      "Na správu môžete odpovedať priamo cez tlačidlo Odpovedať vo svojom e-mailovom klientovi.",
+    ]
+      .filter((line): line is string => line !== null)
+      .join("\n"),
+    html: `
+      <div style="background:#f7f9fb;padding:32px 16px;font-family:Inter,Arial,sans-serif;color:#17212d">
+        <div style="max-width:600px;margin:0 auto;background:#fff;border:1px solid #e2e8ef;border-radius:16px;padding:32px">
+          <div style="font-size:19px;font-weight:800;color:#163b65;margin-bottom:24px">WebPreKandidata.sk</div>
+          <h1 style="font-size:25px;line-height:1.25;margin:0 0 22px">Žiadosť o podporu</h1>
+          <div style="background:#f7f9fb;border:1px solid #e2e8ef;border-radius:12px;padding:18px;margin-bottom:22px">
+            <p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>Odpovedný e-mail:</strong> ${safeReplyEmail}</p>
+            ${safeAccountEmail && accountEmail !== replyEmail ? `<p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>Účet:</strong> ${safeAccountEmail}</p>` : ""}
+            <p style="font-size:14px;line-height:1.6;margin:0"><strong>ID používateľa:</strong> ${safeUserId}</p>
+          </div>
+          <div style="font-size:15px;line-height:1.7;color:#303d4f">${safeMessage}</div>
+          <p style="font-size:12px;line-height:1.55;color:#7c8ba1;margin:24px 0 0">Na správu môžete odpovedať priamo cez tlačidlo Odpovedať vo svojom e-mailovom klientovi.</p>
+        </div>
+      </div>
+    `,
+  });
+}

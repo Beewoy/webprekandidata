@@ -38,12 +38,15 @@ Vyžaduje Supabase premenné a `DEMO_MODE=false`.
 
 ```text
 app/
+  page.tsx                indexovateľná marketingová landing page
   [slug]/                 verejný web z aktuálneho publikovaného snapshotu
   (auth)/                 prihlasovacie a obnovovacie obrazovky
   actions/                serverové mutácie a autorizácia
+  admin/                  interný admin prevádzkovateľa (role=admin)
   app/                    chránená aplikácia kandidáta
   auth/callback/          výmena Supabase auth kódu za reláciu
 components/
+  admin/                  shell, tabuľky a dialóg admin hold
   app-shell/              sidebar, mobilná navigácia a horná lišta
   auth/                   interaktívne auth formuláre
   dashboard/              prehľad projektu
@@ -52,12 +55,14 @@ components/
   ui/                     malé zdieľané prezentačné komponenty
 lib/
   ai/                     serverové AI volanie, fallback a podpísané potvrdenie výsledku
-  data/                   serverové čítanie dát
+  data/                   serverové čítanie dát vrátane admin loaderov
   supabase/               typované browser/server Supabase klienty a generované DB typy
   validation/             Zod schémy a typy stavov formulárov
 supabase/migrations/      verzovaná databázová schéma a RPC
 tests/                    jednotkové testy
 ```
+
+Root `/` sa staticky generuje zo zdrojového dokumentu `landing-page/index.html`, ale metadata, Open Graph obrázok, robots a sitemap používa Next.js Metadata API. `/app` a `/admin` zostávajú samostatné chránené stromy. Platformové `www` sa v `proxy.ts` presmeruje 308 na apex; custom hostname sa naďalej prepisuje iba na publikovaný snapshot.
 
 ## 4. Serverové a klientské hranice
 
@@ -108,7 +113,7 @@ Obnova hesla:
 
 Serverové akcie sú v `app/actions/auth.ts`. UI je v `components/auth/auth-form.tsx`.
 
-Obnovu hesla a ďalšie vstavané Auth e-maily odosiela Supabase cez Brevo SMTP. Aplikačný overovací e-mail odosiela server cez rovnaké Brevo SMTP spojenie (`smtp-relay.brevo.com:587`). SMTP prihlasovacie údaje sú iba v serverovom prostredí. Doména `webprekandidata.sk` je autentifikovaná overovacím TXT a dvomi DKIM CNAME záznamami vo Websupport DNS. Odosielateľ je `Web pre kandidáta <noreply@webprekandidata.sk>`. Existujúci SPF záznam Websupportu a DMARC politika `p=quarantine` sa pri tejto integrácii nemenia.
+Obnovu hesla a ďalšie vstavané Auth e-maily odosiela Supabase cez Brevo SMTP. Aplikačný overovací e-mail odosiela server cez rovnaké Brevo SMTP spojenie (`smtp-relay.brevo.com:587`). SMTP prihlasovacie údaje sú iba v serverovom prostredí. Doména `webprekandidata.sk` je autentifikovaná overovacím TXT a dvomi DKIM CNAME záznamami vo Websupport DNS. Odosielateľ je `Web pre kandidáta <noreply@webprekandidata.sk>`. Existujúci SPF záznam Websupportu a DMARC politika `p=quarantine` sa pri tejto integrácii nemenia. Dialóg Pomoc a podpora v dashboarde odosiela podporné správy cez rovnaké Brevo SMTP na pevné interné inboxy; vyžaduje prihláseného používateľa (okrem demo režimu) a má limity na počet odoslaní.
 
 Ochrana nesmie byť iba v proxy alebo UI. Každá mutácia musí samostatne overiť používateľa a databázová operácia musí byť chránená RLS alebo bezpečnou RPC funkciou.
 
@@ -189,9 +194,48 @@ Po pripojení produkčnej databázy sa existujúce migrácie nemenia. Každá zm
 
 Cloudová schéma je zdrojom pre generovaný súbor `lib/supabase/database.types.ts`. Po každej aplikovanej migrácii sa obnoví cez `npm run supabase:types`; browserový aj serverový klient používajú typ `Database`. Generovaný súbor sa neupravuje ručne.
 
-Balík je vlastnosť konkrétneho webu, nie globálna vlastnosť prihlasovacieho účtu. `sites.plan_code = null` znamená Free; hodnoty `basic` a `plus` sa v dashboarde zobrazujú ako aktívny balík. Samotný textový stav v `sites` nie je bezpečnostným oprávnením na platené funkcie. Plus AI sa odomkne iba vtedy, keď pre ten istý web a vlastníka existuje zaplatená, stále platná Plus objednávka v `orders`. Ručné testovacie granty preto musia aktualizovať oba záznamy a vytvoriť auditnú stopu; v produkcii ich nahradí výhradne overený Stripe fulfillment.
+Balík je vlastnosť konkrétneho webu, nie globálna vlastnosť prihlasovacieho účtu. `sites.plan_code = null` znamená Free; hodnoty `basic` a `plus` sa v dashboarde zobrazujú ako aktívny balík. Samotný textový stav v `sites` nie je bezpečnostným oprávnením na platené funkcie. Plus AI sa odomkne iba vtedy, keď pre ten istý web a vlastníka existuje zaplatená, stále platná Plus objednávka v `orders`. Produkčné odomknutie ide výhradne cez overený Stripe fulfillment (`fulfill_stripe_checkout`); admin môže výnimočne udeliť balík cez auditovanú RPC `admin_grant_site_plan`.
 
-Stránka publikovania načíta vlastnený projekt na serveri a do klientského UI odovzdá iba jeho serializovateľné `planCode`. Pri Free stave ponúka nákupný výber. Pri Basic alebo Plus sa nákupný výber aj objednávkové CTA skryjú a zobrazí sa iba aktívny balík s jeho benefitmi a funkčným odkazom na kontrolu náhľadu. Tým UI nežiada už zaplateného kandidáta o ďalšiu objednávku; oprávnenia platených funkcií však naďalej overuje databáza, nie tento vizuálny stav.
+## 8.1 Platba Stripe Checkout
+
+Tok nákupu Basic/Plus:
+
+1. kandidát na Publikovanie vyberie balík a vyplní fakturačné údaje,
+2. server overí vlastníctvo, Free stav a Zod vstup, vytvorí `orders` so stavom `pending` (buyer/seller snapshot),
+3. server vytvorí Stripe Checkout Session s Price ID z env a uloží `stripe_checkout_session_id`,
+4. kandidát zaplatí na Stripe-hosted Checkout,
+5. webhook `/api/webhooks/stripe` overí podpis a volá `fulfill_stripe_checkout` (service role),
+6. RPC idempotentne podľa `payment_events.provider_event_id` označí objednávku `paid`, nastaví `sites.plan_code` a zapíše audit `order.fulfilled`,
+7. návratová URL iba obnoví UI; balík sa z nej nikdy neaktivuje.
+
+Ceny sú viazané na `STRIPE_PRICE_BASIC` / `STRIPE_PRICE_PLUS` a zároveň na DB constraint `total_cents in (4999, 8999)`. `valid_until` ostáva `null` do schválenia pravidiel kampane. Demo režim Checkout nevolá.
+
+Hlavné súbory: `lib/payments/*`, `lib/validation/checkout.ts`, `app/actions/checkout.ts`, `app/api/webhooks/stripe/route.ts`, `lib/data/orders.ts`, migrácia `0012_stripe_fulfillment.sql`.
+
+## 8.2 Domény, DNS a SSL
+
+Kandidátsky web má v MVP dve adresy:
+
+1. **Platformová cesta** `https://{NEXT_PUBLIC_ROOT_DOMAIN}/{slug}` — súčasť Basic aj Plus. Nevyžaduje wildcard DNS ani Vercel nameservers; apex môže ostať vo Websupporte (Brevo mailové záznamy).
+2. **Vlastná doména** — iba Plus so zaplatenou objednávkou (`has_plus_entitlement`). Jedna custom doména na projekt.
+
+```text
+Plus kandidát
+  → attach_custom_domain RPC
+  → Vercel Domains API add domain
+  → DNS inštrukcie v verification_metadata
+  → manuálna kontrola / verify
+  → status active + ssl_metadata + is_primary
+  → proxy.ts rewrite Host → /{slug}
+```
+
+Pri vytvorení projektu `create_candidate_site` rezervuje subdomain hostname `{slug}.webprekandidata.sk` so stavom `active` (rezervácia pre budúci wildcard). Verejná kanonická Basic adresa je však platformová cesta. `proxy.ts` na platformovom hoste nemení správanie; na custom hoste prepisuje `/` na `/{slug}` a app cesty (`/app`, `/admin`, auth) redirectuje na `NEXT_PUBLIC_APP_URL`.
+
+Vercel tajomstvá (`VERCEL_TOKEN`, `VERCEL_PROJECT_ID`, voliteľne `VERCEL_TEAM_ID`) sú iba serverové. Demo režim Vercel nevolá. Canonical/OG URL berie aktívnu primary custom doménu, inak platformovú cestu.
+
+Hlavné súbory: `lib/domains/*`, `lib/data/domains.ts`, `app/actions/domains.ts`, `components/editor/domain-editor.tsx`, `proxy.ts`, migrácia `0014_domain_management.sql`.
+
+Stránka publikovania načíta vlastnený projekt na serveri a do klientského UI odovzdá iba jeho serializovateľné `planCode`. Pri Free stave ponúka nákupný výber, fakturačný formulár a históriu objednávok. Pri Basic alebo Plus sa nákupný výber aj objednávkové CTA skryjú a zobrazí sa iba aktívny balík s jeho benefitmi a funkčným odkazom na kontrolu náhľadu. Tým UI nežiada už zaplateného kandidáta o ďalšiu objednávku; oprávnenia platených funkcií však naďalej overuje databáza, nie tento vizuálny stav.
 
 Publikovanie nepovažuje samotný `sites.plan_code` za oprávnenie. RPC `has_publish_entitlement` vyžaduje vlastníctvo projektu a zhodnú zaplatenú, neexpirovanú objednávku. UI navyše dostáva serverom odvodenú pripravenosť obsahu, stav poslednej publikácie a informáciu, či sa fingerprint konceptu líši od verejnej verzie.
 
@@ -315,18 +359,62 @@ Verejný loader používa serverový Supabase klient, vyžaduje `sites.status = 
 
 Migrácia: `supabase/migrations/0010_candidate_publications.sql`. Hlavné súbory: `app/actions/publishing.ts`, `lib/data/publishing.ts`, `lib/data/public-site.ts`, `lib/publishing.ts`, `app/[slug]/page.tsx` a `components/editor/publishing-editor.tsx`.
 
-## 13. Bezpečnostné invarianty
+## 13. Interný admin prevádzkovateľa
+
+Oddelený strom `/admin` nie je kandidátsky dashboard. Layout vyžaduje produkčný režim a `requirePlatformAdmin()` (`profiles.role = 'admin'`). V demo režime sa namiesto panelu zobrazí informácia o nedostupnosti. Kandidát bez admin role je presmerovaný na `/app`.
+
+Čítanie ide cez user-scoped Supabase klienta a existujúce RLS politiky s `is_platform_admin()`. Mutácie idú cez server actions a RPC, nie cez service-role UI.
+
+`sites.admin_hold` oddeľuje administrátorské pozastavenie od dobrovoľného pozastavenia kandidáta. RPC `set_candidate_site_visibility` odmietne obnovenie, kým je hold aktívny. RPC `admin_set_site_hold` vyžaduje dôvod, kategóriu, rozsah, trvanie (pri hold) a náhľad správy pre kandidáta; všetko ide do `audit_logs`. Transakčný e-mail sa v MVP ešte neodosiela.
+
+RPC `admin_grant_site_plan` udeľuje Basic alebo Plus konkrétnemu webu: vytvorí zaplatenú objednávku (`valid_until` null), nastaví `sites.plan_code` a zapíše audit `admin_plan_granted`. Balík ostáva vlastnosťou projektu, nie globálneho účtu; zoznam používateľov odkazuje na weby cez filter `?owner=`.
+
+Ďalšie admin RPC: `admin_search_users` (join na `auth.users.email`) a `admin_dashboard_metrics`. `audit_logs` má `GRANT SELECT` pre `authenticated`; RLS stále obmedzuje čítanie na adminov.
+
+Routy: `/admin`, `/admin/pouzivatelia`, `/admin/weby`, `/admin/weby/[siteId]`, `/admin/objednavky`, `/admin/domeny`, `/admin/ai-pouzitie`, `/admin/audit`. AI stránka zobrazuje iba metadata bez promptov a výstupov.
+
+Migrácie: `supabase/migrations/0011_platform_admin.sql`, `supabase/migrations/0013_admin_grant_site_plan.sql`. Hlavné súbory: `lib/data/admin.ts`, `app/actions/admin.ts`, `components/admin/*`, `app/admin/**`.
+
+Prvý admin účet sa nastaví mimo UI:
+
+```sql
+update public.profiles set role = 'admin' where id = '<user-uuid>';
+```
+
+## 14. Bezpečnostné invarianty
 
 - Nikdy neveriť `siteId`, `userId`, cene, plánu ani oprávneniu poslanému klientom.
 - Každú mutáciu validovať na serveri.
 - Service role key nikdy neposielať do prehliadača.
-- Stripe webhook spracovať idempotentne podľa externého event ID.
+- Stripe webhook spracovať idempotentne podľa externého event ID; balík nikdy neaktivovať iba z return URL.
+- Stripe tajomstvá (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, Price IDs) iba na serveri.
+- Vercel Domains tajomstvá (`VERCEL_TOKEN`, `VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID`) iba na serveri.
+- Custom doménu smie pripojiť iba vlastník so zaplatenou Plus objednávkou; zápisy idú cez RPC.
 - Publikovanie vytvára snapshot; verejný web nečíta `site_drafts`.
 - AI výstup je návrh a nesmie sa automaticky publikovať.
 - Kontaktné správy a AI audit musia mať automatické retenčné mazanie.
 - Admin zásahy a pozastavenia webu sa auditujú.
+- `profiles.role` nie je upraviteľné kandidátom; admin hold kandidát sám neuvoľní.
 
-## 13. UI invarianty
+## 15. Produkčná prevádzka
+
+Vercel nasadzuje jeden Next.js projekt s Node.js 24. Produkčné premenné sú oddelené od lokálneho `.env.local`; serverové kľúče nemajú prefix `NEXT_PUBLIC_`. Checkout je fail-closed: `isStripeConfigured()` vyžaduje live prevádzkové tajomstvá, ceny, kompletný snapshot predávajúceho a `LEGAL_DOCUMENTS_APPROVED=true`.
+
+Retenčný tok:
+
+```text
+Vercel Cron
+  → GET /api/cron/retention + Bearer CRON_SECRET
+  → service-role Supabase klient
+  → purge_expired_operational_data RPC
+  → delete contact_submissions a ai_generations po retention_expires_at
+```
+
+RPC je dostupná iba `service_role`. Endpoint používa konštantné porovnanie secretu, nevracia citlivé dáta a chybu odošle do Sentry, ak je DSN nakonfigurované.
+
+Sentry inicializuje client, Node aj edge runtime, neodosiela predvolené PII a v produkcii vzorkuje 10 % trace záznamov. Bez `NEXT_PUBLIC_SENTRY_DSN` je SDK neaktívne. CSP povoľuje iba potrebné platformové, Supabase, Stripe a Sentry spojenia; aplikácia navyše posiela HSTS, `nosniff`, zákaz framovania, Referrer Policy a Permissions Policy.
+
+## 16. UI invarianty
 
 - Platforma používa navy `#163B65`, teal `#0F766E` a Inter.
 - Farba kampane nesmie prefarbiť ovládacie prvky platformy.

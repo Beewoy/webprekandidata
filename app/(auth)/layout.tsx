@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { CheckCircle2, FileText, ShieldCheck, Sparkles } from "lucide-react";
 
@@ -9,7 +10,10 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <div className="auth-panel__inner">
           <Image src="/brand/logo-horizontal.svg" alt="WebPreKandidata.sk" width={210} height={42} priority />
           {children}
-          <p className="auth-legal">Pokračovaním súhlasíte s podmienkami používania a zásadami ochrany osobných údajov.</p>
+          <p className="auth-legal">
+            Pokračovaním súhlasíte s <Link href="/obchodne-podmienky">obchodnými podmienkami</Link> a{" "}
+            <Link href="/ochrana-sukromia">zásadami ochrany osobných údajov</Link>.
+          </p>
         </div>
       </section>
       <aside className="auth-benefits" aria-label="Výhody služby">

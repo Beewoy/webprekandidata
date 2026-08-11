@@ -20,7 +20,7 @@ export const publicationPostSchema = z.object({
   coverAssetId: z.string().uuid().nullable(),
   excerpt: z.string().max(320),
   id: z.string().uuid(),
-  publishedAt: z.string().datetime(),
+  publishedAt: z.string().datetime({ offset: true }),
   title: z.string().min(1).max(140),
 });
 
@@ -40,6 +40,7 @@ export type PublishReadiness = {
 };
 
 export type PublishingState = {
+  adminHold: boolean;
   currentPublication: {
     publishedAt: string;
     sourceRevision: number;

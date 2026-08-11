@@ -2,19 +2,19 @@ export const campaignTemplates = [
   {
     id: "modern",
     name: "Horizont",
-    description: "Vzdušná a univerzálna šablóna s portrétom vedľa hlavnej myšlienky.",
+    description: "Vzdušná občianska šablóna s asymetrickým layoutom a čistou obsahovou hierarchiou.",
     bestFor: "Vhodná pre väčšinu kampaní",
   },
   {
     id: "bold",
     name: "Impulz",
-    description: "Výrazná šablóna so silným nadpisom a energickým farebným blokom.",
+    description: "Dynamická šablóna s veľkou typografiou, kontrastnými blokmi a výraznými prioritami.",
     bestFor: "Pre odvážnu a dynamickú kampaň",
   },
   {
     id: "classic",
     name: "Dôvera",
-    description: "Pokojná, elegantná šablóna s tradičnejším typografickým charakterom.",
+    description: "Reprezentatívna redakčná šablóna so serifovou typografiou a pokojnejším rytmom.",
     bestFor: "Pre vecnú a reprezentatívnu kampaň",
   },
 ] as const;

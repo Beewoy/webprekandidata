@@ -15,6 +15,17 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - health endpoint `/api/health`,
 - lint, typecheck, test a produkčný build.
 
+### Marketingová landing page
+
+- samostatná responzívna landing page pre slovenských kandidátov v komunálnych a župných voľbách 2026,
+- SEO a konverzný obsah pre frázy „web pre kandidáta“, „volebný web“ a súvisiace typy kandidatúry,
+- canonical, Open Graph a Twitter metadata bez odkazov na neexistujúce obrázky,
+- JSON-LD pre organizáciu, webovú aplikáciu, ponuky Basic/Plus a viditeľné FAQ,
+- hlavné výzvy smerujú priamo na registráciu a presne oddeľujú bezplatný súkromný náhľad od platenej publikácie,
+- samostatný SEO audit s odporúčaniami pre obsah, meranie a ostré nasadenie,
+- landing je integrovaný do Next.js rootu `/`, má generovaný Open Graph obrázok 1200 × 630 px, favicon, `robots.txt`, sitemapu a funkčné odkazy na právne routy,
+- právne routy sú implementované ako pracovné znenie a zostávajú `noindex`, kým právnik nepotvrdí obsah a produkcia nenastaví `LEGAL_DOCUMENTS_APPROVED=true`.
+
 ### Dashboard kandidáta
 
 - responzívny app shell a mobilný drawer,
@@ -27,7 +38,8 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - plnohodnotný zoznam aktualít a editor článku pre Basic aj Plus: koncept, zverejnenie, skrytie, mazanie, krátky popis, TipTap obsah a titulný obrázok,
 - verejný model aktualít bez samostatných URL: karty v náhľade otvárajú detail v modálnej vrstve bez zmeny adresy,
 - Plus AI návrh článku z podkladov kandidáta s kvótou 20 návrhov na projekt; návrh sa iba vloží do editora a nikdy sa automaticky neuloží ani nezverejní,
-- výber z troch responzívnych variantov kandidátskej šablóny s prístupnými stavmi a živým náhľadom,
+- výber z troch responzívnych celostránkových šablón s prístupnými stavmi a živým náhľadom: občiansko-editoriálny Horizont, dynamický Impulz a reprezentatívna Dôvera,
+- verejné šablóny používajú spoločný 1200 px obsahový kontajner, verejnú typografickú mierku, responzívne menu a lokálne načítanú serifovú display typografiu pre Dôveru,
 - načítanie a automatické ukladanie vybranej šablóny aj farby do `site_drafts.theme` s ochranou revízie,
 - desktopový a mobilný náhľad,
 - dátový náhľad celého kandidátskeho webu z aktuálneho `site_drafts` s manuálnym obnovením revízie,
@@ -38,7 +50,8 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - verejná kandidátska cesta `/:slug` používa posledný nemenný snapshot; koncept ani automaticky uložené rozpracované zmeny nikdy nečíta,
 - verejný web zdieľa sanitizovaný zobrazovací model s náhľadom, pričom články zostávajú v modálnej vrstve bez samostatnej URL a kontaktný formulár sa aktivuje iba vo verejnom režime,
 - dvojkrokový uvítací dialóg po registrácii s možnosťou preskočenia,
-- editovateľná kontrola prvého návrhu pred vytvorením webu.
+- editovateľná kontrola prvého návrhu pred vytvorením webu,
+- dialóg Pomoc a podpora v sidebare editora s telefónom +421 948 473 255 a formulárom, ktorý cez Brevo SMTP pošle správu na podporné e-maily.
 
 ### AI onboarding
 
@@ -73,7 +86,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - výber a ukladanie tematických občianskych ikoniek pre hodnoty, dôvody a program vrátane zobrazenia v náhľade,
 - základná databázová schéma a RLS politiky,
 - cloudový Supabase projekt `Webprekandidata` linkovaný cez CLI,
-- migrácie `0001` až `0009` aplikované a cloudová databáza zosynchronizovaná; migrácia `0010_candidate_publications.sql` je pripravená lokálne a čaká na aplikovanie do cloudového projektu,
+- cloudové migrácie `0001` až `0015` aplikované; `0015_production_operations.sql` rezervuje platformové slugy a pridáva service-role retenčnú RPC,
 - reálna verejná Supabase konfigurácia v ignorovanom `.env.local` a vypnutý demo režim,
 - cloudové Auth callbacky, okamžitá relácia po registrácii a bezpečnostné limity zosynchronizované z `supabase/config.toml`,
 - samostatný Brevo SMTP key `WebPreKandidata.sk` vytvorený a bezpečne pripojený k Supabase Auth,
@@ -98,6 +111,30 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - verejná stránka poskytuje vlastné SEO metadata, canonical adresu, Open Graph obrázok a povolené indexovanie iba pri stave `published`,
 - audit log zaznamenáva publikovanie, pozastavenie a obnovenie.
 
+### Interný admin prevádzkovateľa
+
+- oddelený strom `/admin` pre účty s `profiles.role = admin`,
+- v demo režime panel nie je dostupný,
+- prehľad metrík, používatelia, weby, objednávky, domény, AI použitie (bez promptov) a audit,
+- read-only detail webu s náhľadom konceptu,
+- administrátorské pozastavenie (`admin_hold`) s povinným dôvodom, kategóriou, rozsahom, trvaním a správou pre kandidáta; zásah je auditovaný,
+- manuálne udelenie balíka Basic alebo Plus cez `/admin/weby/[siteId]` (zaplatená objednávka bez expirácie, aktualizácia `plan_code`, audit `admin_plan_granted`),
+- kandidát nemôže sám obnoviť web pod aktívnym admin hold,
+- migrácia `0011_platform_admin.sql` (GRANT na `audit_logs`, RPC `admin_set_site_hold`, `admin_search_users`, `admin_dashboard_metrics`),
+- migrácia `0013_admin_grant_site_plan.sql` (RPC `admin_grant_site_plan`),
+- bez moderátorskej fronty, bez reprocess webhookov a bez manuálneho prepisu paid stavu Stripe objednávok.
+
+### Domény a DNS
+
+- Basic aj Plus používajú platformovú adresu `https://{ROOT}/{slug}` (bez wildcard DNS),
+- pri vytvorení projektu sa rezervuje záznam `domains` typu subdomain so stavom `active`,
+- Plus s zaplatenou objednávkou môže pripojiť jednu vlastnú doménu cez Vercel Domains API,
+- editor Doména zobrazuje platformovú URL, DNS inštrukcie, stavy overenia a SSL,
+- serverové akcie pripoja, skontrolujú, odstránia a nastavia hlavnú doménu; zápisy idú cez RPC s Plus entitlementom,
+- `proxy.ts` prepisuje aktívny custom hostname na internú cestu `/{slug}`; app cesty na custom hoste idú na platformovú app URL,
+- canonical a Open Graph URL preferujú aktívnu primary custom doménu, inak platformovú cestu,
+- migrácia `0014_domain_management.sql`,
+- demo režim Vercel nevolá; bez `VERCEL_TOKEN` / `VERCEL_PROJECT_ID` produkčné pripojenie custom domény odmietne.
 ### Kontaktný formulár
 
 - viditeľné polia meno, e-mail, voliteľný telefón a popis,
@@ -133,41 +170,61 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - Basic má celý manuálny editor; AI je viazaná na reálne zaplatenú Plus objednávku,
 - databázová rezervácia kvóty odolná voči súbežným požiadavkám,
 - minimalizovaný AI audit bez uloženia promptu a odpovede, `store: false` a pseudonymizovaný bezpečnostný identifikátor.
-- ručný testovací grant balíka sa eviduje ako zaplatená objednávka bez expirácie aj ako auditovaná operácia; produkčné odomknutie neskôr prevezme Stripe fulfillment.
+- ručný testovací / admin grant balíka sa eviduje ako zaplatená objednávka bez expirácie aj ako auditovaná operácia (`admin_grant_site_plan`); produkčné odomknutie prebieha cez Stripe fulfillment.
+
+### Stripe Checkout a objednávky
+
+- výber Basic 49,99 € / Plus 89,99 € s DPH na stránke Publikovanie,
+- fakturačné údaje kupujúceho a súhlas pred Checkoutom,
+- server vytvorí pending `orders` a Stripe Checkout Session,
+- podpísaný webhook `/api/webhooks/stripe` idempotentne splní objednávku a nastaví `sites.plan_code`,
+- návrat do aplikácie obnoví Publikovanie; aktivácia balíka čaká na webhook,
+- história objednávok na stránke Publikovanie (vlastník cez RLS),
+- demo režim platbu neponúka,
+- migrácia `0012_stripe_fulfillment.sql` (`fulfill_stripe_checkout`, `mark_checkout_session_status`).
 
 ### Overenie
 
-- 55 jednotkových testov,
+- 71 jednotkových testov,
 - TypeScript bez chýb,
 - ESLint bez chýb a varovaní,
 - úspešný produkčný build,
 - cloudový REST smoke test potvrdil dostupnosť API a anonymnú izoláciu tabuľky `sites`,
 - verejné Auth nastavenia potvrdili zapnutú registráciu a okamžité vytvorenie relácie,
-- vizuálne overené desktopové a mobilné toky,
-- overené bez horizontálneho pretečenia pri 375 px.
+- všetky tri verejné šablóny vizuálne overené pri šírkach 375, 768, 1024 a 1440 px,
+- pri každej šablóne a overenej šírke potvrdené nulové horizontálne pretečenie.
+
+### Produkčná prevádzka
+
+- Vercel projekt `beewoy/webprekandidata` je vytvorený, linkovaný, používa Next.js preset a Node.js 24,
+- apex `webprekandidata.sk` a `www.webprekandidata.sk` sú pridané do Vercel projektu; DNS ešte musí byť zosúladené vo Websupporte,
+- produkčné Supabase, Brevo a AI premenné sú nastavené vo Verceli; demo režim je vypnutý,
+- Supabase Auth Site URL je `https://webprekandidata.sk`, produkčné callbacky sú povolené a limit Auth e-mailov je 10 za hodinu,
+- bezpečnostné HTTP hlavičky vrátane CSP, frame protection, nosniff, Referrer Policy a HSTS sú nakonfigurované,
+- Sentry SDK je zapojené pre client, server aj edge runtime bez odosielania predvolených PII; začne odosielať až po nastavení DSN,
+- denný Vercel Cron volá autorizovaný retenčný endpoint a maže expirované kontaktné a AI záznamy cez service-role RPC,
+- checkout sa fail-closed nezapne bez live Stripe secretu, webhook secretu, kompletných údajov predávajúceho a schválených právnych dokumentov.
 
 ## Pripravené v UI, ale ešte bez produkčného backendu
 
-- správa domény a DNS,
-- Stripe Checkout a webhook,
-- transakčné e-maily,
-- analytika,
-- interný admin prevádzkovateľa.
+- transakčné e-maily (vrátane potvrdenia platby),
+- analytika.
 
 ## Externé závislosti
 
-Supabase a Brevo sú pripojené. AI onboarding bez `OPENAI_API_KEY` používa označený manuálny fallback; Plus AI články bez kľúča zobrazia bezpečný chybový stav a neodpočítajú úspešný návrh. Používateľ ešte vytvorí a poskytne konfiguráciu pre:
+Supabase, Brevo, OpenAI a Vercel sú pripojené. AI onboarding bez `OPENAI_API_KEY` naďalej používa označený manuálny fallback. V Stripe live mode existujú Products Basic/Plus so správnymi jednorazovými cenami, ale platený launch zostáva zablokovaný, kým sa doplní:
 
-- Vercel,
-- Stripe,
-- OpenAI API kľúč, model a samostatný HMAC secret,
-- monitoring chýb.
+- live `STRIPE_SECRET_KEY` a produkčný `STRIPE_WEBHOOK_SECRET`,
+- kompletné `SELLER_*` údaje a právne schválenie,
+- projektový `VERCEL_TOKEN` pre pripájanie Plus custom domén,
+- Sentry DSN, org, project a CI auth token.
 
 ## Najbližší odporúčaný míľnik
 
-1. Aplikovať migráciu `0010_candidate_publications.sql`, obnoviť generované databázové typy a end-to-end overiť prvé publikovanie, opätovné publikovanie, pozastavenie a obnovenie.
-2. End-to-end overiť registráciu, doručenie a spotrebovanie overovacieho odkazu proti reálnej databáze.
-3. Pripojiť Vercel a nastaviť produkčné Auth redirect URL.
+1. Zosúladiť DNS apexu a `www` vo Websupporte podľa Vercelu bez odstránenia poštových záznamov.
+2. Doplniť live Stripe secret, webhook secret, `SELLER_*`, právne schválenie, Vercel token a Sentry konfiguráciu.
+3. Nasadiť produkciu a end-to-end overiť registráciu, Checkout Basic/Plus, webhook fulfillment, publikovanie a Plus custom doménu.
+4. Po úspešnom overení nastaviť `LEGAL_DOCUMENTS_APPROVED=true` a odoslať sitemapu do Search Console.
 
 ## Otvorené produktové rozhodnutia
 

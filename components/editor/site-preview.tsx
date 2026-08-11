@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, CalendarDays, ChevronLeft, ChevronRight, ExternalLink, Mail, Monitor, Phone, RefreshCw, Smartphone, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, ChevronLeft, ChevronRight, ExternalLink, Mail, Menu, Monitor, Phone, RefreshCw, Smartphone, X } from "lucide-react";
 import { PageHeading } from "@/components/ui/page-heading";
 import { ContactForm } from "@/components/public-site/contact-form";
 import { cn } from "@/lib/cn";
@@ -23,6 +23,7 @@ export function SitePreview({ data, publicMode = false, siteId }: SitePreviewPro
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [activeGalleryIndex, setActiveGalleryIndex] = useState<number | null>(null);
   const [activePostId, setActivePostId] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const articleTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [isRefreshing, startRefresh] = useTransition();
   const router = useRouter();
@@ -88,126 +89,161 @@ export function SitePreview({ data, publicMode = false, siteId }: SitePreviewPro
           <div className="full-preview-viewport">
             <article className={cn("candidate-preview", `candidate-preview--${data.theme.template}`, publicMode && "candidate-preview--public", !publicMode && device === "mobile" && "candidate-preview--mobile")} id={publicMode ? "hlavny-obsah" : undefined} style={campaignStyle}>
               <header className="candidate-preview__header">
-                <a className="candidate-preview__brand" href="#uvod">
-                  <span
-                    aria-label={data.media.logo?.altText}
-                    className={data.media.logo ? "candidate-preview__logo candidate-preview__logo--image" : "candidate-preview__logo"}
-                    role={data.media.logo ? "img" : undefined}
-                    style={data.media.logo ? { backgroundImage: `url("${data.media.logo.url}")` } : undefined}
-                  >{data.media.logo ? null : data.candidate.initials}</span>
-                  <span><strong>{data.candidate.name}</strong><small>{data.candidate.position}{data.candidate.city ? ` · ${data.candidate.city}` : ""}</small></span>
-                </a>
-                <nav aria-label={publicMode ? "Navigácia webu kandidáta" : "Navigácia náhľadu"}>
-                  <a href="#o-mne">O mne</a><a href="#preco">Prečo kandidujem</a><a href="#program">Program</a>{data.news.items.length > 0 && <a href="#aktuality">Aktuality</a>}{data.gallery.items.length > 0 && <a href="#galeria">Galéria</a>}<a href="#kontakt">Kontakt</a>
-                </nav>
+                <div className="candidate-preview__container candidate-preview__header-inner">
+                  <a className="candidate-preview__brand" href="#uvod" onClick={() => setMobileMenuOpen(false)}>
+                    <span
+                      aria-label={data.media.logo?.altText}
+                      className={data.media.logo ? "candidate-preview__logo candidate-preview__logo--image" : "candidate-preview__logo"}
+                      role={data.media.logo ? "img" : undefined}
+                      style={data.media.logo ? { backgroundImage: `url("${data.media.logo.url}")` } : undefined}
+                    >{data.media.logo ? null : data.candidate.initials}</span>
+                    <span><strong>{data.candidate.name}</strong><small>{data.candidate.position}{data.candidate.city ? ` · ${data.candidate.city}` : ""}</small></span>
+                  </a>
+                  <button
+                    aria-expanded={mobileMenuOpen}
+                    aria-label={mobileMenuOpen ? "Zavrieť navigáciu" : "Otvoriť navigáciu"}
+                    className="candidate-preview__menu-button"
+                    onClick={() => setMobileMenuOpen((current) => !current)}
+                    type="button"
+                  >
+                    {mobileMenuOpen ? <X aria-hidden="true" size={22} /> : <Menu aria-hidden="true" size={22} />}
+                  </button>
+                  <nav aria-label={publicMode ? "Navigácia webu kandidáta" : "Navigácia náhľadu"} className={mobileMenuOpen ? "candidate-preview__nav candidate-preview__nav--open" : "candidate-preview__nav"}>
+                    <a href="#o-mne" onClick={() => setMobileMenuOpen(false)}>O mne</a>
+                    <a href="#preco" onClick={() => setMobileMenuOpen(false)}>Prečo kandidujem</a>
+                    <a href="#program" onClick={() => setMobileMenuOpen(false)}>Program</a>
+                    {data.news.items.length > 0 && <a href="#aktuality" onClick={() => setMobileMenuOpen(false)}>Aktuality</a>}
+                    {data.gallery.items.length > 0 && <a href="#galeria" onClick={() => setMobileMenuOpen(false)}>Galéria</a>}
+                    <a className="candidate-preview__nav-cta" href="#kontakt" onClick={() => setMobileMenuOpen(false)}>Kontakt</a>
+                  </nav>
+                </div>
               </header>
 
               <section className="candidate-preview__hero" id="uvod">
-                <div className="candidate-preview__hero-copy">
-                  <p className="candidate-preview__eyebrow">{data.candidate.position}</p>
-                  <h1>
-                    {data.hero.headlineBefore}
-                    {data.hero.highlight && <em>{data.hero.highlight}</em>}
-                    {data.hero.headlineAfter}
-                  </h1>
-                  <p className="candidate-preview__lead">{data.hero.subheadline}</p>
-                  <div className="candidate-preview__hero-actions"><a href="#program">Môj program</a><a href="#kontakt">Napíšte mi</a></div>
-                </div>
-                <div
-                  aria-label={data.media.hero ? undefined : `Miesto pre portrét: ${data.candidate.name}`}
-                  className={data.media.hero ? "candidate-preview__portrait candidate-preview__portrait--image" : "candidate-preview__portrait"}
-                  role={data.media.hero ? undefined : "img"}
-                >
-                  {data.media.hero
-                    ? <Image alt={data.media.hero.altText} fill sizes="(max-width: 480px) 220px, 320px" src={data.media.hero.url} unoptimized />
-                    : <span>{data.candidate.initials}</span>}
+                <div className="candidate-preview__container candidate-preview__hero-inner">
+                  <div className="candidate-preview__hero-copy">
+                    <p className="candidate-preview__eyebrow">{data.candidate.position}</p>
+                    <h1>
+                      {data.hero.headlineBefore}
+                      {data.hero.highlight && <em>{data.hero.highlight}</em>}
+                      {data.hero.headlineAfter}
+                    </h1>
+                    <p className="candidate-preview__lead">{data.hero.subheadline}</p>
+                    <div className="candidate-preview__hero-actions"><a href="#program">Môj program</a><a href="#kontakt">Napíšte mi</a></div>
+                  </div>
+                  <div
+                    aria-label={data.media.hero ? undefined : `Miesto pre portrét: ${data.candidate.name}`}
+                    className={data.media.hero ? "candidate-preview__portrait candidate-preview__portrait--image" : "candidate-preview__portrait"}
+                    role={data.media.hero ? undefined : "img"}
+                  >
+                    {data.media.hero
+                      ? <Image alt={data.media.hero.altText} fill sizes="(max-width: 760px) 280px, 420px" src={data.media.hero.url} unoptimized />
+                      : <span>{data.candidate.initials}</span>}
+                  </div>
                 </div>
               </section>
 
               <section className="candidate-preview__section candidate-preview__about" id="o-mne">
-                <div className="candidate-preview__section-heading"><p>{data.about.eyebrow}</p><h2>{data.about.headline}</h2></div>
-                <div className={data.media.about ? "candidate-preview__about-grid candidate-preview__about-grid--with-image" : "candidate-preview__about-grid"}>
-                  {data.media.about && <div aria-label={data.media.about.altText} className="candidate-preview__about-photo" role="img" style={{ backgroundImage: `url("${data.media.about.url}")` }} />}
-                  <div className="candidate-preview__rich-text" dangerouslySetInnerHTML={{ __html: data.about.bodyHtml }} />
-                  <div className="candidate-preview__values">
-                    {data.about.values.map((item, index) => {
-                      const Icon = getCivicIconOption(item.icon).Icon;
-                      return <article key={`${item.title}-${index}`}><span className="candidate-preview__item-icon"><Icon aria-hidden="true" size={17} /></span><div><h3>{item.title}</h3><p>{item.text}</p></div></article>;
-                    })}
+                <div className="candidate-preview__container">
+                  <div className="candidate-preview__section-heading"><p>{data.about.eyebrow}</p><h2>{data.about.headline}</h2></div>
+                  <div className={data.media.about ? "candidate-preview__about-grid candidate-preview__about-grid--with-image" : "candidate-preview__about-grid"}>
+                    {data.media.about && <div aria-label={data.media.about.altText} className="candidate-preview__about-photo" role="img" style={{ backgroundImage: `url("${data.media.about.url}")` }} />}
+                    <div className="candidate-preview__rich-text" dangerouslySetInnerHTML={{ __html: data.about.bodyHtml }} />
+                    <div className="candidate-preview__values">
+                      {data.about.values.map((item, index) => {
+                        const Icon = getCivicIconOption(item.icon).Icon;
+                        return <article key={`${item.title}-${index}`}><span className="candidate-preview__item-icon"><Icon aria-hidden="true" size={19} /></span><div><h3>{item.title}</h3><p>{item.text}</p></div></article>;
+                      })}
+                    </div>
                   </div>
+                  {data.about.signature && <p className="candidate-preview__signature">{data.about.signature}</p>}
                 </div>
-                {data.about.signature && <p className="candidate-preview__signature">{data.about.signature}</p>}
               </section>
 
               <section className="candidate-preview__section candidate-preview__section--tinted" id="preco">
-                <div className="candidate-preview__section-heading candidate-preview__section-heading--center"><p>{data.reasons.eyebrow}</p><h2>{data.reasons.headline}</h2><span>{data.reasons.intro}</span></div>
-                <div className="candidate-preview__card-grid">
-                  {data.reasons.items.map((item, index) => {
-                    const Icon = getCivicIconOption(item.icon).Icon;
-                    return <article key={`${item.title}-${index}`}><span className="candidate-preview__item-icon"><Icon aria-hidden="true" size={20} /></span><h3>{item.title}</h3><p>{item.text}</p></article>;
-                  })}
+                <div className="candidate-preview__container">
+                  <div className="candidate-preview__section-heading candidate-preview__section-heading--center"><p>{data.reasons.eyebrow}</p><h2>{data.reasons.headline}</h2><span>{data.reasons.intro}</span></div>
+                  <div className="candidate-preview__card-grid">
+                    {data.reasons.items.map((item, index) => {
+                      const Icon = getCivicIconOption(item.icon).Icon;
+                      return <article key={`${item.title}-${index}`}><span className="candidate-preview__item-icon"><Icon aria-hidden="true" size={21} /></span><h3>{item.title}</h3><p>{item.text}</p></article>;
+                    })}
+                  </div>
                 </div>
               </section>
 
               <section className="candidate-preview__section" id="program">
-                <div className="candidate-preview__section-heading"><p>{data.program.eyebrow}</p><h2>{data.program.headline}</h2><span>{data.program.intro}</span></div>
-                <div className="candidate-preview__program-list">
-                  {data.program.items.map((item, index) => (
-                    <article key={`${item.title}-${index}`}>
-                      {(() => { const Icon = getCivicIconOption(item.icon).Icon; return <span className="candidate-preview__item-icon candidate-preview__program-icon"><Icon aria-hidden="true" size={19} /></span>; })()}
-                      <div><h3>{item.title}</h3><p>{item.text}</p>{item.detailHtml && <div className="candidate-preview__rich-text candidate-preview__program-detail" dangerouslySetInnerHTML={{ __html: item.detailHtml }} />}</div>
-                    </article>
-                  ))}
+                <div className="candidate-preview__container">
+                  <div className="candidate-preview__section-heading"><p>{data.program.eyebrow}</p><h2>{data.program.headline}</h2><span>{data.program.intro}</span></div>
+                  <div className="candidate-preview__program-list">
+                    {data.program.items.map((item, index) => (
+                      <article key={`${item.title}-${index}`}>
+                        {(() => { const Icon = getCivicIconOption(item.icon).Icon; return <span className="candidate-preview__item-icon candidate-preview__program-icon"><Icon aria-hidden="true" size={20} /></span>; })()}
+                        <div><h3>{item.title}</h3><p>{item.text}</p>{item.detailHtml && <div className="candidate-preview__rich-text candidate-preview__program-detail" dangerouslySetInnerHTML={{ __html: item.detailHtml }} />}</div>
+                      </article>
+                    ))}
+                  </div>
                 </div>
               </section>
 
               {data.news.items.length > 0 && (
                 <section className="candidate-preview__section candidate-preview__news" id="aktuality">
-                  <div className="candidate-preview__section-heading"><p>Aktuality</p><h2>Novinky z kampane</h2><span>Podujatia, stanoviská a dôležité informácie na jednom mieste.</span></div>
-                  <div className="candidate-preview__news-grid">
-                    {data.news.items.map((post) => (
-                      <article className="candidate-preview__news-card" key={post.id}>
-                        {post.cover && <Image alt={post.cover.altText} className="candidate-preview__news-cover" height={post.cover.height} src={post.cover.previewUrl} unoptimized width={post.cover.width} />}
-                        <div>
-                          <time dateTime={post.publishedAt}><CalendarDays aria-hidden="true" size={13} /> {new Intl.DateTimeFormat("sk-SK", { dateStyle: "long", timeZone: "Europe/Bratislava" }).format(new Date(post.publishedAt))}</time>
-                          <h3>{post.title}</h3>
-                          {post.excerpt && <p>{post.excerpt}</p>}
-                          <button onClick={(event) => { articleTriggerRef.current = event.currentTarget; setActivePostId(post.id); }} type="button">Čítať článok <ArrowRight aria-hidden="true" size={14} /></button>
-                        </div>
-                      </article>
-                    ))}
+                  <div className="candidate-preview__container">
+                    <div className="candidate-preview__section-heading"><p>Aktuality</p><h2>Novinky z kampane</h2><span>Podujatia, stanoviská a dôležité informácie na jednom mieste.</span></div>
+                    <div className="candidate-preview__news-grid">
+                      {data.news.items.map((post) => (
+                        <article className="candidate-preview__news-card" key={post.id}>
+                          {post.cover && <Image alt={post.cover.altText} className="candidate-preview__news-cover" height={post.cover.height} src={post.cover.previewUrl} unoptimized width={post.cover.width} />}
+                          <div>
+                            <time dateTime={post.publishedAt}><CalendarDays aria-hidden="true" size={15} /> {new Intl.DateTimeFormat("sk-SK", { dateStyle: "long", timeZone: "Europe/Bratislava" }).format(new Date(post.publishedAt))}</time>
+                            <h3>{post.title}</h3>
+                            {post.excerpt && <p>{post.excerpt}</p>}
+                            <button onClick={(event) => { articleTriggerRef.current = event.currentTarget; setActivePostId(post.id); }} type="button">Čítať článok <ArrowRight aria-hidden="true" size={16} /></button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
                   </div>
                 </section>
               )}
 
               {data.gallery.items.length > 0 && (
                 <section className="candidate-preview__section candidate-preview__gallery" id="galeria">
-                  <div className="candidate-preview__section-heading"><p>Galéria</p><h2>Život kampane</h2><span>Stretnutia, podujatia a momenty z nášho mesta.</span></div>
-                  <div className="candidate-preview__gallery-grid">
-                    {data.gallery.items.map((item, index) => (
-                      <button aria-label={`Otvoriť fotografiu ${index + 1}${item.caption ? `: ${item.caption}` : ""}`} key={item.id} onClick={() => setActiveGalleryIndex(index)} type="button">
-                        <Image alt={item.altText} height={item.height} src={item.previewUrl} unoptimized width={item.width} />
-                        {item.caption && <span>{item.caption}</span>}
-                      </button>
-                    ))}
+                  <div className="candidate-preview__container">
+                    <div className="candidate-preview__section-heading"><p>Galéria</p><h2>Život kampane</h2><span>Stretnutia, podujatia a momenty z nášho mesta.</span></div>
+                    <div className="candidate-preview__gallery-grid">
+                      {data.gallery.items.map((item, index) => (
+                        <button aria-label={`Otvoriť fotografiu ${index + 1}${item.caption ? `: ${item.caption}` : ""}`} key={item.id} onClick={() => setActiveGalleryIndex(index)} type="button">
+                          <Image alt={item.altText} height={item.height} src={item.previewUrl} unoptimized width={item.width} />
+                          {item.caption && <span>{item.caption}</span>}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </section>
               )}
 
               <section className="candidate-preview__contact" id="kontakt">
-                <div><p className="candidate-preview__eyebrow">Kontakt</p><h2>Ozvite sa mi</h2><span>Máte otázku alebo podnet? Napíšte mi.</span></div>
-                <div className={`candidate-preview__contact-grid${data.contact.formEnabled ? "" : " candidate-preview__contact-grid--links-only"}`}>
-                  <div className="candidate-preview__contact-links">
-                    {data.contact.email && <a href={`mailto:${data.contact.email}`}><Mail size={18} /><span><small>E-mail</small>{data.contact.email}</span></a>}
-                    {data.contact.phone && <a href={`tel:${data.contact.phone.replace(/[^+\d]/g, "")}`}><Phone size={18} /><span><small>Telefón</small>{data.contact.phone}</span></a>}
-                    {data.contact.facebook && <a href={data.contact.facebook} rel="noreferrer" target="_blank">Facebook <ExternalLink size={14} /></a>}
-                    {data.contact.instagram && <a href={data.contact.instagram} rel="noreferrer" target="_blank">Instagram <ExternalLink size={14} /></a>}
+                <div className="candidate-preview__container">
+                  <div className="candidate-preview__contact-heading"><p className="candidate-preview__eyebrow">Kontakt</p><h2>Ozvite sa mi</h2><span>Máte otázku alebo podnet? Napíšte mi.</span></div>
+                  <div className={`candidate-preview__contact-grid${data.contact.formEnabled ? "" : " candidate-preview__contact-grid--links-only"}`}>
+                    <div className="candidate-preview__contact-links">
+                      {data.contact.email && <a href={`mailto:${data.contact.email}`}><Mail size={20} /><span><small>E-mail</small>{data.contact.email}</span></a>}
+                      {data.contact.phone && <a href={`tel:${data.contact.phone.replace(/[^+\d]/g, "")}`}><Phone size={20} /><span><small>Telefón</small>{data.contact.phone}</span></a>}
+                      {data.contact.facebook && <a href={data.contact.facebook} rel="noreferrer" target="_blank">Facebook <ExternalLink size={16} /></a>}
+                      {data.contact.instagram && <a href={data.contact.instagram} rel="noreferrer" target="_blank">Instagram <ExternalLink size={16} /></a>}
+                    </div>
+                    {data.contact.formEnabled && <ContactForm preview={!publicMode} siteId={siteId} />}
                   </div>
-                  {data.contact.formEnabled && <ContactForm preview={!publicMode} siteId={siteId} />}
                 </div>
               </section>
 
-              <footer className="candidate-preview__footer"><strong>{data.candidate.name}</strong><span>{data.candidate.position} · {data.candidate.city}</span></footer>
+              <footer className="candidate-preview__footer">
+                <div className="candidate-preview__container candidate-preview__footer-inner">
+                  <div><strong>{data.candidate.name}</strong><span>{data.candidate.position} · {data.candidate.city}</span></div>
+                  <a href="https://webprekandidata.sk" rel="noreferrer" target="_blank">Vytvorené cez WebPreKandidata.sk <ExternalLink aria-hidden="true" size={14} /></a>
+                </div>
+              </footer>
             </article>
           </div>
         </div>

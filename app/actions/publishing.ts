@@ -52,6 +52,7 @@ export async function publishSiteAction(input: unknown): Promise<PublishSiteResu
   const admin = createAdminClient();
   const copiedPaths: string[] = [];
   const mediaManifest: PublicationMediaItem[] = [];
+  let publicationSucceeded = false;
 
   try {
     for (const asset of source.assets) {
@@ -89,6 +90,7 @@ export async function publishSiteAction(input: unknown): Promise<PublishSiteResu
     const publication = publicationResult(data);
     if (error || !publication) throw new Error(error?.message ?? "publication_transaction_failed");
 
+    publicationSucceeded = true;
     revalidatePath(`/app/web/${source.site.id}`, "layout");
     revalidatePath(`/${source.site.slug}`);
     return {
@@ -98,7 +100,9 @@ export async function publishSiteAction(input: unknown): Promise<PublishSiteResu
       versionNumber: publication.version_number,
     };
   } catch {
-    if (copiedPaths.length) await admin.storage.from("published-media").remove(copiedPaths);
+    // Cleanup je potrebný len pri zlyhaní pred úspešným zápisom pointera na nové publikum v DB.
+    // Ak by zlyhalo iba cache invalidovanie po úspešnom RPC, nechceme odstrániť médiá, na ktoré snapshot už ukazuje.
+    if (!publicationSucceeded && copiedPaths.length) await admin.storage.from("published-media").remove(copiedPaths);
     return { ok: false, message: "Web sa nepodarilo zverejniť. Verejná verzia zostala bez zmeny." };
   }
 }
@@ -117,7 +121,12 @@ export async function setSiteVisibilityAction(input: unknown): Promise<PublishSi
     p_site_id: parsed.data.siteId,
     p_visible: parsed.data.visible,
   });
-  if (error) return { ok: false, message: parsed.data.visible ? "Web sa nepodarilo obnoviť." : "Web sa nepodarilo pozastaviť." };
+  if (error) {
+    if (error.message.includes("admin_hold_active")) {
+      return { ok: false, message: "Web je pozastavený prevádzkovateľom platformy. Obnovenie nie je možné." };
+    }
+    return { ok: false, message: parsed.data.visible ? "Web sa nepodarilo obnoviť." : "Web sa nepodarilo pozastaviť." };
+  }
 
   revalidatePath(`/app/web/${source.site.id}`, "layout");
   revalidatePath(`/${source.site.slug}`);

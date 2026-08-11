@@ -19,6 +19,7 @@ export type SiteSummary = {
   slug: string;
   status: "draft" | "ready" | "payment_pending" | "published" | "suspended" | "archived";
   planCode: "basic" | "plus" | null;
+  adminHold: boolean;
   currentPublicationId: string | null;
   updatedAt: string;
 };
@@ -31,6 +32,7 @@ const demoSite: SiteSummary = {
   slug: "martin-novak",
   status: "draft",
   planCode: null,
+  adminHold: false,
   currentPublicationId: null,
   updatedAt: new Date().toISOString(),
 };
@@ -55,7 +57,7 @@ export async function getSites(): Promise<SiteSummary[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("sites")
-    .select("id, internal_name, candidate_name, locality, slug, status, plan_code, current_publication_id, updated_at")
+    .select("id, internal_name, candidate_name, locality, slug, status, plan_code, admin_hold, current_publication_id, updated_at")
     .is("deleted_at", null)
     .order("updated_at", { ascending: false });
 
@@ -68,6 +70,7 @@ export async function getSites(): Promise<SiteSummary[]> {
     slug: site.slug,
     status: site.status,
     planCode: site.plan_code,
+    adminHold: site.admin_hold,
     currentPublicationId: site.current_publication_id,
     updatedAt: site.updated_at,
   }));
@@ -80,7 +83,7 @@ export const getSite = cache(async (siteId: string): Promise<SiteSummary | null>
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("sites")
-    .select("id, internal_name, candidate_name, locality, slug, status, plan_code, current_publication_id, updated_at")
+    .select("id, internal_name, candidate_name, locality, slug, status, plan_code, admin_hold, current_publication_id, updated_at")
     .eq("id", siteId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -94,6 +97,7 @@ export const getSite = cache(async (siteId: string): Promise<SiteSummary | null>
     slug: data.slug,
     status: data.status,
     planCode: data.plan_code,
+    adminHold: data.admin_hold,
     currentPublicationId: data.current_publication_id,
     updatedAt: data.updated_at,
   };

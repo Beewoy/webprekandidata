@@ -1,6 +1,6 @@
 # WebPreKandidata.sk
 
-Self-service aplikácia na vytvorenie a publikovanie profesionálneho volebného webu bez potreby programátora. Tento repozitár momentálne obsahuje kandidátsky dashboard a technický základ aplikácie. Verejná landing page produktu sa rieši samostatne neskôr.
+Self-service aplikácia na vytvorenie a publikovanie profesionálneho volebného webu bez potreby programátora. Jeden Next.js projekt obsluhuje verejnú landing page na `/`, kandidátsku aplikáciu na `/app`, interný panel na `/admin` a publikované weby na `/:slug`.
 
 ## Rýchly štart
 
@@ -16,6 +16,7 @@ npm run dev
 
 Lokálna aplikácia je dostupná na:
 
+- `http://localhost:3000/`
 - `http://localhost:3000/app/web/demo`
 - prihlásenie: `http://localhost:3000/prihlasenie`
 - zoznam projektov: `http://localhost:3000/app`
@@ -75,6 +76,66 @@ Supabase CLI je pripnuté ako lokálna dev dependency. Používajte `npx supabas
 
 Po aplikovaní migrácie `0010_candidate_publications.sql` vytvára publikačná akcia nemenný snapshot a verejnú stránku na `http://localhost:3000/<slug>`. Rozpracovaný koncept ostáva oddelený; zmena sa verejne prejaví iba po kliknutí na „Publikovať zmeny“. Použité médiá sa kopírujú zo súkromného bucketu do samostatného verejného bucketu konkrétnej publikácie. Publikovanie aj obnovenie vyžadujú zaplatenú objednávku, ktorá sa zhoduje s balíkom projektu.
 
+### Domény (Basic path + Plus custom)
+
+Migrácia `0014_domain_management.sql` aktivuje správu domén. Basic aj Plus majú platformovú adresu `{NEXT_PUBLIC_ROOT_DOMAIN}/{slug}`. Plus môže pripojiť jednu vlastnú doménu cez Vercel Domains API.
+
+Do `.env.local` doplňte serverové:
+
+```bash
+VERCEL_TOKEN=
+VERCEL_PROJECT_ID=
+VERCEL_TEAM_ID=
+```
+
+Na Vercel projekte pridajte apex `webprekandidata.sk` (A/CNAME, bez povinného presunu nameserverov). Wildcard `*.webprekandidata.sk` zatiaľ nie je potrebný. DNS pre poštu (Brevo) ostáva vo Websupporte.
+
+V editore Doména kandidát skopíruje DNS záznamy, spustí kontrolu a po overení dostane HTTPS. Demo režim custom doménu nepripája.
+
+### Interný admin
+
+Po aplikovaní migrácie `0011_platform_admin.sql` je dostupný operačný panel na `/admin` pre účty s `profiles.role = 'admin'`. Prvý admin účet nastavte v SQL editore alebo cez service-role klienta:
+
+```sql
+update public.profiles set role = 'admin' where id = '<user-uuid>';
+```
+
+Kandidát si rolu sám nenastaví. Admin panel v demo režime nie je dostupný. Pozastavenie webu z adminu nastaví `admin_hold` a kandidát web sám neobnoví, kým hold neuvoľní administrátor. Basic alebo Plus sa udeľuje na konkrétny web v `/admin/weby/[siteId]` (tlačidlo „Udeliť balík“); vytvorí sa zaplatená objednávka bez expirácie.
+
+## Stripe Checkout
+
+Po aplikovaní migrácie `0012_stripe_fulfillment.sql` kandidát na stránke Publikovanie zaplatí Basic alebo Plus cez Stripe-hosted Checkout. Do `.env.local` doplňte:
+
+- `STRIPE_SECRET_KEY`,
+- `STRIPE_WEBHOOK_SECRET`,
+- `STRIPE_PRICE_BASIC` a `STRIPE_PRICE_PLUS` (jednorazové ceny 49,99 € a 89,99 € s DPH),
+- voliteľné `SELLER_*` pre fakturačný snapshot predávajúceho.
+
+Lokálny webhook:
+
+```bash
+stripe listen --forward-to localhost:3000/api/webhooks/stripe
+```
+
+Balík sa aktivuje iba po podpísanom webhooku (`checkout.session.completed` / `async_payment_succeeded`). Návratová URL z Checkoutu nestačí. V demo režime ostáva Checkout vypnutý.
+
+## Produkčné nasadenie na Vercel
+
+Projekt je pripravený pre Vercel s Node.js 24 a Next.js presetom. Produkcia používa:
+
+- `NEXT_PUBLIC_APP_URL=https://webprekandidata.sk`,
+- `NEXT_PUBLIC_ROOT_DOMAIN=webprekandidata.sk`,
+- `DEMO_MODE=false`,
+- premenné Supabase, Brevo, OpenAI, Stripe, predávajúceho a Vercel Domains API z `.env.example`,
+- `CRON_SECRET` pre denný retenčný job `/api/cron/retention`,
+- voliteľný Sentry projekt cez `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT` a `SENTRY_AUTH_TOKEN`.
+
+Checkout sa zámerne nezapne, kým chýba live Stripe secret/webhook, kompletné `SELLER_*` údaje alebo `LEGAL_DOCUMENTS_APPROVED=true`. Túto poistku neobchádzajte do právnej a fakturačnej kontroly.
+
+Po pripojení apexu a `www` nastavte DNS podľa výstupu `vercel domains inspect`; poštové TXT, DKIM, SPF a DMARC záznamy vo Websupporte musia zostať zachované. `www` sa v `proxy.ts` presmeruje stavom 308 na apex.
+
+Databázová migrácia `0015_production_operations.sql` rezervuje platformové slugy a pridáva service-role retenčnú RPC. Vercel Cron ju spúšťa denne o 03:17 UTC. Neúspešný alebo neautorizovaný job údaje nemaže.
+
 ## AI onboarding po registrácii
 
 Po úspešnej registrácii sa otvorí dvojkrokové uvítanie. Kandidát napíše krátke predstavenie, server z neho cez OpenAI Responses API pripraví štruktúrovaný návrh a kandidát pred vytvorením projektu upraví alebo potvrdí každé pole.
@@ -102,6 +163,7 @@ Požiadavka používa `store: false`; celý prompt ani odmietnutý výsledok sa 
 - React 19,
 - TypeScript,
 - Supabase Auth, PostgreSQL a Storage,
+- Stripe Checkout,
 - Zod,
 - Vitest,
 - Lucide icons,

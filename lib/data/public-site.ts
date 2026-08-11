@@ -2,6 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 import { z } from "zod";
+import { getCanonicalPublicUrl } from "@/lib/domains/platform";
 import { parsePublicationMedia, parsePublicationPosts } from "@/lib/publishing";
 import { buildSitePreviewData, type SitePreviewData, type SitePreviewPost } from "@/lib/site-preview-model";
 import type { GalleryMediaAsset, SiteMediaAsset } from "@/lib/site-media";
@@ -21,6 +22,7 @@ const publicationSchema = z.object({
 });
 
 export type PublicCandidateSite = {
+  canonicalUrl: string;
   data: SitePreviewData;
   description: string;
   publishedAt: string;
@@ -53,13 +55,22 @@ export const getPublicCandidateSite = cache(async (rawSlug: string): Promise<Pub
 
   if (siteError || !site?.current_publication_id) return null;
 
-  const { data: publicationRow, error: publicationError } = await admin
-    .from("site_publications")
-    .select("*")
-    .eq("id", site.current_publication_id)
-    .eq("site_id", site.id)
-    .is("unpublished_at", null)
-    .maybeSingle();
+  const [{ data: publicationRow, error: publicationError }, { data: primaryDomain }] = await Promise.all([
+    admin
+      .from("site_publications")
+      .select("*")
+      .eq("id", site.current_publication_id)
+      .eq("site_id", site.id)
+      .is("unpublished_at", null)
+      .maybeSingle(),
+    admin
+      .from("domains")
+      .select("hostname, domain_type, status, is_primary")
+      .eq("site_id", site.id)
+      .eq("is_primary", true)
+      .neq("status", "removed")
+      .maybeSingle(),
+  ]);
 
   const parsedPublication = publicationSchema.safeParse(publicationRow);
   if (publicationError || !parsedPublication.success) return null;
@@ -113,8 +124,15 @@ export const getPublicCandidateSite = cache(async (rawSlug: string): Promise<Pub
   const title = plainText(seo.title, 70) || `${site.candidate_name} – kandidát`;
   const description = plainText(seo.description, 180) || `Oficiálna stránka kandidáta ${site.candidate_name}.`;
   const socialAsset = manifest.findLast((asset) => asset.kind === "social");
+  const canonicalUrl = getCanonicalPublicUrl({
+    platformSlug: site.slug,
+    primaryHostname: primaryDomain?.hostname,
+    primaryIsCustom: primaryDomain?.domain_type === "custom",
+    primaryStatus: primaryDomain?.status,
+  });
 
   return {
+    canonicalUrl,
     data: buildSitePreviewData(
       { candidateName: site.candidate_name, locality: site.locality, slug: site.slug },
       {

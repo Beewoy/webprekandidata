@@ -1,37 +1,299 @@
 "use client";
 
-import { Check, Copy, Globe2, Info, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import {
+  ArrowRight,
+  Check,
+  Copy,
+  Globe2,
+  Info,
+  LoaderCircle,
+  LockKeyhole,
+  ShieldCheck,
+  Trash2,
+} from "lucide-react";
+import {
+  attachCustomDomainAction,
+  checkCustomDomainAction,
+  removeCustomDomainAction,
+  setPrimaryDomainAction,
+} from "@/app/actions/domains";
 import { PageHeading } from "@/components/ui/page-heading";
+import type { SiteDomainRecord, SiteDomainState } from "@/lib/data/domains";
 
-export function DomainEditor() {
-  const [mode, setMode] = useState<"subdomain" | "custom">("subdomain");
+function CopyButton({ value, label }: { value: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  return (
+    <button aria-label={label} className="icon-button" onClick={copy} type="button">
+      {copied ? <Check size={17} /> : <Copy size={17} />}
+    </button>
+  );
+}
+
+function DnsTable({ records }: { records: SiteDomainRecord["dns"] }) {
+  if (records.length === 0) {
+    return <p className="domain-empty-note">DNS inštrukcie sa zobrazia po pripojení domény.</p>;
+  }
+
+  return (
+    <div className="domain-dns-table-wrap">
+      <table className="domain-dns-table">
+        <caption className="sr-only">DNS záznamy na nastavenie</caption>
+        <thead>
+          <tr>
+            <th scope="col">Typ</th>
+            <th scope="col">Názov</th>
+            <th scope="col">Hodnota</th>
+            <th scope="col">Účel</th>
+            <th scope="col"><span className="sr-only">Kopírovať</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {records.map((record) => (
+            <tr key={`${record.type}-${record.name}-${record.value}`}>
+              <td><code>{record.type}</code></td>
+              <td><code>{record.name}</code></td>
+              <td><code>{record.value}</code></td>
+              <td>{record.purpose === "verification" ? "Overenie" : "Smerovanie"}</td>
+              <td><CopyButton label={`Kopírovať hodnotu ${record.type}`} value={record.value} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export function DomainEditor({ siteId, state }: { siteId: string; state: SiteDomainState }) {
+  const [mode, setMode] = useState<"platform" | "custom">(state.customDomain ? "custom" : "platform");
+  const [hostname, setHostname] = useState(state.customDomain?.hostname ?? "");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [fieldError, setFieldError] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+  const custom = state.customDomain;
+  const locked = !state.canUseCustomDomain;
+
+  function refresh(nextMessage: string) {
+    setMessage(nextMessage);
+    setError("");
+    router.refresh();
+  }
+
+  function attachDomain() {
+    setError("");
+    setFieldError("");
+    setMessage("");
+    startTransition(async () => {
+      const result = await attachCustomDomainAction({ hostname, siteId });
+      if (!result.ok) {
+        setError(result.message);
+        setFieldError(result.fieldErrors?.hostname?.[0] ?? "");
+        return;
+      }
+      refresh(result.message ?? "Doména bola pripojená.");
+    });
+  }
+
+  function checkDomain(domain: SiteDomainRecord) {
+    setError("");
+    setMessage("");
+    startTransition(async () => {
+      const result = await checkCustomDomainAction({ domainId: domain.id, siteId });
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      refresh(result.message ?? "Kontrola dokončená.");
+    });
+  }
+
+  function removeDomain(domain: SiteDomainRecord) {
+    if (!window.confirm(`Odstrániť doménu ${domain.hostname}?`)) return;
+    setError("");
+    setMessage("");
+    startTransition(async () => {
+      const result = await removeCustomDomainAction({ domainId: domain.id, siteId });
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setHostname("");
+      setMode("platform");
+      refresh(result.message ?? "Doména bola odstránená.");
+    });
+  }
+
+  function makePrimary(domain: SiteDomainRecord) {
+    setError("");
+    setMessage("");
+    startTransition(async () => {
+      const result = await setPrimaryDomainAction({ domainId: domain.id, siteId });
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      refresh(result.message ?? "Hlavná adresa bola nastavená.");
+    });
+  }
 
   return (
     <div className="page-container">
-      <PageHeading eyebrow="Adresa webu" title="Doména" description="Vyberte, na akej adrese návštevníci váš web nájdu." />
+      <PageHeading
+        eyebrow="Adresa webu"
+        title="Doména"
+        description="Vyberte, na akej adrese návštevníci váš web nájdu."
+      />
+
+      {message && <div className="autosave-success" role="status">{message}</div>}
+      {error && <div className="autosave-error" role="alert">{error}</div>}
+
       <section className="editor-card">
         <div className="domain-options">
-          <button type="button" className={mode === "subdomain" ? "domain-option domain-option--active" : "domain-option"} onClick={() => setMode("subdomain")}>
-            <span className="domain-radio">{mode === "subdomain" && <Check size={14} />}</span><span><strong>Adresa na WebPreKandidata.sk</strong><small>Súčasť balíka Basic aj Plus</small></span><em>49,99 €</em>
+          <button
+            type="button"
+            className={mode === "platform" ? "domain-option domain-option--active" : "domain-option"}
+            onClick={() => setMode("platform")}
+          >
+            <span className="domain-radio">{mode === "platform" && <Check size={14} />}</span>
+            <span>
+              <strong>Adresa na WebPreKandidata.sk</strong>
+              <small>Súčasť balíka Basic aj Plus</small>
+            </span>
           </button>
-          <button type="button" className={mode === "custom" ? "domain-option domain-option--active" : "domain-option"} onClick={() => setMode("custom")}>
-            <span className="domain-radio">{mode === "custom" && <Check size={14} />}</span><span><strong>Vlastná doména</strong><small>Napríklad martin-novak.sk · balík Plus</small></span><em>89,99 €</em>
+          <button
+            type="button"
+            className={mode === "custom" ? "domain-option domain-option--active" : "domain-option"}
+            onClick={() => setMode("custom")}
+          >
+            <span className="domain-radio">{mode === "custom" && <Check size={14} />}</span>
+            <span>
+              <strong>Vlastná doména</strong>
+              <small>Napríklad martin-novak.sk · balík Plus</small>
+            </span>
           </button>
         </div>
 
-        {mode === "subdomain" ? (
+        {mode === "platform" ? (
           <div className="domain-form">
-            <label className="field"><span>Adresa vášho webu</span><div className="slug-input"><span>webprekandidata.sk/</span><input defaultValue="martin-novak" /></div><small>Bez medzier, diakritiky a špeciálnych znakov.</small></label>
-            <div className="domain-result"><Globe2 size={20} /><span><small>Vaša budúca adresa</small><strong>webprekandidata.sk/martin-novak</strong></span><button className="icon-button" type="button" aria-label="Kopírovať adresu"><Copy size={17} /></button></div>
+            <div className="domain-result">
+              <Globe2 size={20} />
+              <span>
+                <small>Verejná adresa na našej platforme</small>
+                <strong>{state.platformUrl}</strong>
+              </span>
+              <CopyButton label="Kopírovať adresu" value={state.platformUrl} />
+            </div>
+            <div className="info-box">
+              <Info size={18} />
+              <span>
+                <strong>Funguje po zverejnení webu</strong>
+                <small>HTTPS a hosting zabezpečujeme my. Vlastnú doménu môžete doplniť neskôr v balíku Plus.</small>
+              </span>
+            </div>
           </div>
         ) : (
           <div className="domain-form">
-            <label className="field"><span>Vaša doména</span><input defaultValue="martin-novak.sk" /><small>Doménu môžete vlastniť už teraz alebo vám pomôžeme s registráciou.</small></label>
-            <div className="info-box"><Info size={18} /><span><strong>Po zverejnení vás prevedieme nastavením</strong><small>Pripravíme presné DNS údaje. Bežné sprevádzkovanie trvá od niekoľkých minút do 24 hodín.</small></span></div>
+            {locked ? (
+              <div className="info-box">
+                <LockKeyhole size={18} />
+                <span>
+                  <strong>Vlastná doména je v balíku Plus</strong>
+                  <small>Po aktivácii Plus pripojíte jednu existujúcu doménu a dostanete presné DNS inštrukcie.</small>
+                </span>
+              </div>
+            ) : custom ? (
+              <>
+                <div className={`domain-status-banner domain-status-banner--${custom.status}`}>
+                  <span>
+                    <small>Stav</small>
+                    <strong>{custom.statusLabel}</strong>
+                  </span>
+                  <span>
+                    <small>HTTPS</small>
+                    <strong>{custom.sslReady ? "Pripravené" : "Čaká na overenie"}</strong>
+                  </span>
+                  <span>
+                    <small>Hostname</small>
+                    <strong>{custom.hostname}</strong>
+                  </span>
+                </div>
+
+                <DnsTable records={custom.dns} />
+
+                <div className="domain-actions">
+                  <button className="button button--secondary" disabled={isPending} onClick={() => checkDomain(custom)} type="button">
+                    {isPending ? <LoaderCircle className="spin" size={17} /> : <ShieldCheck size={17} />}
+                    Skontrolovať DNS
+                  </button>
+                  {custom.status === "active" && !custom.isPrimary && (
+                    <button className="button button--secondary" disabled={isPending} onClick={() => makePrimary(custom)} type="button">
+                      Nastaviť ako hlavnú
+                    </button>
+                  )}
+                  <button className="button button--secondary" disabled={isPending} onClick={() => removeDomain(custom)} type="button">
+                    <Trash2 size={17} />
+                    Odstrániť
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <label className="field">
+                  <span>Vaša doména</span>
+                  <input
+                    autoComplete="off"
+                    disabled={isPending}
+                    onChange={(event) => setHostname(event.target.value)}
+                    placeholder="martin-novak.sk"
+                    value={hostname}
+                  />
+                  {fieldError ? <small className="field-error">{fieldError}</small> : <small>Doménu musíte vlastniť. Registráciu za vás zatiaľ neriešime.</small>}
+                </label>
+                <div className="info-box">
+                  <Info size={18} />
+                  <span>
+                    <strong>Po pripojení dostanete DNS údaje</strong>
+                    <small>Bežné sprevádzkovanie trvá od niekoľkých minút do 24 hodín podľa poskytovateľa DNS.</small>
+                  </span>
+                </div>
+                <div className="editor-card__footer domain-form-footer">
+                  <span><ShieldCheck size={16} /> HTTPS certifikát zabezpečíme automaticky po overení DNS.</span>
+                  <button className="button button--primary" disabled={isPending || !hostname.trim()} onClick={attachDomain} type="button">
+                    {isPending ? <LoaderCircle className="spin" size={17} /> : null}
+                    Pripojiť doménu
+                  </button>
+                </div>
+              </>
+            )}
+
+            {locked && (
+              <Link className="text-link" href={`/app/web/${siteId}/publikovanie`}>
+                Pozrieť balík Plus <ArrowRight size={15} />
+              </Link>
+            )}
           </div>
         )}
-        <div className="editor-card__footer"><span><ShieldCheck size={16} /> HTTPS certifikát a bezpečné pripojenie zabezpečíme automaticky.</span><button className="button button--primary" type="button">Uložiť adresu</button></div>
+
+        {mode === "platform" && (
+          <div className="editor-card__footer">
+            <span><ShieldCheck size={16} /> HTTPS certifikát a bezpečné pripojenie zabezpečíme automaticky.</span>
+          </div>
+        )}
       </section>
     </div>
   );

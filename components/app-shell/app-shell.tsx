@@ -15,6 +15,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+import { SupportDialog } from "@/components/app-shell/support-dialog";
 import { cn } from "@/lib/cn";
 import type { SiteSummary } from "@/lib/data/sites";
 import { getPlanLabel, PlanBadge } from "@/components/ui/plan-badge";
@@ -50,7 +51,17 @@ function SectionLink({ section, siteId, onNavigate }: { section: SiteSection; si
   );
 }
 
-function SidebarContent({ site, sectionStatuses, onNavigate }: { site: SiteSummary; sectionStatuses: SiteSectionStatusMap; onNavigate?: () => void }) {
+function SidebarContent({
+  site,
+  sectionStatuses,
+  onNavigate,
+  onOpenSupport,
+}: {
+  site: SiteSummary;
+  sectionStatuses: SiteSectionStatusMap;
+  onNavigate?: () => void;
+  onOpenSupport: () => void;
+}) {
   const siteId = site.id;
   const pathname = usePathname();
   const overviewHref = `/app/web/${siteId}`;
@@ -80,7 +91,7 @@ function SidebarContent({ site, sectionStatuses, onNavigate }: { site: SiteSumma
       </nav>
 
       <div className="sidebar-footer">
-        <button className="side-link side-link--button" type="button">
+        <button className="side-link side-link--button" type="button" onClick={onOpenSupport}>
           <HelpCircle size={18} />
           <span>Pomoc a podpora</span>
         </button>
@@ -96,6 +107,7 @@ function SidebarContent({ site, sectionStatuses, onNavigate }: { site: SiteSumma
 
 export function AppShell({ site, sectionStatuses, children }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const siteId = site.id;
   const isPublished = site.status === "published";
   const isSuspended = site.status === "suspended";
@@ -108,9 +120,16 @@ export function AppShell({ site, sectionStatuses, children }: AppShellProps) {
         ? "Váš balík je aktivovaný. Web zatiaľ nie je verejný."
         : "Váš web zatiaľ nie je verejný. Obsah môžete pokojne dopĺňať.";
 
+  const openSupport = () => {
+    setMenuOpen(false);
+    setSupportOpen(true);
+  };
+
   return (
     <div className="app-shell">
-      <aside className="sidebar" aria-label="Editor webu"><SidebarContent site={site} sectionStatuses={sectionStatuses} /></aside>
+      <aside className="sidebar" aria-label="Editor webu">
+        <SidebarContent site={site} sectionStatuses={sectionStatuses} onOpenSupport={openSupport} />
+      </aside>
 
       <header className="mobile-header">
         <button className="icon-button" type="button" onClick={() => setMenuOpen(true)} aria-label="Otvoriť menu"><Menu size={22} /></button>
@@ -123,10 +142,17 @@ export function AppShell({ site, sectionStatuses, children }: AppShellProps) {
           <button className="drawer-backdrop" type="button" onClick={() => setMenuOpen(false)} aria-label="Zavrieť menu" />
           <aside className="drawer-panel">
             <button className="drawer-close icon-button" type="button" onClick={() => setMenuOpen(false)} aria-label="Zavrieť menu"><X size={22} /></button>
-            <SidebarContent site={site} sectionStatuses={sectionStatuses} onNavigate={() => setMenuOpen(false)} />
+            <SidebarContent
+              site={site}
+              sectionStatuses={sectionStatuses}
+              onNavigate={() => setMenuOpen(false)}
+              onOpenSupport={openSupport}
+            />
           </aside>
         </div>
       )}
+
+      <SupportDialog open={supportOpen} onClose={() => setSupportOpen(false)} />
 
       <main className="app-main">
         <div className="desktop-topbar">

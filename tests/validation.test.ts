@@ -109,3 +109,55 @@ describe("site validation", () => {
     }).success).toBe(false);
   });
 });
+
+describe("admin validation", () => {
+  it("vyžaduje dôvod a správu pri pozastavení", async () => {
+    const { adminSiteHoldSchema } = await import("../lib/validation/admin");
+    expect(adminSiteHoldSchema.safeParse({
+      siteId: "00000000-0000-4000-8000-000000000001",
+      hold: true,
+      reason: "krátky",
+      category: "terms_violation",
+      scope: "whole_site",
+      durationDays: 14,
+      candidateMessage: "Správa pre kandidáta o pozastavení webu.",
+    }).success).toBe(false);
+
+    expect(adminSiteHoldSchema.safeParse({
+      siteId: "00000000-0000-4000-8000-000000000001",
+      hold: true,
+      reason: "Opakované porušenie podmienok používania.",
+      category: "terms_violation",
+      scope: "whole_site",
+      durationDays: 14,
+      candidateMessage: "Správa pre kandidáta o pozastavení webu.",
+    }).success).toBe(true);
+  });
+
+  it("pri uvoľnení nevyžaduje trvanie", async () => {
+    const { adminSiteHoldSchema } = await import("../lib/validation/admin");
+    expect(adminSiteHoldSchema.safeParse({
+      siteId: "00000000-0000-4000-8000-000000000001",
+      hold: false,
+      reason: "Náprava bola overená a hold sa uvoľňuje.",
+      category: "other",
+      scope: "whole_site",
+      durationDays: null,
+      candidateMessage: "Administrátorské pozastavenie bolo uvoľnené.",
+    }).success).toBe(true);
+  });
+
+  it("prijme udelenie Basic alebo Plus s dôvodom", async () => {
+    const { adminGrantPlanSchema } = await import("../lib/validation/admin");
+    expect(adminGrantPlanSchema.safeParse({
+      siteId: "00000000-0000-4000-8000-000000000001",
+      planCode: "plus",
+      reason: "Pilotný účet pre interný test.",
+    }).success).toBe(true);
+    expect(adminGrantPlanSchema.safeParse({
+      siteId: "00000000-0000-4000-8000-000000000001",
+      planCode: "free",
+      reason: "Pilotný účet pre interný test.",
+    }).success).toBe(false);
+  });
+});
