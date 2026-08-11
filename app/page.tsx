@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Metadata } from "next";
+import dashboardImage from "../landing-page/assets/martin-kandidat.png";
+import mobilePreviewImage from "../landing-page/assets/martin-kandidat-mobil.png";
 import "../landing-page/assets/styles.css";
 import "../landing-page/assets/refined.css";
 import "../landing-page/assets/pricing.css";
@@ -53,7 +55,17 @@ function readLandingDocument() {
     throw new Error("Landing page source is missing its body or structured data.");
   }
 
-  return { body, structuredData };
+  const bodyWithBundledImages = body
+    .replaceAll(
+      'src="assets/martin-kandidat.png"',
+      `src="${dashboardImage.src}"`,
+    )
+    .replaceAll(
+      'src="assets/martin-kandidat-mobil.png"',
+      `src="${mobilePreviewImage.src}"`,
+    );
+
+  return { body: bodyWithBundledImages, structuredData };
 }
 
 export default function Home() {
