@@ -24,7 +24,10 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - hlavné výzvy smerujú priamo na registráciu a presne oddeľujú bezplatný súkromný náhľad od platenej publikácie,
 - samostatný SEO audit s odporúčaniami pre obsah, meranie a ostré nasadenie,
 - landing je integrovaný do Next.js rootu `/`, má generovaný Open Graph obrázok 1200 × 630 px, favicon, `robots.txt`, sitemapu a funkčné odkazy na právne routy,
-- právne routy sú implementované ako pracovné znenie a zostávajú `noindex`, kým právnik nepotvrdí obsah a produkcia nenastaví `LEGAL_DOCUMENTS_APPROVED=true`.
+- hero na root landing page zobrazuje kompaktný odpočet celých kalendárnych dní do volieb 24. októbra 2026, obnovovaný cez hodinové ISR; v deň volieb použije neutrálny text a po termíne sa skryje,
+- päť samostatných indexovateľných kampanových stránok pre starostu, primátora, poslanca, komunálne voľby 2026 a spoločnú kandidatúru na predsedu kraja alebo poslanca VÚC; stránky zdieľajú responzívny marketingový komponent, ceny, interné prepojenia, metadata a JSON-LD,
+- sezónne stránky uvádzajú oficiálny termín komunálnych a krajských volieb 24. októbra 2026 a prístupný živý odpočet s bezpečným stavom po volebnom dni,
+- právne routy sú implementované ako pracovné znenie; obchodné podmienky pokrývajú reálny bezplatný náhľad, balíky, Stripe platbu, publikovanie, vlastnú doménu, AI a spotrebiteľské práva, samostatný reklamačný poriadok upravuje oznámenie vady, lehoty, spôsoby vybavenia a ARS, pričom dokumenty zostávajú `noindex`, kým právnik nepotvrdí obsah a produkcia nenastaví `LEGAL_DOCUMENTS_APPROVED=true`.
 
 ### Dashboard kandidáta
 
@@ -45,7 +48,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - dátový náhľad celého kandidátskeho webu z aktuálneho `site_drafts` s manuálnym obnovením revízie,
 - kompaktný náhľad na prehľade projektu napojený na rovnaký koncept, šablónu, farbu, logo a portrét ako úplný náhľad webu,
 - kontaktný formulár nad pätičkou v náhľade verejnej šablóny a prepínač jeho viditeľnosti v sekcii Kontakt,
-- balíky Basic 49,99 € a Plus 89,99 € s DPH,
+- balíky Basic 49,99 € a Plus 89,99 € ako konečné jednorazové ceny,
 - stránka publikovania číta balík a reálne oprávnenie aktuálneho projektu zo servera: Free účtu zobrazí výber Basic/Plus, aktívnemu Basic/Plus účtu pripravenosť obsahu, stav verejnej verzie a akcie zverejniť, publikovať zmeny, pozastaviť alebo obnoviť,
 - verejná kandidátska cesta `/:slug` používa posledný nemenný snapshot; koncept ani automaticky uložené rozpracované zmeny nikdy nečíta,
 - verejný web zdieľa sanitizovaný zobrazovací model s náhľadom, pričom články zostávajú v modálnej vrstve bez samostatnej URL a kontaktný formulár sa aktivuje iba vo verejnom režime,
@@ -87,6 +90,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - základná databázová schéma a RLS politiky,
 - cloudový Supabase projekt `Webprekandidata` linkovaný cez CLI,
 - cloudové migrácie `0001` až `0015` aplikované; `0015_production_operations.sql` rezervuje platformové slugy a pridáva service-role retenčnú RPC,
+- append-only migrácia `0016_reserve_marketing_slugs.sql` je pripravená lokálne a dopĺňa rezervácie piatich kampanových ciest, reklamačného poriadku a systémovej stránky pre neznámu doménu,
 - reálna verejná Supabase konfigurácia v ignorovanom `.env.local` a vypnutý demo režim,
 - cloudové Auth callbacky, okamžitá relácia po registrácii a bezpečnostné limity zosynchronizované z `supabase/config.toml`,
 - samostatný Brevo SMTP key `WebPreKandidata.sk` vytvorený a bezpečne pripojený k Supabase Auth,
@@ -174,7 +178,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 
 ### Stripe Checkout a objednávky
 
-- výber Basic 49,99 € / Plus 89,99 € s DPH na stránke Publikovanie,
+- výber Basic 49,99 € / Plus 89,99 € ako konečných cien na stránke Publikovanie,
 - fakturačné údaje kupujúceho a súhlas pred Checkoutom,
 - server vytvorí pending `orders` a Stripe Checkout Session,
 - podpísaný webhook `/api/webhooks/stripe` idempotentne splní objednávku a nastaví `sites.plan_code`,
@@ -185,7 +189,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 
 ### Overenie
 
-- 71 jednotkových testov,
+- 86 jednotkových testov,
 - TypeScript bez chýb,
 - ESLint bez chýb a varovaní,
 - úspešný produkčný build,
@@ -193,6 +197,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - verejné Auth nastavenia potvrdili zapnutú registráciu a okamžité vytvorenie relácie,
 - všetky tri verejné šablóny vizuálne overené pri šírkach 375, 768, 1024 a 1440 px,
 - pri každej šablóne a overenej šírke potvrdené nulové horizontálne pretečenie.
+- nové kampanové stránky vizuálne overené v Chromium pri šírkach 375, 768, 1024 a 1440 px bez viditeľného horizontálneho pretečenia.
 
 ### Produkčná prevádzka
 
@@ -202,13 +207,13 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - Supabase Auth Site URL je `https://webprekandidata.sk`, produkčné callbacky sú povolené a limit Auth e-mailov je 10 za hodinu,
 - bezpečnostné HTTP hlavičky vrátane CSP, frame protection, nosniff, Referrer Policy a HSTS sú nakonfigurované,
 - Sentry SDK je zapojené pre client, server aj edge runtime bez odosielania predvolených PII; začne odosielať až po nastavení DSN,
+- Firebase Analytics je zapojené pre celý web cez GA4 stream `G-0LPPHZCVXB`; SDK sa načíta až po dobrovoľnom súhlase a návštevník môže uloženú voľbu kedykoľvek zmeniť cez nastavenia cookies v pätičke landing page alebo cez dostupné náhradné tlačidlo na ostatných routach,
 - denný Vercel Cron volá autorizovaný retenčný endpoint a maže expirované kontaktné a AI záznamy cez service-role RPC,
 - checkout sa fail-closed nezapne bez live Stripe secretu, webhook secretu, kompletných údajov predávajúceho a schválených právnych dokumentov.
 
 ## Pripravené v UI, ale ešte bez produkčného backendu
 
 - transakčné e-maily (vrátane potvrdenia platby),
-- analytika.
 
 ## Externé závislosti
 

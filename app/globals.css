@@ -1684,3 +1684,65 @@ svg { flex: 0 0 auto; }
 }
 .error-page h1 { color: var(--navy-950); font-size: 34px; letter-spacing: -.04em; }
 .error-page p:not(.eyebrow) { color: var(--slate-600); line-height: 1.6; }
+
+.cookie-consent {
+  align-items: center;
+  background: var(--white);
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-lg);
+  bottom: 20px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  left: 50%;
+  max-width: min(920px, calc(100vw - 32px));
+  padding: 20px 22px;
+  position: fixed;
+  transform: translateX(-50%);
+  width: 100%;
+  z-index: 100;
+}
+.cookie-consent strong { color: var(--navy-950); display: block; font-size: 16px; margin-bottom: 6px; }
+.cookie-consent p { color: var(--slate-600); font-size: 13px; line-height: 1.55; margin: 0; max-width: 600px; }
+.cookie-consent p a { color: var(--teal-700); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.cookie-consent .cookie-consent__current { color: var(--navy-800); font-weight: 700; margin-top: 8px; }
+.cookie-consent__actions { display: flex; flex: 0 0 auto; gap: 10px; }
+.cookie-settings-button {
+  background: var(--white);
+  border: 1px solid var(--slate-300);
+  border-radius: 99px;
+  bottom: 16px;
+  box-shadow: var(--shadow-sm);
+  color: var(--slate-700);
+  font-size: 11px;
+  font-weight: 700;
+  left: 16px;
+  min-height: 44px;
+  padding: 10px 14px;
+  position: fixed;
+  z-index: 90;
+}
+.cookie-settings-button:hover { border-color: var(--navy-700); color: var(--navy-800); }
+.footer-cookie-settings {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  min-height: 44px;
+  padding: 8px 0;
+}
+.footer-cookie-settings:hover { color: var(--white); }
+.footer-cookie-settings:focus-visible {
+  border-radius: 4px;
+  outline: 3px solid var(--white);
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  .cookie-consent { align-items: stretch; bottom: 12px; flex-direction: column; gap: 16px; padding: 18px; }
+  .cookie-consent__actions { display: grid; grid-template-columns: 1fr; }
+  .cookie-consent__actions .button { width: 100%; }
+  .cookie-settings-button { bottom: 12px; left: 12px; }
+}

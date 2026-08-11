@@ -108,7 +108,7 @@ Po aplikovaní migrácie `0012_stripe_fulfillment.sql` kandidát na stránke Pub
 
 - `STRIPE_SECRET_KEY`,
 - `STRIPE_WEBHOOK_SECRET`,
-- `STRIPE_PRICE_BASIC` a `STRIPE_PRICE_PLUS` (jednorazové ceny 49,99 € a 89,99 € s DPH),
+- `STRIPE_PRICE_BASIC` a `STRIPE_PRICE_PLUS` (konečné jednorazové ceny 49,99 € a 89,99 €),
 - voliteľné `SELLER_*` pre fakturačný snapshot predávajúceho.
 
 Lokálny webhook:

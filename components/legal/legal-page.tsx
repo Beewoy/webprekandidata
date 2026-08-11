@@ -19,6 +19,7 @@ export function LegalPage({
         <div>
           <Link href="/ochrana-sukromia">Ochrana súkromia</Link>
           <Link href="/obchodne-podmienky">Obchodné podmienky</Link>
+          <Link href="/reklamacny-poriadok">Reklamačný poriadok</Link>
         </div>
       </nav>
       <article className="legal-document">
@@ -41,12 +42,14 @@ export function SellerIdentity() {
   return (
     <address>
       <strong>{process.env.SELLER_NAME || "Ing. Tibor Antal"}</strong>
-      <span>{process.env.SELLER_ADDRESS || "Adresa bude doplnená pred spustením predaja"}</span>
-      <span>IČO: {process.env.SELLER_ICO || "bude doplnené"}</span>
-      {process.env.SELLER_DIC && <span>DIČ: {process.env.SELLER_DIC}</span>}
-      {process.env.SELLER_IC_DPH && <span>IČ DPH: {process.env.SELLER_IC_DPH}</span>}
-      <a href={`mailto:${process.env.SELLER_EMAIL || "ahoj@beewoy.sk"}`}>
-        {process.env.SELLER_EMAIL || "ahoj@beewoy.sk"}
+      <span>
+        {process.env.SELLER_ADDRESS ||
+          "Jána Stanislava 3085/37, 841 05 Bratislava – Karlova Ves, Slovensko"}
+      </span>
+      <span>IČO: {process.env.SELLER_ICO || "50640259"}</span>
+      <span>DIČ: {process.env.SELLER_DIC || "1075966881"}</span>
+      <a href={`mailto:${process.env.SELLER_EMAIL || "tibor.antal2@gmail.com"}`}>
+        {process.env.SELLER_EMAIL || "tibor.antal2@gmail.com"}
       </a>
     </address>
   );

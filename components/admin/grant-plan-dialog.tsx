@@ -118,7 +118,7 @@ export function GrantPlanDialog({ sites, accountLabel, trigger = "button" }: Gra
                   />
                   <span>
                     <strong>{PLAN_LABELS.basic}</strong>
-                    <small>{PLAN_PRICE_LABELS.basic} s DPH · evidencia v objednávke</small>
+                    <small>{PLAN_PRICE_LABELS.basic} · evidencia v objednávke</small>
                   </span>
                 </label>
                 <label className="admin-plan-choice">
@@ -131,7 +131,7 @@ export function GrantPlanDialog({ sites, accountLabel, trigger = "button" }: Gra
                   />
                   <span>
                     <strong>{PLAN_LABELS.plus}</strong>
-                    <small>{PLAN_PRICE_LABELS.plus} s DPH · evidencia v objednávke</small>
+                    <small>{PLAN_PRICE_LABELS.plus} · evidencia v objednávke</small>
                   </span>
                 </label>
                 {state.fieldErrors?.planCode ? <small role="alert">{state.fieldErrors.planCode}</small> : null}

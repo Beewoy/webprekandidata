@@ -39,6 +39,9 @@ Vyžaduje Supabase premenné a `DEMO_MODE=false`.
 ```text
 app/
   page.tsx                indexovateľná marketingová landing page
+  kampanovy-web-pre-*/    statické SEO stránky podľa typu komunálnej kandidatúry
+  komunalne-volby-2026/   sezónna komunálna SEO stránka
+  volby-do-vuc-2026/      spoločná SEO stránka pre predsedu kraja a poslanca VÚC
   [slug]/                 verejný web z aktuálneho publikovaného snapshotu
   (auth)/                 prihlasovacie a obnovovacie obrazovky
   actions/                serverové mutácie a autorizácia
@@ -46,6 +49,7 @@ app/
   app/                    chránená aplikácia kandidáta
   auth/callback/          výmena Supabase auth kódu za reláciu
 components/
+  marketing/              zdieľaný kampanový web, odpočet a izolované štýly
   admin/                  shell, tabuľky a dialóg admin hold
   app-shell/              sidebar, mobilná navigácia a horná lišta
   auth/                   interaktívne auth formuláre
@@ -56,6 +60,7 @@ components/
 lib/
   ai/                     serverové AI volanie, fallback a podpísané potvrdenie výsledku
   data/                   serverové čítanie dát vrátane admin loaderov
+  marketing/              obsah, metadata, JSON-LD a zoznam verejných SEO ciest
   supabase/               typované browser/server Supabase klienty a generované DB typy
   validation/             Zod schémy a typy stavov formulárov
 supabase/migrations/      verzovaná databázová schéma a RPC
@@ -63,6 +68,8 @@ tests/                    jednotkové testy
 ```
 
 Root `/` sa staticky generuje zo zdrojového dokumentu `landing-page/index.html`, ale metadata, Open Graph obrázok, robots a sitemap používa Next.js Metadata API. `/app` a `/admin` zostávajú samostatné chránené stromy. Platformové `www` sa v `proxy.ts` presmeruje 308 na apex; custom hostname sa naďalej prepisuje iba na publikovaný snapshot.
+
+Päť kampanových SEO ciest je implementovaných ako explicitné statické segmenty, ktoré zdieľajú serverový komponent a dátovú konfiguráciu v `lib/marketing/campaign-pages.ts`. Každá cesta má vlastný obsah, canonical, Open Graph metadata a JSON-LD zhodné s viditeľným FAQ. Explicitné segmenty majú pred dynamickým `[slug]` prednosť, preto migrácia `0016_reserve_marketing_slugs.sql` pridáva všetky marketingové a chýbajúce systémové cesty do rezervovaného zoznamu `create_candidate_site`. Sitemap, robots a interné odkazy používajú spoločný zoznam `MARKETING_ROUTES`.
 
 ## 4. Serverové a klientské hranice
 
@@ -413,6 +420,8 @@ Vercel Cron
 RPC je dostupná iba `service_role`. Endpoint používa konštantné porovnanie secretu, nevracia citlivé dáta a chybu odošle do Sentry, ak je DSN nakonfigurované.
 
 Sentry inicializuje client, Node aj edge runtime, neodosiela predvolené PII a v produkcii vzorkuje 10 % trace záznamov. Bez `NEXT_PUBLIC_SENTRY_DSN` je SDK neaktívne. CSP povoľuje iba potrebné platformové, Supabase, Stripe a Sentry spojenia; aplikácia navyše posiela HSTS, `nosniff`, zákaz framovania, Referrer Policy a Permissions Policy.
+
+Firebase Analytics používa verejnú webovú konfiguráciu projektu `web-pre-kandidatov` a GA4 measurement ID `G-0LPPHZCVXB`. Malý Client Component v root layoute najprv načíta voľbu z lokálneho úložiska. Firebase SDK a Google Analytics skript sa dynamicky načítajú až po dobrovoľnom súhlase; odmietnutie nevytvorí analytické cookies. Návštevník môže uloženú voľbu zmeniť cez nastavenie cookies v pätičke landing page; delegovaný handler funguje aj pri klientskom prechode medzi routami a na ostatných stránkach zostáva dostupné náhradné pevné tlačidlo. Odvolanie súhlasu zastaví zber a odstráni cookies `_ga` a `_ga_0LPPHZCVXB`. CSP povoľuje iba konkrétne Google Analytics a Google Tag Manager endpointy potrebné na zber.
 
 ## 16. UI invarianty
 

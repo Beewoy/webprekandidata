@@ -2,7 +2,7 @@
 
 > Pracovný produktový brief pre MVP. Dokument sumarizuje doterajšiu diskusiu a dopĺňa ju o odporúčanú technickú architektúru, cenotvorbu, distribúciu a realizačný plán. Položky označené ako **odporúčanie** ešte nie sú finálnym rozhodnutím a majú sa overiť validáciou s kandidátmi.
 
-> Aktualizácia 11. 8. 2026: Najskôr sa implementuje produktové jadro a dashboard; landing page sa bude riešiť neskôr. Potvrdené sú dva balíky Basic 49,99 € a Plus 89,99 € s DPH.
+> Aktualizácia 11. 8. 2026: Najskôr sa implementuje produktové jadro a dashboard; landing page sa bude riešiť neskôr. Potvrdené sú dva balíky Basic 49,99 € a Plus 89,99 € ako konečné jednorazové ceny.
 
 ## 1. Cieľ produktu
 
@@ -293,7 +293,7 @@ AI z odpovedí vytvorí návrh, ktorý používateľ upraví a explicitne schvá
 
 Pre MVP sú potvrdené dva jednorazové balíky na obdobie kampane:
 
-### Basic — 49,99 € s DPH
+### Basic — 49,99 €
 
 - web na subdoméne WebPreKandidata.sk,
 - editor a všetky základné sekcie,
@@ -302,14 +302,14 @@ Pre MVP sú potvrdené dva jednorazové balíky na obdobie kampane:
 - kontaktný formulár,
 - základné SEO, zdieľanie a štandardná podpora.
 
-### Plus — 89,99 € s DPH
+### Plus — 89,99 €
 
 - všetko z Basic,
 - pripojenie jednej existujúcej vlastnej domény,
 - AI pomoc s tvorbou článkov,
 - prioritná e-mailová podpora.
 
-Registrácia novej domény nie je automaticky zahrnutá. Presný dátum skončenia prevádzky a pravidlá predĺženia zatiaľ nie sú určené. Pred ostrým predajom treba s účtovníkom potvrdiť daňové postavenie, fakturačný proces a správne znenie cien s DPH.
+Registrácia novej domény nie je automaticky zahrnutá. Presný dátum skončenia prevádzky a pravidlá predĺženia zatiaľ nie sú určené. Pred ostrým predajom treba s účtovníkom potvrdiť fakturačný proces a správne znenie cien.
 
 ## 10. Distribúcia a predaj
 

@@ -26,7 +26,7 @@ Produkt nebude voľný drag-and-drop builder. Platforma kontroluje štruktúru, 
 - Používateľ musí dostať kvalitný súkromný náhľad ešte pred zaplatením.
 - Verejné publikovanie sa odomkne až po úspešnej platbe.
 - MVP bude mať jednu kvalitnú šablónu s niekoľkými kontrolovanými variantmi.
-- Produkt bude mať dva balíky: Basic za 49,99 € s DPH a Plus za 89,99 € s DPH.
+- Produkt bude mať dva balíky: Basic za 49,99 € a Plus za 89,99 €.
 - Každý publikovaný web dostane subdoménu `slug.webprekandidata.sk`.
 - Plus obsahuje pripojenie vlastnej domény, AI pomoc s aktualitami a prioritnú podporu.
 - Kontaktný formulár a aktuality budú súčasťou prvého release.
@@ -105,7 +105,7 @@ Tímové roly nie sú súčasťou MVP. Dátový model však nesmie zabrániť ne
 
 ### 4.3 Balíky a ceny
 
-#### Basic — 49,99 € s DPH
+#### Basic — 49,99 €
 
 - verejný web na subdoméne `slug.webprekandidata.sk`,
 - všetky základné obsahové sekcie a editor,
@@ -116,7 +116,7 @@ Tímové roly nie sú súčasťou MVP. Dátový model však nesmie zabrániť ne
 - hosting počas dohodnutého obdobia kampane,
 - štandardná e-mailová podpora.
 
-#### Plus — 89,99 € s DPH
+#### Plus — 89,99 €
 
 - všetko z balíka Basic,
 - pripojenie jednej existujúcej vlastnej domény,
@@ -125,7 +125,7 @@ Tímové roly nie sú súčasťou MVP. Dátový model však nesmie zabrániť ne
 
 Registrácia novej domény nie je automaticky zahrnutá v cene Plus. Kandidát môže vlastniť doménu a platforma ju pripojí. Registráciu domény za kandidáta možno neskôr ponúknuť ako samostatný doplnok po overení nákladov a procesu.
 
-Obe ceny sa v rozhraní uvádzajú ako ceny s DPH. Pred ostrým predajom treba potvrdiť daňové postavenie predávajúceho a správne fakturačné znenie.
+Obe ceny sa v rozhraní uvádzajú ako konečné jednorazové ceny.
 
 ### 4.4 Zatiaľ neimplementovať
 
@@ -529,7 +529,7 @@ Publikovaný web nikdy nečíta neuložený koncept priamo.
 ### 10.7 `orders`
 
 - `id`, `site_id`, `user_id`,
-- `status`, `currency`, cena s DPH, základ a daňové údaje,
+- `status`, `currency`, cena a fakturačné údaje,
 - `plan_code`,
 - `valid_until` ako nullable údaj, kým sa neurčí koniec kampane,
 - Stripe customer a checkout session identifikátory,
@@ -657,7 +657,7 @@ Bezpečnostné pravidlá:
 
 1. používateľ otvorí Publikovanie,
 2. systém skontroluje povinný obsah,
-3. používateľ vyberie Basic 49,99 € alebo Plus 89,99 € s DPH,
+3. používateľ vyberie Basic 49,99 € alebo Plus 89,99 €,
 4. používateľ vyplní fakturačné údaje a potvrdí podmienky,
 5. server vytvorí Stripe Checkout Session s konkrétnym balíkom,
 6. Stripe vykoná platbu,
@@ -671,11 +671,11 @@ Nárok sa nikdy neodomkne iba podľa návratovej URL z platobnej stránky. Webho
 ### 14.2 Fakturácia
 
 - predávajúci: SZČO Ing. Tibor Antal,
-- pred produkciou doplniť oficiálne obchodné meno, adresu, IČO, DIČ, IČ DPH podľa skutočného stavu a kontaktné údaje,
+- pred produkciou doplniť oficiálne obchodné meno, adresu, IČO, DIČ a kontaktné údaje,
 - fakturačné údaje sa ukladajú ako snapshot k objednávke,
 - presný daňový a fakturačný proces sa potvrdí s účtovníkom pred ostrým predajom,
 - aplikácia nebude označovať bežné potvrdenie Stripe za slovenskú faktúru bez overenia procesu,
-- ceny 49,99 € a 89,99 € sa pracovne zobrazujú ako ceny s DPH; ich správne daňové znenie sa musí potvrdiť podľa postavenia prevádzkovateľa.
+- ceny 49,99 € a 89,99 € sa zobrazujú ako konečné jednorazové ceny.
 
 ## 15. E-maily
 
@@ -959,7 +959,7 @@ MVP je pripravené na pilot, keď:
 | Oblasť | Stav | Rozhodnutie alebo ďalší krok |
 |---|---|---|
 | Značka | rozhodnuté pracovne | WebPreKandidata.sk, pracovné SVG logo, navy `#163B65`, teal `#0F766E`, Inter |
-| Cena | rozhodnuté | Basic 49,99 € a Plus 89,99 €, obe komunikované s DPH |
+| Cena | rozhodnuté | Basic 49,99 € a Plus 89,99 €, obe komunikované ako konečné jednorazové ceny |
 | Koniec kampane | otvorené | `campaign_ends_at` a `valid_until` zostanú nullable; pred predajom určiť trvanie a predĺženie |
 | Predávajúci | čiastočne rozhodnuté | SZČO Ing. Tibor Antal; doplniť oficiálne fakturačné identifikátory a proces |
 | Doména | rozhodnuté | webprekandidata.sk, wildcard subdomény a vlastná doména v Plus |

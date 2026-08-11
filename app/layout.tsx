@@ -3,6 +3,7 @@ import "@fontsource-variable/source-serif-4";
 import "./globals.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { FirebaseAnalytics } from "@/components/analytics/firebase-analytics";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
@@ -12,5 +13,12 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
-  return <html lang="sk" data-scroll-behavior="smooth"><body>{children}</body></html>;
+  return (
+    <html lang="sk" data-scroll-behavior="smooth">
+      <body>
+        {children}
+        <FirebaseAnalytics />
+      </body>
+    </html>
+  );
 }

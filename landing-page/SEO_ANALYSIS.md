@@ -17,6 +17,16 @@ Výrazy sa majú používať prirodzene. Samostatné `meta keywords` neprináša
 
 ## Stav po úprave
 
+### Samostatné kampanové stránky
+
+- `/kampanovy-web-pre-starostu` cieli na predstavenie vízie obce, skúseností a programu kandidáta na starostu,
+- `/kampanovy-web-pre-primatora` rozvíja mestské témy a rozsiahlejší program kandidáta na primátora,
+- `/kampanovy-web-pre-poslanca` vysvetľuje odbornosť, hodnoty a priority kandidáta do miestneho zastupiteľstva,
+- `/komunalne-volby-2026` pokrýva sezónny zámer komunálnych volieb a prepája všetky tri komunálne funkcie,
+- `/volby-do-vuc-2026` pokrýva kandidáta na predsedu samosprávneho kraja aj poslanca VÚC.
+
+Stránky zdieľajú technický komponent, ceny a konverzný tok, ale nie sú iba mechanickou zámenou názvu funkcie. Každá má samostatnú argumentáciu, FAQ, meta popis a interné odkazy zodpovedajúce odlišnému vyhľadávaciemu zámeru.
+
 ### On-page SEO
 
 - Title začína hlavnou frázou a obsahuje aktuálny rok volieb.
@@ -30,7 +40,7 @@ Výrazy sa majú používať prirodzene. Samostatné `meta keywords` neprináša
 
 - Hodnotová ponuka vysvetľuje konkrétny výsledok: predstavenie kandidáta, program, aktuality, galériu a kontakt.
 - Bezplatný účet a súkromný náhľad sú oddelené od platenej publikácie.
-- Ceny Basic 49,99 € a Plus 89,99 € sú uvedené ako jednorazové ceny s DPH.
+- Ceny Basic 49,99 € a Plus 89,99 € sú uvedené ako konečné jednorazové ceny.
 - AI je prezentovaná ako kontrolovaný návrh z údajov kandidáta, nie ako autor politických postojov alebo faktov.
 - Odstránené bolo neoverené mobilné skóre 100 a neurčitý prísľub dokončenia „za desiatky minút“.
 - Vlastná doména je označená ako pripravovaná funkcia Plus, kým nemá produkčný backend.
@@ -67,4 +77,4 @@ Open Graph obrázok 1200 × 630 px, právne routy, `robots.txt`, sitemap a aktua
 
 ## Časová aktuálnosť
 
-Komunálne a župné voľby sa konajú 24. októbra 2026. Sezónny rok a volebné formulácie treba po kampani prehodnotiť, aby landing page nepôsobila zastaralo. Zdroj termínu: [Ministerstvo vnútra SR](https://www.minv.sk/?volby-samosprava26=).
+Komunálne a župné voľby sa konajú 24. októbra 2026. Sezónny rok a volebné formulácie treba po kampani prehodnotiť, aby landing page nepôsobila zastaralo. Zdroj termínu: [Ministerstvo vnútra SR](https://www.minv.sk/?volby-selfgov26=).

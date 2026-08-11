@@ -56,7 +56,6 @@ export function getSellerSnapshot() {
     address: process.env.SELLER_ADDRESS?.trim() || "",
     ico: process.env.SELLER_ICO?.trim() || "",
     dic: process.env.SELLER_DIC?.trim() || "",
-    icDph: process.env.SELLER_IC_DPH?.trim() || "",
     email: process.env.SELLER_EMAIL?.trim() || "",
   };
 }

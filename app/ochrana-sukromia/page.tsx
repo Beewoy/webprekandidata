@@ -42,9 +42,10 @@ export default function PrivacyPage() {
         <h2>4. Dodávatelia</h2>
         <p>
           Pri prevádzke používame najmä Vercel na hosting, Supabase na databázu, autentifikáciu a
-          úložisko, Stripe na platby, Brevo na doručovanie e-mailov a OpenAI na voliteľné AI návrhy.
-          Dodávatelia dostávajú iba údaje potrebné na konkrétnu službu a spracúvajú ich podľa svojich
-          zmluvných a bezpečnostných podmienok.
+          úložisko, Stripe na platby, Brevo na doručovanie e-mailov, OpenAI na voliteľné AI návrhy a
+          Google Analytics cez Firebase na meranie návštevnosti po udelení súhlasu. Dodávatelia
+          dostávajú iba údaje potrebné na konkrétnu službu a spracúvajú ich podľa svojich zmluvných a
+          bezpečnostných podmienok.
         </p>
       </section>
       <section>
@@ -74,9 +75,10 @@ export default function PrivacyPage() {
       <section>
         <h2>8. Cookies a bezpečnosť</h2>
         <p>
-          Používame nevyhnutné cookies pre prihlásenie a bezpečnú reláciu. Reklamné cookies v MVP
-          nepoužívame. Prenos je šifrovaný a prístup k údajom obmedzujú serverové kontroly a databázové
-          pravidlá podľa vlastníctva projektu.
+          Používame nevyhnutné cookies pre prihlásenie a bezpečnú reláciu. Google Analytics cez
+          Firebase sa načíta až po dobrovoľnom súhlase a jeho nastavenie môžete kedykoľvek zmeniť cez
+          tlačidlo „Nastavenia cookies“. Reklamné cookies nepoužívame. Prenos je šifrovaný a prístup k
+          údajom obmedzujú serverové kontroly a databázové pravidlá podľa vlastníctva projektu.
         </p>
       </section>
     </LegalPage>

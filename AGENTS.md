@@ -25,7 +25,7 @@ Before changing code, read these sources in order:
 - In production mode every mutation must validate input, authenticate the user and rely on RLS or an ownership-checked RPC.
 - Draft and published content are separate. Public pages must never read `site_drafts` directly.
 - Keep `campaign_ends_at` and order `valid_until` nullable until campaign extension rules are approved.
-- Prices are Basic 49.99 EUR and Plus 89.99 EUR, displayed as prices including VAT.
+- Prices are Basic 49.99 EUR and Plus 89.99 EUR, displayed as final one-time prices.
 - Supported social networks in MVP are Facebook and Instagram.
 - Do not expose `SUPABASE_SERVICE_ROLE_KEY`, Stripe secrets, e-mail secrets or AI keys to Client Components.
 - After production starts, database migrations are append-only. Add a new numbered migration instead of rewriting applied migrations.

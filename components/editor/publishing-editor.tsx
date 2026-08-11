@@ -283,7 +283,7 @@ export function PublishingEditor({
             {item.id === "plus" && <span className="recommended-badge"><Sparkles size={13} /> Odporúčame</span>}
             <span className="pricing-radio">{plan === item.id && <Check size={14} />}</span>
             <span className="pricing-title"><strong>{item.name}</strong><small>{item.note}</small></span>
-            <strong className="pricing-price">{item.price}<small>s DPH</small></strong>
+            <strong className="pricing-price">{item.price}<small>konečná cena</small></strong>
             <span className="pricing-features">{item.features.map((feature) => <span key={feature}><Check size={15} />{feature}</span>)}</span>
           </button>
         ))}
@@ -302,7 +302,7 @@ export function PublishingEditor({
             <h2 id="billing-title">{selected.name}</h2>
             <p>{selected.note}. Jednorazová platba za jedno volebné obdobie.</p>
           </div>
-          <div className="order-total"><small>Celkom s DPH</small><strong>{selected.price}</strong></div>
+          <div className="order-total"><small>Celkom</small><strong>{selected.price}</strong></div>
 
           <div className="checkout-form__fields">
             <label className="field">
