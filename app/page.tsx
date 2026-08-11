@@ -6,6 +6,7 @@ import mobilePreviewImage from "../landing-page/assets/martin-kandidat-mobil.png
 import "../landing-page/assets/styles.css";
 import "../landing-page/assets/refined.css";
 import "../landing-page/assets/pricing.css";
+import "../landing-page/assets/mobile-navigation.css";
 import { getDaysUntilElection } from "../lib/marketing/election-countdown";
 
 const canonicalUrl = "https://webprekandidata.sk/";

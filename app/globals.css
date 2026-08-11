@@ -1724,6 +1724,10 @@ svg { flex: 0 0 auto; }
   z-index: 90;
 }
 .cookie-settings-button:hover { border-color: var(--navy-700); color: var(--navy-800); }
+.cookie-settings-button.cookie-settings-button--app {
+  left: auto;
+  right: 16px;
+}
 .footer-cookie-settings {
   background: transparent;
   border: 0;
@@ -1745,4 +1749,5 @@ svg { flex: 0 0 auto; }
   .cookie-consent__actions { display: grid; grid-template-columns: 1fr; }
   .cookie-consent__actions .button { width: 100%; }
   .cookie-settings-button { bottom: 12px; left: 12px; }
+  .cookie-settings-button.cookie-settings-button--app { left: auto; right: 12px; }
 }

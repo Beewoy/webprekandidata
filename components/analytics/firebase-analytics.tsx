@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { disableFirebaseAnalytics, enableFirebaseAnalytics } from "@/lib/analytics/firebase";
 
 const CONSENT_STORAGE_KEY = "webprekandidata_analytics_consent";
@@ -10,6 +11,7 @@ const GA_COOKIE_NAMES = ["_ga", "_ga_0LPPHZCVXB"];
 type ConsentState = "loading" | "unset" | "accepted" | "declined";
 
 export function FirebaseAnalytics() {
+  const pathname = usePathname();
   const [consent, setConsent] = useState<ConsentState>("loading");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [hasExternalSettingsButton, setHasExternalSettingsButton] = useState(false);
@@ -69,7 +71,11 @@ export function FirebaseAnalytics() {
     if (hasExternalSettingsButton) return null;
 
     return (
-      <button className="cookie-settings-button" type="button" onClick={() => setIsSettingsOpen(true)}>
+      <button
+        className={`cookie-settings-button${pathname.startsWith("/app") ? " cookie-settings-button--app" : ""}`}
+        type="button"
+        onClick={() => setIsSettingsOpen(true)}
+      >
         Nastavenia cookies
       </button>
     );
