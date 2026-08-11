@@ -1,0 +1,247 @@
+"use client";
+
+import type { CSSProperties } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, ArrowRight, CalendarDays, ChevronLeft, ChevronRight, ExternalLink, Mail, Monitor, Phone, RefreshCw, Smartphone, X } from "lucide-react";
+import { PageHeading } from "@/components/ui/page-heading";
+import { ContactForm } from "@/components/public-site/contact-form";
+import { cn } from "@/lib/cn";
+import type { SitePreviewData } from "@/lib/site-preview-model";
+import { getReadableCampaignTextColor } from "@/lib/site-theme";
+import { getCivicIconOption } from "@/lib/civic-icons";
+
+type SitePreviewProps = {
+  data: SitePreviewData;
+  publicMode?: boolean;
+  siteId: string;
+};
+
+export function SitePreview({ data, publicMode = false, siteId }: SitePreviewProps) {
+  const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
+  const [activeGalleryIndex, setActiveGalleryIndex] = useState<number | null>(null);
+  const [activePostId, setActivePostId] = useState<string | null>(null);
+  const articleTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const [isRefreshing, startRefresh] = useTransition();
+  const router = useRouter();
+  const campaignStyle = {
+    "--campaign-color": data.theme.color,
+    "--campaign-on-color": getReadableCampaignTextColor(data.theme.color),
+  } as CSSProperties;
+  const activeGalleryItem = activeGalleryIndex === null ? null : data.gallery.items[activeGalleryIndex];
+  const activePost = activePostId ? data.news.items.find((post) => post.id === activePostId) ?? null : null;
+
+  useEffect(() => {
+    if (activeGalleryIndex === null) return;
+    function closeOnEscape(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") setActiveGalleryIndex(null);
+      if (event.key === "ArrowLeft") setActiveGalleryIndex((current) => current === null ? null : (current - 1 + data.gallery.items.length) % data.gallery.items.length);
+      if (event.key === "ArrowRight") setActiveGalleryIndex((current) => current === null ? null : (current + 1) % data.gallery.items.length);
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [activeGalleryIndex, data.gallery.items.length]);
+
+  useEffect(() => {
+    if (!activePost) return;
+    const previousOverflow = document.body.style.overflow;
+    const trigger = articleTriggerRef.current;
+    document.body.style.overflow = "hidden";
+    function closeOnEscape(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") setActivePostId(null);
+      if (event.key === "Tab") {
+        event.preventDefault();
+        document.querySelector<HTMLElement>(".article-modal__close")?.focus();
+      }
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+      trigger?.focus();
+    };
+  }, [activePost]);
+
+  return (
+    <div className={publicMode ? "public-site-shell" : "page-container page-container--wide"}>
+      {publicMode && <a className="public-site-skip-link" href="#hlavny-obsah">Preskočiť na hlavný obsah</a>}
+      {!publicMode && <PageHeading
+        eyebrow="Kontrola webu"
+        title="Náhľad"
+        description="Náhľad používa aktuálne uložené texty z vášho konceptu."
+        action={(
+          <div className="preview-toolbar">
+            <div className="preview-actions" role="group" aria-label="Veľkosť náhľadu">
+              <button aria-pressed={device === "desktop"} className={cn("device-button", device === "desktop" && "device-button--active")} onClick={() => setDevice("desktop")} type="button"><Monitor size={17} /> Počítač</button>
+              <button aria-pressed={device === "mobile"} className={cn("device-button", device === "mobile" && "device-button--active")} onClick={() => setDevice("mobile")} type="button"><Smartphone size={17} /> Mobil</button>
+            </div>
+            <button className="button button--secondary button--small" disabled={isRefreshing} onClick={() => startRefresh(() => router.refresh())} type="button"><RefreshCw className={isRefreshing ? "spin" : ""} size={15} /> {isRefreshing ? "Obnovujem…" : "Obnoviť"}</button>
+          </div>
+        )}
+      />}
+
+      <div className={cn("full-preview-stage", publicMode && "full-preview-stage--public")}>
+        <div className={cn("full-preview-frame", publicMode && "full-preview-frame--public", !publicMode && device === "mobile" && "full-preview-frame--mobile")}>
+          {!publicMode && <div className="full-preview-frame__bar"><i /><i /><i /><span>{data.address}</span><ExternalLink aria-hidden="true" size={15} /></div>}
+          <div className="full-preview-viewport">
+            <article className={cn("candidate-preview", `candidate-preview--${data.theme.template}`, publicMode && "candidate-preview--public", !publicMode && device === "mobile" && "candidate-preview--mobile")} id={publicMode ? "hlavny-obsah" : undefined} style={campaignStyle}>
+              <header className="candidate-preview__header">
+                <a className="candidate-preview__brand" href="#uvod">
+                  <span
+                    aria-label={data.media.logo?.altText}
+                    className={data.media.logo ? "candidate-preview__logo candidate-preview__logo--image" : "candidate-preview__logo"}
+                    role={data.media.logo ? "img" : undefined}
+                    style={data.media.logo ? { backgroundImage: `url("${data.media.logo.url}")` } : undefined}
+                  >{data.media.logo ? null : data.candidate.initials}</span>
+                  <span><strong>{data.candidate.name}</strong><small>{data.candidate.position}{data.candidate.city ? ` · ${data.candidate.city}` : ""}</small></span>
+                </a>
+                <nav aria-label={publicMode ? "Navigácia webu kandidáta" : "Navigácia náhľadu"}>
+                  <a href="#o-mne">O mne</a><a href="#preco">Prečo kandidujem</a><a href="#program">Program</a>{data.news.items.length > 0 && <a href="#aktuality">Aktuality</a>}{data.gallery.items.length > 0 && <a href="#galeria">Galéria</a>}<a href="#kontakt">Kontakt</a>
+                </nav>
+              </header>
+
+              <section className="candidate-preview__hero" id="uvod">
+                <div className="candidate-preview__hero-copy">
+                  <p className="candidate-preview__eyebrow">{data.candidate.position}</p>
+                  <h1>
+                    {data.hero.headlineBefore}
+                    {data.hero.highlight && <em>{data.hero.highlight}</em>}
+                    {data.hero.headlineAfter}
+                  </h1>
+                  <p className="candidate-preview__lead">{data.hero.subheadline}</p>
+                  <div className="candidate-preview__hero-actions"><a href="#program">Môj program</a><a href="#kontakt">Napíšte mi</a></div>
+                </div>
+                <div
+                  aria-label={data.media.hero ? undefined : `Miesto pre portrét: ${data.candidate.name}`}
+                  className={data.media.hero ? "candidate-preview__portrait candidate-preview__portrait--image" : "candidate-preview__portrait"}
+                  role={data.media.hero ? undefined : "img"}
+                >
+                  {data.media.hero
+                    ? <Image alt={data.media.hero.altText} fill sizes="(max-width: 480px) 220px, 320px" src={data.media.hero.url} unoptimized />
+                    : <span>{data.candidate.initials}</span>}
+                </div>
+              </section>
+
+              <section className="candidate-preview__section candidate-preview__about" id="o-mne">
+                <div className="candidate-preview__section-heading"><p>{data.about.eyebrow}</p><h2>{data.about.headline}</h2></div>
+                <div className={data.media.about ? "candidate-preview__about-grid candidate-preview__about-grid--with-image" : "candidate-preview__about-grid"}>
+                  {data.media.about && <div aria-label={data.media.about.altText} className="candidate-preview__about-photo" role="img" style={{ backgroundImage: `url("${data.media.about.url}")` }} />}
+                  <div className="candidate-preview__rich-text" dangerouslySetInnerHTML={{ __html: data.about.bodyHtml }} />
+                  <div className="candidate-preview__values">
+                    {data.about.values.map((item, index) => {
+                      const Icon = getCivicIconOption(item.icon).Icon;
+                      return <article key={`${item.title}-${index}`}><span className="candidate-preview__item-icon"><Icon aria-hidden="true" size={17} /></span><div><h3>{item.title}</h3><p>{item.text}</p></div></article>;
+                    })}
+                  </div>
+                </div>
+                {data.about.signature && <p className="candidate-preview__signature">{data.about.signature}</p>}
+              </section>
+
+              <section className="candidate-preview__section candidate-preview__section--tinted" id="preco">
+                <div className="candidate-preview__section-heading candidate-preview__section-heading--center"><p>{data.reasons.eyebrow}</p><h2>{data.reasons.headline}</h2><span>{data.reasons.intro}</span></div>
+                <div className="candidate-preview__card-grid">
+                  {data.reasons.items.map((item, index) => {
+                    const Icon = getCivicIconOption(item.icon).Icon;
+                    return <article key={`${item.title}-${index}`}><span className="candidate-preview__item-icon"><Icon aria-hidden="true" size={20} /></span><h3>{item.title}</h3><p>{item.text}</p></article>;
+                  })}
+                </div>
+              </section>
+
+              <section className="candidate-preview__section" id="program">
+                <div className="candidate-preview__section-heading"><p>{data.program.eyebrow}</p><h2>{data.program.headline}</h2><span>{data.program.intro}</span></div>
+                <div className="candidate-preview__program-list">
+                  {data.program.items.map((item, index) => (
+                    <article key={`${item.title}-${index}`}>
+                      {(() => { const Icon = getCivicIconOption(item.icon).Icon; return <span className="candidate-preview__item-icon candidate-preview__program-icon"><Icon aria-hidden="true" size={19} /></span>; })()}
+                      <div><h3>{item.title}</h3><p>{item.text}</p>{item.detailHtml && <div className="candidate-preview__rich-text candidate-preview__program-detail" dangerouslySetInnerHTML={{ __html: item.detailHtml }} />}</div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+
+              {data.news.items.length > 0 && (
+                <section className="candidate-preview__section candidate-preview__news" id="aktuality">
+                  <div className="candidate-preview__section-heading"><p>Aktuality</p><h2>Novinky z kampane</h2><span>Podujatia, stanoviská a dôležité informácie na jednom mieste.</span></div>
+                  <div className="candidate-preview__news-grid">
+                    {data.news.items.map((post) => (
+                      <article className="candidate-preview__news-card" key={post.id}>
+                        {post.cover && <Image alt={post.cover.altText} className="candidate-preview__news-cover" height={post.cover.height} src={post.cover.previewUrl} unoptimized width={post.cover.width} />}
+                        <div>
+                          <time dateTime={post.publishedAt}><CalendarDays aria-hidden="true" size={13} /> {new Intl.DateTimeFormat("sk-SK", { dateStyle: "long", timeZone: "Europe/Bratislava" }).format(new Date(post.publishedAt))}</time>
+                          <h3>{post.title}</h3>
+                          {post.excerpt && <p>{post.excerpt}</p>}
+                          <button onClick={(event) => { articleTriggerRef.current = event.currentTarget; setActivePostId(post.id); }} type="button">Čítať článok <ArrowRight aria-hidden="true" size={14} /></button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {data.gallery.items.length > 0 && (
+                <section className="candidate-preview__section candidate-preview__gallery" id="galeria">
+                  <div className="candidate-preview__section-heading"><p>Galéria</p><h2>Život kampane</h2><span>Stretnutia, podujatia a momenty z nášho mesta.</span></div>
+                  <div className="candidate-preview__gallery-grid">
+                    {data.gallery.items.map((item, index) => (
+                      <button aria-label={`Otvoriť fotografiu ${index + 1}${item.caption ? `: ${item.caption}` : ""}`} key={item.id} onClick={() => setActiveGalleryIndex(index)} type="button">
+                        <Image alt={item.altText} height={item.height} src={item.previewUrl} unoptimized width={item.width} />
+                        {item.caption && <span>{item.caption}</span>}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              <section className="candidate-preview__contact" id="kontakt">
+                <div><p className="candidate-preview__eyebrow">Kontakt</p><h2>Ozvite sa mi</h2><span>Máte otázku alebo podnet? Napíšte mi.</span></div>
+                <div className={`candidate-preview__contact-grid${data.contact.formEnabled ? "" : " candidate-preview__contact-grid--links-only"}`}>
+                  <div className="candidate-preview__contact-links">
+                    {data.contact.email && <a href={`mailto:${data.contact.email}`}><Mail size={18} /><span><small>E-mail</small>{data.contact.email}</span></a>}
+                    {data.contact.phone && <a href={`tel:${data.contact.phone.replace(/[^+\d]/g, "")}`}><Phone size={18} /><span><small>Telefón</small>{data.contact.phone}</span></a>}
+                    {data.contact.facebook && <a href={data.contact.facebook} rel="noreferrer" target="_blank">Facebook <ExternalLink size={14} /></a>}
+                    {data.contact.instagram && <a href={data.contact.instagram} rel="noreferrer" target="_blank">Instagram <ExternalLink size={14} /></a>}
+                  </div>
+                  {data.contact.formEnabled && <ContactForm preview={!publicMode} siteId={siteId} />}
+                </div>
+              </section>
+
+              <footer className="candidate-preview__footer"><strong>{data.candidate.name}</strong><span>{data.candidate.position} · {data.candidate.city}</span></footer>
+            </article>
+          </div>
+        </div>
+      </div>
+
+      {activePost && (
+        <div aria-label={`Článok: ${activePost.title}`} aria-modal="true" className="article-modal" onClick={() => setActivePostId(null)} role="dialog">
+          <article className="article-modal__dialog" onClick={(event) => event.stopPropagation()}>
+            <button aria-label="Zavrieť článok" autoFocus className="article-modal__close" onClick={() => setActivePostId(null)} type="button"><X size={21} /></button>
+            {activePost.cover && <Image alt={activePost.cover.altText} className="article-modal__cover" height={activePost.cover.height} src={activePost.cover.previewUrl} unoptimized width={activePost.cover.width} />}
+            <div className="article-modal__content">
+              <time dateTime={activePost.publishedAt}><CalendarDays aria-hidden="true" size={14} /> {new Intl.DateTimeFormat("sk-SK", { dateStyle: "long", timeZone: "Europe/Bratislava" }).format(new Date(activePost.publishedAt))}</time>
+              <h2>{activePost.title}</h2>
+              {activePost.excerpt && <p className="article-modal__lead">{activePost.excerpt}</p>}
+              <div className="candidate-preview__rich-text article-modal__body" dangerouslySetInnerHTML={{ __html: activePost.bodyHtml }} />
+            </div>
+          </article>
+        </div>
+      )}
+
+      {activeGalleryItem && activeGalleryIndex !== null && (
+        <div aria-label="Náhľad fotografie" aria-modal="true" className="gallery-lightbox" onClick={() => setActiveGalleryIndex(null)} role="dialog">
+          <div className="gallery-lightbox__dialog" onClick={(event) => event.stopPropagation()}>
+            <button aria-label="Zavrieť galériu" autoFocus className="gallery-lightbox__close" onClick={() => setActiveGalleryIndex(null)} type="button"><X size={22} /></button>
+            {data.gallery.items.length > 1 && <button aria-label="Predchádzajúca fotografia" className="gallery-lightbox__previous" onClick={() => setActiveGalleryIndex((activeGalleryIndex - 1 + data.gallery.items.length) % data.gallery.items.length)} type="button"><ChevronLeft size={25} /></button>}
+            <Image alt={activeGalleryItem.altText} height={activeGalleryItem.height} src={activeGalleryItem.previewUrl} unoptimized width={activeGalleryItem.width} />
+            {data.gallery.items.length > 1 && <button aria-label="Nasledujúca fotografia" className="gallery-lightbox__next" onClick={() => setActiveGalleryIndex((activeGalleryIndex + 1) % data.gallery.items.length)} type="button"><ChevronRight size={25} /></button>}
+            <div className="gallery-lightbox__caption"><span>{activeGalleryIndex + 1} / {data.gallery.items.length}</span>{activeGalleryItem.caption && <strong>{activeGalleryItem.caption}</strong>}</div>
+          </div>
+        </div>
+      )}
+
+      {!publicMode && <p className="preview-revision" aria-live="polite">Zobrazená verzia konceptu: {data.revision}. Zmeny sa načítajú po automatickom uložení a obnovení náhľadu.</p>}
+      {!publicMode && <div className="preview-footer"><Link className="button button--secondary" href={`/app/web/${siteId}/zakladne-udaje`}><ArrowLeft size={17} /> Upraviť obsah</Link><Link className="button button--primary" href={`/app/web/${siteId}/publikovanie`}>Pokračovať k zverejneniu <ExternalLink size={17} /></Link></div>}
+    </div>
+  );
+}
