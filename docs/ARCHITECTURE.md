@@ -206,7 +206,7 @@ Tým sa predíde napoly vytvorenému projektu.
 
 ## 7. Autosave a revízie
 
-Editor po zmene poľa počká približne 700 ms. Pri opustení poľa sa uloženie spustí skôr.
+Editor po zmene poľa počká približne 700 ms (autosave). Uloženie sa nespúšťa pri opustení poľa — iba po debounce zmene, okamžitých akciách (pridať/zmazať/presunúť položku) alebo pri téme po výbere.
 
 ```text
 zmena poľa
@@ -216,12 +216,13 @@ zmena poľa
   → kontrola relácie
   → RPC update_site_section(site_id, section, payload, expected_revision)
   → atómový update iba pri zhodnej revízii
+  → JSON výsledok `{ ok, revision, conflict? }` (bez RAISE pri konflikte)
   → nová revízia sa vráti klientovi
 ```
 
-Ak revízia nesedí, databáza vráti `revision_conflict` a v `DETAIL` aktuálnu revíziu konceptu. Server action konflikt zaznamená, nastaví krátky in-process cooldown pre `(userId, siteId)` (zdieľaný pre ukladanie sekcie aj témy), vráti `conflict` + `currentRevision` a UI vypne autosave až do obnovenia stránky. UI nesmie konflikt potichu prepísať.
+Ak revízia nesedí, RPC vráti `{ ok: false, conflict: true, revision }` a zapíše DB cooldown (transakcia sa commitne — výnimka by cooldown rollbackla). Server action konflikt zaznamená, nastaví krátky in-process cooldown pre `(userId, siteId)` (zdieľaný pre ukladanie sekcie aj témy), vráti `conflict` + `currentRevision` a UI vypne autosave až do obnovenia stránky. UI nesmie konflikt potichu prepísať.
 
-Incidentová analýza (2026-08-12): `docs/incidents/revision-conflict-burst-2026-08-12.md` — Service Health ukázal ~3,3 M Postgres ERROR logov/h pri ~231 API Gateway requestoch; chart počíta `postgres_logs`, nie HTTP. Migrácia `0020` dopĺňa aktuálnu revíziu do DETAIL; `0021` pridáva DB cooldown a potláča ERROR spam počas stormu.
+Incidentová analýza (2026-08-12): `docs/incidents/revision-conflict-burst-2026-08-12.md` — Service Health ukázal ~3,3 M Postgres ERROR logov/h pri ~231 API Gateway requestoch; chart počíta `postgres_logs`, nie HTTP. Migrácia `0020` dopĺňala DETAIL; `0021` cooldown + RAISE bola neúčinná (rollback); `0022` vracia JSON bez RAISE, aby cooldown prežil a ERROR spam ustal.
 
 Hlavné súbory:
 
@@ -231,7 +232,8 @@ Hlavné súbory:
 - `lib/draft-save-guard.ts`,
 - `supabase/migrations/0002_site_functions.sql`,
 - `supabase/migrations/0020_revision_conflict_detail.sql`,
-- `supabase/migrations/0021_draft_revision_cooldown.sql`.
+- `supabase/migrations/0021_draft_revision_cooldown.sql`,
+- `supabase/migrations/0022_revision_conflict_json_result.sql`.
 
 Opakované položky používajú v klientskom stave stabilné ID, podporujú pridanie, odstránenie a zmenu poradia úchytom, dotykom aj šípkami na klávesnici. Autosave serializuje autoritatívny klientsky stav, nie ešte neaktualizované DOM prvky: posiela aktuálny počet v `items_count` a položky ako ploché kľúče `item_{index}_title`, `item_{index}_text`, `item_{index}_icon` a pri programe aj `item_{index}_detail`. Načítanie konceptu zachová všetky reťazcové kľúče sekcie vrátane dynamických položiek. Databázová RPC vždy nahradí celý payload sekcie, takže odstránené položky nezostávajú v koncepte. Pri budúcom rozšírení o samostatné entity alebo zdieľané odkazy sa má úložisko migrovať na položky s perzistentným ID.
 

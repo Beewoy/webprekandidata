@@ -244,7 +244,7 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
         </div>
       )}
 
-      <form ref={formRef} className="editor-card" onChange={() => scheduleSave()} onBlur={() => { if (revisionConflictRef.current) return; if (timer.current) clearTimeout(timer.current); timer.current = setTimeout(() => void flushChanges(), 120); }} onSubmit={(event) => event.preventDefault()}>
+      <form ref={formRef} className="editor-card" onChange={() => scheduleSave()} onSubmit={(event) => event.preventDefault()}>
         <div className="editor-card__intro">
           <span className="section-symbol"><section.icon size={21} /></span>
           <div><h2>{section.label}</h2><p>Text môžete kedykoľvek upraviť. Na verejný web sa prenesie až po jeho zverejnení.</p></div>

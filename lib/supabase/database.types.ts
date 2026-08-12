@@ -913,7 +913,7 @@ export type Database = {
           p_section_key: string
           p_site_id: string
         }
-        Returns: number
+        Returns: Json
       }
       verify_email_token: { Args: { p_token_hash: string }; Returns: boolean }
     }

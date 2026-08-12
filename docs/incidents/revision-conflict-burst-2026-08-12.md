@@ -53,10 +53,11 @@ Lokálne `.env.local` ukazuje na Docker Supabase; produkčný Management API tok
 
 ## Mitigácie v kóde
 
-- App: in-process cooldown 5 s po konflikte (`lib/draft-save-guard.ts`), UI vypne autosave do reloadu.
-- Migrácia `0020`: `DETAIL` s aktuálnou revíziou.
-- Migrácia `0021`: DB cooldown tabuľka `draft_revision_cooldowns`; počas cooldownu ďalšie konflikty stále zlyhajú klientovi, ale **nezahlcujú** `postgres_logs` (`log_min_messages = fatal` v session).
+- App: in-process cooldown 5 s po konflikte (`lib/draft-save-guard.ts`), UI vypne autosave do reloadu; blur-save na sekciách zrušený (iba debounce ~700 ms).
+- Migrácia `0020`: `DETAIL` s aktuálnou revíziou (neskôr nahradené JSON výsledkom).
+- Migrácia `0021`: DB cooldown tabuľka — **neúčinná voči spam logov**, lebo `RAISE EXCEPTION` rollbackol insert cooldownu.
+- Migrácia `0022`: `update_site_section` vracia JSON `{ ok, conflict, revision }` **bez RAISE** pri konflikte, takže cooldown sa commitne a `postgres_logs` sa nezahlcujú.
 
 ## Záver
 
-Optimistic locking funguje; anomália je **kontinuálny storm ERROR logov** (~tisíce/s), nie „3 M návštevníkov“. Success rate 0 % v overviewe je skreslený Postgres ERROR spamom. Po nasadení `0021` by mal červený Postgres chart pri opakovanom konflikte klesnúť na jednotky ERROR/s namiesto státisícov.
+Optimistic locking funguje; anomália je **kontinuálny storm ERROR logov** (~tisíce/s), nie „3 M návštevníkov“. Success rate 0 % v overviewe je skreslený Postgres ERROR spamom. Po nasadení `0022` by mal červený Postgres chart pri konfliktoch klesnúť na nulu ERROR z tejto RPC (konflikt je úspešná HTTP odpoveď s `ok: false`).

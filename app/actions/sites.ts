@@ -23,8 +23,8 @@ import {
   draftConflictKey,
   isDraftSaveCoolingDown,
   markDraftRevisionConflict,
-  parseRevisionConflictDetail,
 } from "@/lib/draft-save-guard";
+import { z } from "zod";
 
 function slugify(value: string) {
   return value
@@ -68,6 +68,13 @@ const CONFLICT_MESSAGE = "Obsah bol medzičasom upravený v inom okne. Obnovte s
 const THEME_CONFLICT_MESSAGE = "Vzhľad bol medzičasom upravený v inom okne. Obnovte stránku.";
 const COOLDOWN_MESSAGE = "Ukladanie je dočasne pozastavené po konflikte revízie. Obnovte stránku.";
 
+const updateSiteSectionResultSchema = z.object({
+  ok: z.boolean(),
+  conflict: z.boolean().optional(),
+  cooldown: z.boolean().optional(),
+  revision: z.coerce.number().int().nonnegative(),
+});
+
 async function readCurrentDraftRevision(
   supabase: Awaited<ReturnType<typeof createClient>>,
   siteId: string,
@@ -109,12 +116,13 @@ export async function saveSectionAction(input: unknown): Promise<SaveSectionResu
   });
 
   if (error) {
+    // Legacy path while older function builds still raise 40001.
     const conflict = error.code === "40001" || error.message.includes("revision_conflict");
-    let currentRevision = conflict ? parseRevisionConflictDetail(error.details) : undefined;
-    if (conflict && currentRevision == null) {
+    let currentRevision: number | undefined;
+    if (conflict) {
       currentRevision = await readCurrentDraftRevision(supabase, parsed.data.siteId);
+      markDraftRevisionConflict(guardKey);
     }
-    if (conflict) markDraftRevisionConflict(guardKey);
 
     console.error("update_site_section failed", {
       code: error.code,
@@ -137,9 +145,50 @@ export async function saveSectionAction(input: unknown): Promise<SaveSectionResu
     };
   }
 
+  // Legacy bigint return from pre-0022 function builds.
+  if (typeof data === "number" && Number.isSafeInteger(data) && data >= 1) {
+    revalidatePath(`/app/web/${parsed.data.siteId}`, "layout");
+    return { ok: true, revision: data };
+  }
+
+  const result = updateSiteSectionResultSchema.safeParse(data);
+  if (!result.success) {
+    console.error("update_site_section returned unexpected payload", {
+      data,
+      siteId: parsed.data.siteId,
+      sectionSlug: parsed.data.sectionSlug,
+      revision: parsed.data.revision,
+      userId: user.id,
+    });
+    return { ok: false, message: "Zmeny sa nepodarilo uložiť. Skúste to znova." };
+  }
+
+  if (!result.data.ok || result.data.conflict) {
+    const currentRevision = result.data.revision > 0 ? result.data.revision : undefined;
+    markDraftRevisionConflict(guardKey);
+    console.warn("update_site_section revision_conflict", {
+      siteId: parsed.data.siteId,
+      sectionSlug: parsed.data.sectionSlug,
+      revision: parsed.data.revision,
+      currentRevision,
+      cooldown: result.data.cooldown === true,
+      userId: user.id,
+    });
+    return {
+      ok: false,
+      conflict: true,
+      currentRevision,
+      message: result.data.cooldown ? COOLDOWN_MESSAGE : CONFLICT_MESSAGE,
+    };
+  }
+
+  if (result.data.revision < 1) {
+    return { ok: false, message: "Zmeny sa nepodarilo uložiť. Skúste to znova." };
+  }
+
   revalidatePath(`/app/web/${parsed.data.siteId}`, "layout");
 
-  return { ok: true, revision: Number(data) };
+  return { ok: true, revision: result.data.revision };
 }
 
 export async function saveThemeAction(input: unknown): Promise<SaveThemeResult> {
