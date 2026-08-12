@@ -61,7 +61,7 @@ export async function getSites(): Promise<SiteSummary[]> {
     .is("deleted_at", null)
     .order("updated_at", { ascending: false });
 
-  if (error) throw new Error("Projekty sa nepodarilo načítať.");
+  if (error) throw new Error("Projekty sa nepodarilo načítať.", { cause: error });
   return (data ?? []).map((site) => ({
     id: site.id,
     internalName: site.internal_name,
@@ -161,7 +161,7 @@ export async function getSiteMedia(siteId: string): Promise<SiteMediaAsset[] | n
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
-  if (error) throw new Error("Obrázky sa nepodarilo načítať.");
+  if (error) throw new Error("Obrázky sa nepodarilo načítať.", { cause: error });
 
   const latestByKind = (data ?? []).filter((asset) => isMediaKind(asset.kind)).filter((asset, index, assets) => (
     assets.findIndex((candidate) => candidate.kind === asset.kind) === index
@@ -203,7 +203,7 @@ export async function getSiteGallery(siteId: string): Promise<SiteGalleryData | 
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
 
-  if (error) throw new Error("Galériu sa nepodarilo načítať.");
+  if (error) throw new Error("Galériu sa nepodarilo načítať.", { cause: error });
   const activeAssets = data ?? [];
   const galleryRows = activeAssets.filter((asset) => asset.kind === "gallery");
   const assets = await Promise.all(galleryRows.map(async (asset, index) => {

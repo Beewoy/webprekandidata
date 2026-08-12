@@ -14,12 +14,13 @@ import { getReadableCampaignTextColor } from "@/lib/site-theme";
 import { getCivicIconOption } from "@/lib/civic-icons";
 
 type SitePreviewProps = {
+  contactFormPreview?: boolean;
   data: SitePreviewData;
   publicMode?: boolean;
   siteId: string;
 };
 
-export function SitePreview({ data, publicMode = false, siteId }: SitePreviewProps) {
+export function SitePreview({ contactFormPreview = false, data, publicMode = false, siteId }: SitePreviewProps) {
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [activeGalleryIndex, setActiveGalleryIndex] = useState<number | null>(null);
   const [activePostId, setActivePostId] = useState<string | null>(null);
@@ -233,7 +234,7 @@ export function SitePreview({ data, publicMode = false, siteId }: SitePreviewPro
                       {data.contact.facebook && <a href={data.contact.facebook} rel="noreferrer" target="_blank">Facebook <ExternalLink size={16} /></a>}
                       {data.contact.instagram && <a href={data.contact.instagram} rel="noreferrer" target="_blank">Instagram <ExternalLink size={16} /></a>}
                     </div>
-                    {data.contact.formEnabled && <ContactForm preview={!publicMode} siteId={siteId} />}
+                    {data.contact.formEnabled && <ContactForm preview={!publicMode || contactFormPreview} siteId={siteId} />}
                   </div>
                 </div>
               </section>

@@ -27,8 +27,13 @@ export async function getEmailVerificationStatus(): Promise<EmailVerificationSta
     .eq("id", user.id)
     .single();
 
-  if (error || !data || !user.email) {
-    throw new Error("Stav overenia e-mailu sa nepodarilo načítať.");
+  if (error) {
+    throw new Error("Stav overenia e-mailu sa nepodarilo načítať.", { cause: error });
+  }
+  if (!data || !user.email) {
+    throw new Error("Stav overenia e-mailu sa nepodarilo načítať.", {
+      cause: new Error(!data ? "Profil používateľa neexistuje." : "Prihlásený používateľ nemá e-mail."),
+    });
   }
 
   return {

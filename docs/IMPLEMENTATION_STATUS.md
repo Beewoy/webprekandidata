@@ -1,6 +1,6 @@
 # Stav implementácie
 
-Aktualizované: 11. august 2026
+Aktualizované: 12. august 2026
 
 Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Produktový plán môže obsahovať aj budúci rozsah.
 
@@ -25,6 +25,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - samostatný SEO audit s odporúčaniami pre obsah, meranie a ostré nasadenie,
 - landing je integrovaný do Next.js rootu `/`, má generovaný Open Graph obrázok 1200 × 630 px, favicon, `robots.txt`, sitemapu a funkčné odkazy na právne routy,
 - hero na root landing page zobrazuje kompaktný odpočet celých kalendárnych dní do volieb 24. októbra 2026, obnovovaný cez hodinové ISR; v deň volieb použije neutrálny text a po termíne sa skryje,
+- root landing page obsahuje responzívnu inline MP4 ukážku administrácie s posterom, natívnymi ovládacími prvkami, prístupným zväčšením vo focus-trap modálnom dialógu a priamym CTA na hotový ukážkový web cez verejnú cestu `/ukazka`,
 - päť samostatných indexovateľných kampanových stránok pre starostu, primátora, poslanca, komunálne voľby 2026 a spoločnú kandidatúru na predsedu kraja alebo poslanca VÚC; stránky zdieľajú responzívny marketingový komponent, ceny, interné prepojenia, metadata a JSON-LD,
 - sezónne stránky uvádzajú oficiálny termín komunálnych a krajských volieb 24. októbra 2026 a prístupný živý odpočet s bezpečným stavom po volebnom dni,
 - právne routy sú implementované ako pracovné znenie; obchodné podmienky pokrývajú reálny bezplatný náhľad, balíky, Stripe platbu, publikovanie, vlastnú doménu, AI a spotrebiteľské práva, samostatný reklamačný poriadok upravuje oznámenie vady, lehoty, spôsoby vybavenia a ARS, pričom dokumenty zostávajú `noindex`, kým právnik nepotvrdí obsah a produkcia nenastaví `LEGAL_DOCUMENTS_APPROVED=true`.
@@ -42,6 +43,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - verejný model aktualít bez samostatných URL: karty v náhľade otvárajú detail v modálnej vrstve bez zmeny adresy,
 - Plus AI návrh článku z podkladov kandidáta s kvótou 20 návrhov na projekt; návrh sa iba vloží do editora a nikdy sa automaticky neuloží ani nezverejní,
 - výber z troch responzívnych celostránkových šablón s prístupnými stavmi a živým náhľadom: občiansko-editoriálny Horizont, dynamický Impulz a reprezentatívna Dôvera,
+- samostatná ukážková cesta `/app/web/demo` a jej verejný alias `/ukazka` prezentujú vyplnený kandidátsky web v šablóne Horizont vrátane hlavného portrétu kandidáta, profilového loga, fotografie v sekcii O mne, aktualít, trojfotkovej galérie a neaktívneho náhľadu kontaktného formulára aj pri zapnutom produkčnom dátovom režime,
 - verejné šablóny používajú spoločný 1200 px obsahový kontajner, verejnú typografickú mierku, responzívne menu a lokálne načítanú serifovú display typografiu pre Dôveru,
 - načítanie a automatické ukladanie vybranej šablóny aj farby do `site_drafts.theme` s ochranou revízie,
 - desktopový a mobilný náhľad,
@@ -209,6 +211,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - Supabase Auth Site URL je `https://webprekandidata.sk`, produkčné callbacky sú povolené a limit Auth e-mailov je 10 za hodinu,
 - bezpečnostné HTTP hlavičky vrátane CSP, frame protection, nosniff, Referrer Policy a HSTS sú nakonfigurované,
 - Sentry SDK je zapojené pre client, server aj edge runtime bez odosielania predvolených PII; začne odosielať až po nastavení DSN,
+- globálna chybová obrazovka obnovuje celú stránku a pri dostupnom Next.js digest zobrazí bezpečný referenčný kód; Sentry záznam zachová digest, cestu a pôvodnú príčinu zlyhaného načítania dashboardu,
 - Firebase Analytics je zapojené pre celý web cez GA4 stream `G-0LPPHZCVXB`; SDK sa načíta až po dobrovoľnom súhlase a návštevník môže uloženú voľbu kedykoľvek zmeniť cez nastavenia cookies v pätičke landing page alebo cez dostupné náhradné tlačidlo na ostatných routach,
 - denný Vercel Cron volá autorizovaný retenčný endpoint a maže expirované kontaktné a AI záznamy cez service-role RPC,
 - checkout sa fail-closed nezapne bez live Stripe secretu, webhook secretu, kompletných údajov predávajúceho a schválených právnych dokumentov.

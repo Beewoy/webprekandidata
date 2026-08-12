@@ -47,6 +47,7 @@ app/
   actions/                serverové mutácie a autorizácia
   admin/                  interný admin prevádzkovateľa (role=admin)
   app/                    chránená aplikácia kandidáta
+  ukazka/                 interný cieľ verejnej ukážky šablóny Horizont
   auth/callback/          výmena Supabase auth kódu za reláciu
 components/
   marketing/              zdieľaný kampanový web, odpočet a izolované štýly
@@ -68,6 +69,8 @@ tests/                    jednotkové testy
 ```
 
 Root `/` sa staticky generuje zo zdrojového dokumentu `landing-page/index.html`, ale metadata, Open Graph obrázok, robots a sitemap používa Next.js Metadata API. `/app` a `/admin` zostávajú samostatné chránené stromy. Platformové `www` sa v `proxy.ts` presmeruje 308 na apex; custom hostname sa naďalej prepisuje iba na publikovaný snapshot.
+
+Výnimkou z autentifikácie stromu `/app` je verejná ukážka `/app/web/demo`. `proxy.ts` ju na platformovom hoste interne prepisuje na noindex cestu `/ukazka`, takže odkaz z prihlasovacej stránky funguje bez účtu a nedotýka sa produkčných konceptov ani publikovaných snapshotov.
 
 Päť kampanových SEO ciest je implementovaných ako explicitné statické segmenty, ktoré zdieľajú serverový komponent a dátovú konfiguráciu v `lib/marketing/campaign-pages.ts`. Každá cesta má vlastný obsah, canonical, Open Graph metadata a JSON-LD zhodné s viditeľným FAQ. Explicitné segmenty majú pred dynamickým `[slug]` prednosť, preto migrácia `0016_reserve_marketing_slugs.sql` pridáva všetky marketingové a chýbajúce systémové cesty do rezervovaného zoznamu `create_candidate_site`. Sitemap, robots a interné odkazy používajú spoločný zoznam `MARKETING_ROUTES`.
 

@@ -7,6 +7,8 @@ import "../landing-page/assets/styles.css";
 import "../landing-page/assets/refined.css";
 import "../landing-page/assets/pricing.css";
 import "../landing-page/assets/mobile-navigation.css";
+import "../landing-page/assets/video-demo.css";
+import { LandingVideoDialog } from "../components/marketing/landing-video-dialog";
 import { getDaysUntilElection } from "../lib/marketing/election-countdown";
 
 const canonicalUrl = "https://webprekandidata.sk/";
@@ -110,6 +112,7 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: structuredData }}
       />
       <div dangerouslySetInnerHTML={{ __html: body }} />
+      <LandingVideoDialog />
     </>
   );
 }

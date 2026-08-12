@@ -132,10 +132,6 @@
     width: 100%;
   }
 
-  .hero-actions .text-link {
-    display: none;
-  }
-
   .micro-trust {
     align-items: stretch;
     gap: 10px;
