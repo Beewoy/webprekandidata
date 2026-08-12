@@ -25,20 +25,22 @@ export default async function AdminOrdersPage() {
         <table className="admin-table">
           <thead>
             <tr>
+              <th scope="col">Číslo</th>
               <th scope="col">Vytvorené</th>
               <th scope="col">Web</th>
               <th scope="col">Stav</th>
               <th scope="col">Balík</th>
               <th scope="col">Suma</th>
-              <th scope="col">Stripe</th>
+              <th scope="col">Stripe / Doklad</th>
               <th scope="col">Paid / Fulfilled</th>
             </tr>
           </thead>
           <tbody>
             {orders.length === 0 ? (
-              <tr><td colSpan={7}>Zatiaľ nie sú žiadne objednávky.</td></tr>
+              <tr><td colSpan={8}>Zatiaľ nie sú žiadne objednávky.</td></tr>
             ) : orders.map((order) => (
               <tr key={order.id}>
+                <td><code>{order.orderNumber}</code></td>
                 <td>{formatDateTime(order.createdAt)}</td>
                 <td>
                   <SiteLink siteId={order.siteId}>{order.siteName || order.siteSlug || order.siteId.slice(0, 8)}</SiteLink>
@@ -49,6 +51,11 @@ export default async function AdminOrdersPage() {
                 <td>
                   <div className="admin-muted">{order.stripeCheckoutSessionId ?? "—"}</div>
                   <div className="admin-muted">{order.stripeCustomerId ?? ""}</div>
+                  {order.invoiceUrl ? (
+                    <div>
+                      <a href={order.invoiceUrl} target="_blank" rel="noopener noreferrer">Doklad</a>
+                    </div>
+                  ) : null}
                 </td>
                 <td>
                   <div>{formatDateTime(order.paidAt)}</div>

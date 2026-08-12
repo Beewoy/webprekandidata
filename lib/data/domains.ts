@@ -7,7 +7,8 @@ import {
   type DomainStatus,
 } from "@/lib/domains/platform";
 import { ensureDnsInstructions, type DnsRecordInstruction } from "@/lib/domains/dns-instructions";
-import { getVercelProjectDomain, snapshotToMetadata, snapshotToSslMetadata } from "@/lib/domains/vercel";
+import { syncDomainProviderStateWithAdmin } from "@/lib/domains/provider-sync";
+import { getVercelProjectDomain } from "@/lib/domains/vercel";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/database.types";
 
@@ -92,14 +93,13 @@ async function healCustomDomainDns(record: SiteDomainRecord): Promise<SiteDomain
   try {
     const snapshot = await getVercelProjectDomain(record.hostname);
     const dns = ensureDnsInstructions(record.hostname, snapshot.dns);
+    // Heal only refreshes DNS metadata; never promote to active without verify flow.
     const nextStatus: DomainStatus = record.status === "active" ? "active" : "verifying";
-    const supabase = await createClient();
-    await supabase.rpc("sync_domain_provider_state", {
-      p_domain_id: record.id,
-      p_status: nextStatus,
-      p_verification_metadata: snapshotToMetadata({ ...snapshot, dns }) as Json,
-      p_ssl_metadata: snapshotToSslMetadata(snapshot) as Json,
-      p_make_primary: false,
+    await syncDomainProviderStateWithAdmin({
+      domainId: record.id,
+      status: nextStatus,
+      snapshot: { ...snapshot, dns },
+      makePrimaryWhenActive: false,
     });
     return {
       ...record,

@@ -4,6 +4,10 @@ import { redirect } from "next/navigation";
 import { getEmailVerificationStatus } from "@/lib/data/account";
 import { issueAndSendVerificationEmail, VerificationDeliveryError } from "@/lib/email/verification";
 import { getAppUrl, isSupabaseConfigured } from "@/lib/env";
+import {
+  authRateLimitMessage,
+  consumeAuthEmailRateLimit,
+} from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import {
   loginSchema,
@@ -25,6 +29,9 @@ export async function loginAction(_previousState: AuthActionState, formData: For
   if (!parsed.success) return { status: "error", errors: parsed.error.flatten().fieldErrors };
   if (!isSupabaseConfigured()) return unavailableState();
 
+  const allowed = await consumeAuthEmailRateLimit("auth.login", parsed.data.email);
+  if (!allowed) return { status: "error", message: authRateLimitMessage };
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
 
@@ -39,6 +46,9 @@ export async function registerAction(_previousState: AuthActionState, formData: 
   const parsed = registerSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { status: "error", errors: parsed.error.flatten().fieldErrors };
   if (!isSupabaseConfigured()) return unavailableState();
+
+  const allowed = await consumeAuthEmailRateLimit("auth.register", parsed.data.email);
+  if (!allowed) return { status: "error", message: authRateLimitMessage };
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -102,6 +112,9 @@ export async function resetPasswordAction(_previousState: AuthActionState, formD
   if (!parsed.success) return { status: "error", errors: parsed.error.flatten().fieldErrors };
   if (!isSupabaseConfigured()) return unavailableState();
 
+  const allowed = await consumeAuthEmailRateLimit("auth.reset", parsed.data.email);
+  if (!allowed) return { status: "error", message: authRateLimitMessage };
+
   const supabase = await createClient();
   await supabase.auth.resetPasswordForEmail(parsed.data.email, {
     redirectTo: `${getAppUrl()}/auth/callback?next=/obnova-hesla`,
@@ -131,5 +144,5 @@ export async function logoutAction() {
     const supabase = await createClient();
     await supabase.auth.signOut();
   }
-  redirect("/prihlasenie");
+  redirect("/");
 }

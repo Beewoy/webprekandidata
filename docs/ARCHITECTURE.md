@@ -264,22 +264,23 @@ Balík je vlastnosť konkrétneho webu, nie globálna vlastnosť prihlasovacieho
 Tok nákupu Basic/Plus:
 
 1. kandidát na Publikovanie vyberie balík a vyplní fakturačné údaje,
-2. server overí vlastníctvo, Free stav a Zod vstup, vytvorí `orders` so stavom `pending` (buyer/seller snapshot),
+2. server overí vlastníctvo, Free stav a Zod vstup, vytvorí `orders` so stavom `pending` (buyer/seller snapshot) a číslom `order_number` vo formáte `WPK-YYYY-NNNNN`,
 3. server vytvorí Stripe Customer z buyer snapshotu; názov firmy má prednosť pred menom a IČO zostáva v Customer metadata,
-4. server vytvorí Stripe Checkout Session s Price ID z env, `mode=payment`, konkrétnym Customerom a zapnutou post-purchase Invoice; rovnaké mapovacie metadata sú na Session, PaymentIntente aj budúcej Invoice,
+4. server vytvorí Stripe Checkout Session s Price ID z env, `mode=payment`, konkrétnym Customerom a zapnutou post-purchase Invoice; rovnaké mapovacie metadata (`order_id`, `order_number`, …) sú na Session, PaymentIntente aj budúcej Invoice,
 5. uloží `stripe_customer_id` a `stripe_checkout_session_id`, kandidát zaplatí na Stripe-hosted Checkout,
 6. `checkout.session.completed` alebo `checkout.session.async_payment_succeeded` overený webhook volá `fulfill_stripe_checkout` (service role),
 7. RPC idempotentne podľa `payment_events.provider_event_id` označí objednávku `paid`, nastaví `sites.plan_code` a zapíše audit `order.fulfilled`,
-8. samostatný `invoice.paid` webhook mapuje Invoice cez `invoice.metadata.order_id`; `record_stripe_invoice` uloží Invoice ID, PDF URL a Hosted Invoice URL a skontroluje zhodu Customer ID,
-9. návratová URL iba obnoví UI; balík sa z nej ani z Invoice eventu nikdy neaktivuje.
+8. pri prvom (neidempotentnom) fulfill aplikácia pošle Brevo potvrdenie s číslom objednávky; `orders.confirmation_email_sent_at` bráni duplicite a zlyhanie e-mailu nevracia webhook na retry,
+9. samostatný `invoice.paid` webhook mapuje Invoice cez `invoice.metadata.order_id`; `record_stripe_invoice` uloží Invoice ID, PDF URL a Hosted Invoice URL a skontroluje zhodu Customer ID,
+10. návratová URL iba obnoví UI; balík sa z nej ani z Invoice eventu nikdy neaktivuje. História objednávok (Publikovanie aj `/admin/objednavky`) zobrazuje `order_number` a odkaz na doklad.
 
 Ceny sú viazané na `STRIPE_PRICE_BASIC` / `STRIPE_PRICE_PLUS` a zároveň na DB constraint `total_cents in (4999, 8999)`. `valid_until` ostáva `null` do schválenia pravidiel kampane. Demo režim Checkout nevolá.
 
-Post-purchase Invoice preberá meno/názov a billing adresu z Customer objektu. Zákaznícke IČO sa zobrazí ako neprázdny custom field; Invoice metadata slúžia iba na spoľahlivé interné mapovanie a na PDF sa nezobrazujú. Footer obsahuje dodávateľské IČO, DIČ a text „Nie sme platiteľom DPH“. Stripe Tax, tax rates, customer tax ID collection ani výpočet DPH nie sú zapnuté. Identitu, adresu, podporu a branding dodávateľa dopĺňa Stripe z konfigurácie účtu.
+Post-purchase Invoice preberá meno/názov a billing adresu z Customer objektu. Custom field obsahuje číslo objednávky a voliteľné zákaznícke IČO; Invoice metadata slúžia iba na spoľahlivé interné mapovanie a na PDF sa nezobrazujú. Footer obsahuje dodávateľské IČO, DIČ a text „Nie sme platiteľom DPH“. Stripe Tax, tax rates, customer tax ID collection ani výpočet DPH nie sú zapnuté. Identitu, adresu, podporu a branding dodávateľa dopĺňa Stripe z konfigurácie účtu.
 
 `invoice.paid` môže prísť pred alebo po checkout fulfillment evente. Obe vetvy používajú spoločnú tabuľku `payment_events`, ale samostatné RPC a nezávislé side effects: Checkout fulfillment aktivuje plán, Invoice RPC iba uloží dokladové referencie. Opakovaný event s rovnakým Stripe event ID sa vráti ako idempotentne spracovaný.
 
-Hlavné súbory: `lib/payments/*`, `lib/validation/checkout.ts`, `app/actions/checkout.ts`, `app/api/webhooks/stripe/route.ts`, `lib/data/orders.ts`, migrácie `0012_stripe_fulfillment.sql` a `0017_stripe_invoices.sql`.
+Hlavné súbory: `lib/payments/*`, `lib/validation/checkout.ts`, `app/actions/checkout.ts`, `app/api/webhooks/stripe/route.ts`, `lib/data/orders.ts`, migrácie `0012_stripe_fulfillment.sql`, `0017_stripe_invoices.sql` a `0024_order_numbers_and_confirmation.sql`.
 
 ## 8.2 Domény, DNS a SSL
 

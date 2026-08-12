@@ -5,7 +5,19 @@ export function isSupabaseConfigured() {
   );
 }
 
+export function isProductionRuntime() {
+  return process.env.NODE_ENV === "production";
+}
+
+/**
+ * Demo mode is allowed only outside production.
+ * In production this always returns false; missing Supabase must not fall back to demo.
+ * Call assertProductionConfig() on /app and /admin to fail-closed on bad production env.
+ */
 export function isDemoMode() {
+  if (isProductionRuntime()) {
+    return false;
+  }
   return process.env.DEMO_MODE !== "false" || !isSupabaseConfigured();
 }
 

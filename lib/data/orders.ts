@@ -1,6 +1,7 @@
 import "server-only";
 
 import { isDemoMode } from "@/lib/env";
+import { resolveOrderInvoiceUrl } from "@/lib/payments/order-invoice";
 import { PLAN_LABELS, PLAN_PRICE_LABELS, type PaidPlanCode } from "@/lib/payments/plans";
 import { createClient } from "@/lib/supabase/server";
 
@@ -8,6 +9,8 @@ export type SiteOrderRow = {
   createdAt: string;
   fulfilledAt: string | null;
   id: string;
+  invoiceUrl: string | null;
+  orderNumber: string;
   paidAt: string | null;
   planCode: PaidPlanCode;
   planLabel: string;
@@ -22,7 +25,9 @@ export async function listSiteOrders(siteId: string): Promise<SiteOrderRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("orders")
-    .select("id, status, plan_code, total_cents, paid_at, fulfilled_at, created_at")
+    .select(
+      "id, order_number, status, plan_code, total_cents, paid_at, fulfilled_at, created_at, stripe_hosted_invoice_url, stripe_invoice_pdf_url",
+    )
     .eq("site_id", siteId)
     .order("created_at", { ascending: false });
 
@@ -32,6 +37,8 @@ export async function listSiteOrders(siteId: string): Promise<SiteOrderRow[]> {
     createdAt: row.created_at,
     fulfilledAt: row.fulfilled_at,
     id: row.id,
+    invoiceUrl: resolveOrderInvoiceUrl(row.stripe_hosted_invoice_url, row.stripe_invoice_pdf_url),
+    orderNumber: row.order_number,
     paidAt: row.paid_at,
     planCode: row.plan_code,
     planLabel: PLAN_LABELS[row.plan_code],

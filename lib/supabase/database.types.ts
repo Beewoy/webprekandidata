@@ -229,6 +229,35 @@ export type Database = {
           },
         ]
       }
+      draft_revision_cooldowns: {
+        Row: {
+          conflict_until: string
+          last_revision: number | null
+          site_id: string
+          updated_at: string
+        }
+        Insert: {
+          conflict_until: string
+          last_revision?: number | null
+          site_id: string
+          updated_at?: string
+        }
+        Update: {
+          conflict_until?: string
+          last_revision?: number | null
+          site_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "draft_revision_cooldowns_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_verification_tokens: {
         Row: {
           created_at: string
@@ -339,11 +368,13 @@ export type Database = {
       orders: {
         Row: {
           buyer_snapshot: Json
+          confirmation_email_sent_at: string | null
           created_at: string
           currency: string
           fulfilled_at: string | null
           id: string
           net_cents: number | null
+          order_number: string
           paid_at: string | null
           plan_code: Database["public"]["Enums"]["plan_code"]
           seller_snapshot: Json
@@ -361,11 +392,13 @@ export type Database = {
         }
         Insert: {
           buyer_snapshot: Json
+          confirmation_email_sent_at?: string | null
           created_at?: string
           currency?: string
           fulfilled_at?: string | null
           id?: string
           net_cents?: number | null
+          order_number?: string
           paid_at?: string | null
           plan_code: Database["public"]["Enums"]["plan_code"]
           seller_snapshot: Json
@@ -383,11 +416,13 @@ export type Database = {
         }
         Update: {
           buyer_snapshot?: Json
+          confirmation_email_sent_at?: string | null
           created_at?: string
           currency?: string
           fulfilled_at?: string | null
           id?: string
           net_cents?: number | null
+          order_number?: string
           paid_at?: string | null
           plan_code?: Database["public"]["Enums"]["plan_code"]
           seller_snapshot?: Json
@@ -556,6 +591,27 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      rate_limit_buckets: {
+        Row: {
+          bucket_key: string
+          hit_count: number
+          updated_at: string
+          window_started_at: string
+        }
+        Insert: {
+          bucket_key: string
+          hit_count: number
+          updated_at?: string
+          window_started_at: string
+        }
+        Update: {
+          bucket_key?: string
+          hit_count?: number
+          updated_at?: string
+          window_started_at?: string
         }
         Relationships: []
       }
@@ -797,6 +853,14 @@ export type Database = {
         Args: { p_hostname: string; p_site_id: string }
         Returns: Json
       }
+      consume_rate_limit: {
+        Args: {
+          p_bucket_key: string
+          p_limit: number
+          p_window_seconds: number
+        }
+        Returns: boolean
+      }
       create_candidate_post: { Args: { p_site_id: string }; Returns: string }
       create_candidate_site: {
         Args: {
@@ -835,6 +899,7 @@ export type Database = {
         }
         Returns: Json
       }
+      next_order_number: { Args: never; Returns: string }
       owns_site: { Args: { target_site_id: string }; Returns: boolean }
       publish_candidate_site: {
         Args: {

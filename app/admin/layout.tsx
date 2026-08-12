@@ -3,8 +3,10 @@ import { AdminShell } from "@/components/admin/admin-shell";
 import { PageHeading } from "@/components/ui/page-heading";
 import { requirePlatformAdmin } from "@/lib/data/admin";
 import { isDemoMode } from "@/lib/env";
+import { assertProductionConfig } from "@/lib/production-config";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
+  assertProductionConfig();
   if (isDemoMode()) {
     return (
       <main className="projects-shell">

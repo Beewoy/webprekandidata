@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -20,8 +20,22 @@ type SitePreviewProps = {
   siteId: string;
 };
 
+const APP_MOBILE_QUERY = "(max-width: 820px)";
+
+function subscribeAppMobile(onStoreChange: () => void) {
+  const media = window.matchMedia(APP_MOBILE_QUERY);
+  media.addEventListener("change", onStoreChange);
+  return () => media.removeEventListener("change", onStoreChange);
+}
+
+function getAppMobileSnapshot() {
+  return window.matchMedia(APP_MOBILE_QUERY).matches;
+}
+
 export function SitePreview({ contactFormPreview = false, data, publicMode = false, siteId }: SitePreviewProps) {
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
+  const isAppMobile = useSyncExternalStore(subscribeAppMobile, getAppMobileSnapshot, () => true);
+  const previewDevice = publicMode ? "desktop" : isAppMobile ? "mobile" : device;
   const [activeGalleryIndex, setActiveGalleryIndex] = useState<number | null>(null);
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -34,6 +48,7 @@ export function SitePreview({ contactFormPreview = false, data, publicMode = fal
   } as CSSProperties;
   const activeGalleryItem = activeGalleryIndex === null ? null : data.gallery.items[activeGalleryIndex];
   const activePost = activePostId ? data.news.items.find((post) => post.id === activePostId) ?? null : null;
+  const showMobileMenu = previewDevice === "mobile" && mobileMenuOpen;
 
   useEffect(() => {
     if (activeGalleryIndex === null) return;
@@ -75,20 +90,22 @@ export function SitePreview({ contactFormPreview = false, data, publicMode = fal
         description="Náhľad používa aktuálne uložené texty z vášho konceptu."
         action={(
           <div className="preview-toolbar">
-            <div className="preview-actions" role="group" aria-label="Veľkosť náhľadu">
-              <button aria-pressed={device === "desktop"} className={cn("device-button", device === "desktop" && "device-button--active")} onClick={() => setDevice("desktop")} type="button"><Monitor size={17} /> Počítač</button>
-              <button aria-pressed={device === "mobile"} className={cn("device-button", device === "mobile" && "device-button--active")} onClick={() => setDevice("mobile")} type="button"><Smartphone size={17} /> Mobil</button>
-            </div>
+            {!isAppMobile && (
+              <div className="preview-actions" role="group" aria-label="Veľkosť náhľadu">
+                <button aria-pressed={device === "desktop"} className={cn("device-button", device === "desktop" && "device-button--active")} onClick={() => { setDevice("desktop"); setMobileMenuOpen(false); }} type="button"><Monitor size={17} /> Počítač</button>
+                <button aria-pressed={device === "mobile"} className={cn("device-button", device === "mobile" && "device-button--active")} onClick={() => { setDevice("mobile"); setMobileMenuOpen(false); }} type="button"><Smartphone size={17} /> Mobil</button>
+              </div>
+            )}
             <button className="button button--secondary button--small" disabled={isRefreshing} onClick={() => startRefresh(() => router.refresh())} type="button"><RefreshCw className={isRefreshing ? "spin" : ""} size={15} /> {isRefreshing ? "Obnovujem…" : "Obnoviť"}</button>
           </div>
         )}
       />}
 
       <div className={cn("full-preview-stage", publicMode && "full-preview-stage--public")}>
-        <div className={cn("full-preview-frame", publicMode && "full-preview-frame--public", !publicMode && device === "mobile" && "full-preview-frame--mobile")}>
+        <div className={cn("full-preview-frame", publicMode && "full-preview-frame--public", !publicMode && previewDevice === "mobile" && "full-preview-frame--mobile")}>
           {!publicMode && <div className="full-preview-frame__bar"><i /><i /><i /><span>{data.address}</span><ExternalLink aria-hidden="true" size={15} /></div>}
           <div className="full-preview-viewport">
-            <article className={cn("candidate-preview", `candidate-preview--${data.theme.template}`, publicMode && "candidate-preview--public", !publicMode && device === "mobile" && "candidate-preview--mobile")} id={publicMode ? "hlavny-obsah" : undefined} style={campaignStyle}>
+            <article className={cn("candidate-preview", `candidate-preview--${data.theme.template}`, publicMode && "candidate-preview--public", !publicMode && previewDevice === "mobile" && "candidate-preview--mobile")} id={publicMode ? "hlavny-obsah" : undefined} style={campaignStyle}>
               <header className="candidate-preview__header">
                 <div className="candidate-preview__container candidate-preview__header-inner">
                   <a className="candidate-preview__brand" href="#uvod" onClick={() => setMobileMenuOpen(false)}>
@@ -101,15 +118,15 @@ export function SitePreview({ contactFormPreview = false, data, publicMode = fal
                     <span><strong>{data.candidate.name}</strong><small>{data.candidate.position}{data.candidate.city ? ` · ${data.candidate.city}` : ""}</small></span>
                   </a>
                   <button
-                    aria-expanded={mobileMenuOpen}
-                    aria-label={mobileMenuOpen ? "Zavrieť navigáciu" : "Otvoriť navigáciu"}
+                    aria-expanded={showMobileMenu}
+                    aria-label={showMobileMenu ? "Zavrieť navigáciu" : "Otvoriť navigáciu"}
                     className="candidate-preview__menu-button"
                     onClick={() => setMobileMenuOpen((current) => !current)}
                     type="button"
                   >
-                    {mobileMenuOpen ? <X aria-hidden="true" size={22} /> : <Menu aria-hidden="true" size={22} />}
+                    {showMobileMenu ? <X aria-hidden="true" size={22} /> : <Menu aria-hidden="true" size={22} />}
                   </button>
-                  <nav aria-label={publicMode ? "Navigácia webu kandidáta" : "Navigácia náhľadu"} className={mobileMenuOpen ? "candidate-preview__nav candidate-preview__nav--open" : "candidate-preview__nav"}>
+                  <nav aria-label={publicMode ? "Navigácia webu kandidáta" : "Navigácia náhľadu"} className={showMobileMenu ? "candidate-preview__nav candidate-preview__nav--open" : "candidate-preview__nav"}>
                     <a href="#o-mne" onClick={() => setMobileMenuOpen(false)}>O mne</a>
                     <a href="#preco" onClick={() => setMobileMenuOpen(false)}>Prečo kandidujem</a>
                     <a href="#program" onClick={() => setMobileMenuOpen(false)}>Program</a>

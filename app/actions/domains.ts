@@ -4,17 +4,18 @@ import { revalidatePath } from "next/cache";
 import { isDemoMode } from "@/lib/env";
 import { ensureDnsInstructions } from "@/lib/domains/dns-instructions";
 import {
+  statusFromVercelSnapshot,
+  syncDomainProviderStateWithAdmin,
+} from "@/lib/domains/provider-sync";
+import {
   addVercelProjectDomain,
   removeVercelProjectDomain,
-  snapshotToMetadata,
-  snapshotToSslMetadata,
   verifyVercelProjectDomain,
   type VercelDomainSnapshot,
 } from "@/lib/domains/vercel";
 import { normalizeHostname } from "@/lib/domains/hostname";
 import { attachCustomDomainSchema, domainIdActionSchema } from "@/lib/validation/domains";
 import { createClient } from "@/lib/supabase/server";
-import type { Json } from "@/lib/supabase/database.types";
 
 export type DomainActionResult =
   | { ok: true; message?: string }
@@ -32,24 +33,13 @@ function mapRpcError(error: { code?: string; message?: string } | null, fallback
   return fallback;
 }
 
-function statusFromSnapshot(snapshot: VercelDomainSnapshot): "pending" | "verifying" | "active" | "failed" {
-  // Misconfigured DNS after attach is expected until the candidate updates registrar records.
-  // Keep "verifying" so the UI shows instructions instead of an immediate hard failure.
-  if (snapshot.verified && snapshot.sslReady && !snapshot.misconfigured) return "active";
-  if (snapshot.verified || snapshot.dns.length > 0 || snapshot.misconfigured) return "verifying";
-  return "pending";
-}
-
 async function syncSnapshot(domainId: string, snapshot: VercelDomainSnapshot, makePrimaryWhenActive = true) {
-  const supabase = await createClient();
-  const status = statusFromSnapshot(snapshot);
-  const { error } = await supabase.rpc("sync_domain_provider_state", {
-    p_domain_id: domainId,
-    p_status: status,
-    p_verification_metadata: snapshotToMetadata(snapshot) as Json,
-    p_ssl_metadata: snapshotToSslMetadata(snapshot) as Json,
-    p_make_primary: makePrimaryWhenActive && status === "active",
-    ...(status === "active" ? { p_verified_at: new Date().toISOString() } : {}),
+  const status = statusFromVercelSnapshot(snapshot);
+  const { error } = await syncDomainProviderStateWithAdmin({
+    domainId,
+    status,
+    snapshot,
+    makePrimaryWhenActive,
   });
   if (error) throw new Error(mapRpcError(error, "Stav domény sa nepodarilo uložiť."));
   return status;

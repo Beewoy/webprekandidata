@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { z } from "zod";
+import { maybeSendOrderConfirmation } from "@/lib/payments/order-confirmation";
 import { getStripeClient } from "@/lib/payments/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -10,6 +11,8 @@ const fulfillResultSchema = z.object({
   ok: z.boolean(),
   error: z.string().optional(),
   retryable: z.boolean().optional(),
+  idempotent: z.boolean().optional(),
+  order_id: z.string().uuid().nullish(),
 });
 
 function stripeObjectId(value: string | { id: string } | null) {
@@ -29,6 +32,7 @@ function throwRpcFailure(data: unknown) {
     err.retryable = retryable;
     throw err;
   }
+  return parsed.data;
 }
 
 async function fulfillCheckoutSession(event: Stripe.Event, session: Stripe.Checkout.Session) {
@@ -45,7 +49,10 @@ async function fulfillCheckoutSession(event: Stripe.Event, session: Stripe.Check
   if (error) {
     throw new Error(error.message);
   }
-  throwRpcFailure(data);
+  const result = throwRpcFailure(data);
+  if (result.idempotent !== true && result.order_id) {
+    await maybeSendOrderConfirmation(result.order_id);
+  }
 }
 
 async function markSessionStatus(

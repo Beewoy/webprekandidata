@@ -9,6 +9,8 @@ export type EmailVerificationStatus = {
   verified: boolean;
 };
 
+export { requireVerifiedUser } from "./email-verification-gate";
+
 export async function getEmailVerificationStatus(): Promise<EmailVerificationStatus> {
   if (isDemoMode()) {
     return {

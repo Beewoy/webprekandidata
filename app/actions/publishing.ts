@@ -3,7 +3,9 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { requireVerifiedUser } from "@/lib/data/email-verification-gate";
 import { loadPublicationSource } from "@/lib/data/publishing";
+import { getCurrentUser } from "@/lib/data/sites";
 import { isDemoMode } from "@/lib/env";
 import { getPublishReadiness, type PublicationMediaItem } from "@/lib/publishing";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -32,6 +34,11 @@ export async function publishSiteAction(input: unknown): Promise<PublishSiteResu
   const parsed = z.object({ siteId: siteIdSchema }).safeParse(input);
   if (!parsed.success) return { ok: false, message: "Projekt nemá platný identifikátor." };
   if (isDemoMode()) return { ok: false, message: "Publikovanie je dostupné po pripojení projektu k databáze." };
+
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, message: "Pred publikovaním sa musíte prihlásiť." };
+  const verification = await requireVerifiedUser(user.id);
+  if (!verification.ok) return { ok: false, message: verification.message };
 
   const source = await loadPublicationSource(parsed.data.siteId);
   if (!source) return { ok: false, message: "Projekt sa nepodarilo overiť." };
@@ -111,6 +118,13 @@ export async function setSiteVisibilityAction(input: unknown): Promise<PublishSi
   const parsed = z.object({ siteId: siteIdSchema, visible: z.boolean() }).safeParse(input);
   if (!parsed.success) return { ok: false, message: "Požiadavka nemá platné údaje." };
   if (isDemoMode()) return { ok: false, message: "Táto akcia nie je dostupná v ukážkovom režime." };
+
+  if (parsed.data.visible) {
+    const user = await getCurrentUser();
+    if (!user) return { ok: false, message: "Pred obnovením webu sa musíte prihlásiť." };
+    const verification = await requireVerifiedUser(user.id);
+    if (!verification.ok) return { ok: false, message: verification.message };
+  }
 
   const source = await loadPublicationSource(parsed.data.siteId);
   if (!source?.currentPublication) return { ok: false, message: "Projekt ešte nemá zverejnenú verziu." };

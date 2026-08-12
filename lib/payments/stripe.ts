@@ -1,7 +1,9 @@
 import "server-only";
 
 import Stripe from "stripe";
-import { getPlanTotalCents, type PaidPlanCode } from "@/lib/payments/plans";
+import type { PaidPlanCode } from "@/lib/payments/plans";
+
+export { assertCheckoutAmountMatchesPlan } from "@/lib/payments/plans";
 
 let stripeClient: Stripe | null = null;
 
@@ -58,13 +60,4 @@ export function getSellerSnapshot() {
     dic: process.env.SELLER_DIC?.trim() || "",
     email: process.env.SELLER_EMAIL?.trim() || "",
   };
-}
-
-export function assertCheckoutAmountMatchesPlan(planCode: PaidPlanCode, amountTotal: number | null, currency: string | null) {
-  if (currency?.toLowerCase() !== "eur") {
-    throw new Error("order_currency_mismatch");
-  }
-  if (amountTotal !== getPlanTotalCents(planCode)) {
-    throw new Error("order_amount_mismatch");
-  }
 }

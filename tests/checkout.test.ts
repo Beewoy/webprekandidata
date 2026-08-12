@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getPlanTotalCents, isPaidPlanCode, PLAN_PRICES_CENTS } from "../lib/payments/plans";
+import { assertCheckoutAmountMatchesPlan, getPlanTotalCents, isPaidPlanCode, PLAN_PRICES_CENTS } from "../lib/payments/plans";
 import { parseCheckoutReturnState } from "../lib/payments/checkout-return";
 import {
   buildCheckoutSessionParams,
@@ -65,6 +65,12 @@ describe("checkout return state", () => {
     expect(notice?.message).toContain("Aktivácia");
   });
 
+  it("return URL success bez entitled ≠ aktivácia balíka (iba UI notice)", () => {
+    const notice = parseCheckoutReturnState({ checkout: "success", entitled: false });
+    expect(notice?.message).not.toMatch(/je aktívny/i);
+    expect(notice?.message).toMatch(/Aktivácia/);
+  });
+
   it("ukáže aktívny balík po success s entitlement", () => {
     const notice = parseCheckoutReturnState({ checkout: "success", entitled: true });
     expect(notice?.message).toContain("aktívny");
@@ -88,6 +94,7 @@ describe("Stripe Customer and post-purchase invoice", () => {
   };
   const metadata = {
     order_id: "11111111-1111-4111-8111-111111111111",
+    order_number: "WPK-2026-00001",
     site_id: "22222222-2222-4222-8222-222222222222",
     plan_code: "basic" as const,
     user_id: "33333333-3333-4333-8333-333333333333",
@@ -143,7 +150,9 @@ describe("Stripe Customer and post-purchase invoice", () => {
     expect(params.metadata).toEqual(metadata);
     expect(params.payment_intent_data?.metadata).toEqual(metadata);
     expect(params.invoice_creation?.invoice_data?.metadata).toEqual(metadata);
-    expect(params.invoice_creation?.invoice_data?.custom_fields).toBeUndefined();
+    expect(params.invoice_creation?.invoice_data?.custom_fields).toEqual([
+      { name: "Číslo objednávky", value: "WPK-2026-00001" },
+    ]);
     expect(params.invoice_creation?.invoice_data?.footer).toContain("Nie sme platiteľom DPH");
   });
 
@@ -160,7 +169,17 @@ describe("Stripe Customer and post-purchase invoice", () => {
     });
 
     expect(params.invoice_creation?.invoice_data?.custom_fields).toEqual([
+      { name: "Číslo objednávky", value: "WPK-2026-00001" },
       { name: "IČO", value: "12345678" },
     ]);
   });
 });
+
+describe("checkout amount/currency guards", () => {
+  it("odmietne zlú menu alebo sumu (žiadny entitlement z nesúladu)", () => {
+    expect(() => assertCheckoutAmountMatchesPlan("basic", 4999, "usd")).toThrow("order_currency_mismatch");
+    expect(() => assertCheckoutAmountMatchesPlan("basic", 1, "eur")).toThrow("order_amount_mismatch");
+    expect(() => assertCheckoutAmountMatchesPlan("plus", 8999, "eur")).not.toThrow();
+  });
+});
+

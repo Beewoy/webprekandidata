@@ -92,7 +92,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - výber a ukladanie tematických občianskych ikoniek pre hodnoty, dôvody a program vrátane zobrazenia v náhľade,
 - základná databázová schéma a RLS politiky,
 - lokálny Supabase stack (Docker) pre vývoj; produkčný cloud projekt `Webprekandidata` (`iozvohajbtzxviytpufp`) s credentials iba vo Vercel a GitHub Secrets,
-- migrácie `0001` až `0022` v repozitári; produkčné nasadenie migrácií cez GitHub Actions workflow `Supabase migrations` pri pushi do `main`,
+- migrácie `0001` až `0024` v repozitári; produkčné nasadenie migrácií cez GitHub Actions workflow `Supabase migrations` pri pushi do `main`,
 - `.env.local.example` a aktualizovaný `.env.example` pre lokálny vývoj na `127.0.0.1:54321`,
 - politika zero prod from Mac: na vývojárskom Macu sa nespúšťa `supabase link` ani `db push` proti produkcii,
 - reálna produkčná Supabase konfigurácia vo Vercel env; lokálny `.env.local` smeruje na Docker stack,
@@ -188,18 +188,19 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 
 - výber Basic 49,99 € / Plus 89,99 € ako konečných cien na stránke Publikovanie,
 - fakturačné údaje kupujúceho a súhlas pred Checkoutom,
-- server vytvorí pending `orders`, reálneho Stripe Customer s fakturačnou adresou a Stripe Checkout Session,
-- jednorazový Checkout používa post-purchase invoice; po úspešnej platbe Stripe automaticky vytvorí paid Invoice s voliteľným zákazníckym IČO a dodávateľským footerom bez výpočtu DPH,
+- server vytvorí pending `orders` s ľudsky čitateľným číslom `WPK-YYYY-NNNNN` (`order_number`), reálneho Stripe Customer s fakturačnou adresou a Stripe Checkout Session,
+- jednorazový Checkout používa post-purchase invoice; po úspešnej platbe Stripe automaticky vytvorí paid Invoice s číslom objednávky, voliteľným zákazníckym IČO a dodávateľským footerom bez výpočtu DPH,
 - podpísaný webhook `/api/webhooks/stripe` idempotentne splní objednávku a nastaví `sites.plan_code`,
+- po prvom (neidempotentnom) fulfill pošle Brevo potvrdenie objednávky; `confirmation_email_sent_at` bráni duplicite; zlyhanie e-mailu nevracia Stripe webhook na retry,
 - samostatný `invoice.paid` webhook idempotentne uloží Invoice ID, PDF URL a Hosted Invoice URL bez vplyvu na aktiváciu balíka,
 - návrat do aplikácie obnoví Publikovanie; aktivácia balíka čaká na webhook,
-- história objednávok na stránke Publikovanie (vlastník cez RLS),
+- história objednávok na stránke Publikovanie a v `/admin/objednavky` zobrazuje číslo a odkaz na doklad (vlastník cez RLS),
 - demo režim platbu neponúka,
-- migrácia `0012_stripe_fulfillment.sql` (`fulfill_stripe_checkout`, `mark_checkout_session_status`) a append-only migrácia `0017_stripe_invoices.sql` (`record_stripe_invoice` a nullable invoice referencie).
+- migrácie `0012_stripe_fulfillment.sql`, `0017_stripe_invoices.sql` a `0024_order_numbers_and_confirmation.sql`.
 
 ### Overenie
 
-- 103 jednotkových testov,
+- 130 jednotkových testov,
 - TypeScript bez chýb,
 - ESLint bez chýb a varovaní,
 - úspešný produkčný build,
@@ -224,7 +225,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 
 ## Pripravené v UI, ale ešte bez produkčného backendu
 
-- transakčné e-maily (vrátane potvrdenia platby),
+- (žiadne aktuálne položky — potvrdenie platby e-mailom je napojené cez Brevo po fulfill)
 
 ## Externé závislosti
 

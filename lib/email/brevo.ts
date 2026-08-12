@@ -199,3 +199,75 @@ export async function sendSupportEmail({
     `,
   });
 }
+
+type OrderConfirmationEmail = {
+  invoiceUrl?: string | null;
+  orderNumber: string;
+  planLabel: string;
+  priceLabel: string;
+  publishingUrl: string;
+  recipientEmail: string;
+  recipientName?: string | null;
+  siteLabel: string;
+};
+
+export async function sendOrderConfirmationEmail({
+  invoiceUrl,
+  orderNumber,
+  planLabel,
+  priceLabel,
+  publishingUrl,
+  recipientEmail,
+  recipientName,
+  siteLabel,
+}: OrderConfirmationEmail) {
+  const transporter = createTransporter();
+  const safeName = recipientName ? escapeHtml(recipientName) : "";
+  const safeOrderNumber = escapeHtml(orderNumber);
+  const safePlan = escapeHtml(planLabel);
+  const safePrice = escapeHtml(priceLabel);
+  const safeSite = escapeHtml(siteLabel);
+  const safePublishingUrl = escapeHtml(publishingUrl);
+  const safeInvoiceUrl = invoiceUrl ? escapeHtml(invoiceUrl) : null;
+
+  await transporter.sendMail({
+    from: { name: "Web pre kandidáta", address: "noreply@webprekandidata.sk" },
+    to: recipientEmail,
+    subject: `Potvrdenie objednávky ${orderNumber} – Web pre kandidáta`,
+    text: [
+      `Dobrý deň${recipientName ? `, ${recipientName}` : ""},`,
+      "",
+      "ďakujeme za objednávku. Balík je aktívny.",
+      "",
+      `Číslo objednávky: ${orderNumber}`,
+      `Balík: ${planLabel}`,
+      `Suma: ${priceLabel}`,
+      `Web: ${siteLabel}`,
+      "",
+      `Správa webu: ${publishingUrl}`,
+      invoiceUrl ? `Doklad: ${invoiceUrl}` : "Doklad (ak je k dispozícii) nájdete v sekcii Publikovanie.",
+      "",
+      "Web pre kandidáta",
+    ].join("\n"),
+    html: `
+      <div style="background:#f7f9fb;padding:32px 16px;font-family:Inter,Arial,sans-serif;color:#17212d">
+        <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e2e8ef;border-radius:16px;padding:32px">
+          <div style="font-size:20px;font-weight:800;color:#163b65;margin-bottom:24px">WebPreKandidata.sk</div>
+          <h1 style="font-size:26px;line-height:1.2;margin:0 0 14px">Potvrdenie objednávky</h1>
+          <p style="font-size:15px;line-height:1.65;color:#465468;margin:0 0 12px">Dobrý deň${safeName ? `, ${safeName}` : ""},</p>
+          <p style="font-size:15px;line-height:1.65;color:#465468;margin:0 0 22px">Ďakujeme za objednávku. Balík je aktívny.</p>
+          <div style="background:#f7f9fb;border:1px solid #e2e8ef;border-radius:12px;padding:18px;margin-bottom:22px">
+            <p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>Číslo objednávky:</strong> ${safeOrderNumber}</p>
+            <p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>Balík:</strong> ${safePlan}</p>
+            <p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>Suma:</strong> ${safePrice}</p>
+            <p style="font-size:14px;line-height:1.6;margin:0"><strong>Web:</strong> ${safeSite}</p>
+          </div>
+          <a href="${safePublishingUrl}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;font-size:14px;font-weight:700;padding:13px 20px;border-radius:10px">Otvoriť Publikovanie</a>
+          ${safeInvoiceUrl
+            ? `<p style="font-size:13px;line-height:1.55;margin:18px 0 0"><a href="${safeInvoiceUrl}" style="color:#0f766e;font-weight:600">Otvoriť doklad</a></p>`
+            : `<p style="font-size:12px;line-height:1.55;color:#7c8ba1;margin:18px 0 0">Doklad (ak je k dispozícii) nájdete v sekcii Publikovanie.</p>`}
+        </div>
+      </div>
+    `,
+  });
+}

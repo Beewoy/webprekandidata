@@ -82,11 +82,16 @@ function OrderHistory({ orders }: { orders: SiteOrderRow[] }) {
           <div className="order-history__item" key={order.id} role="listitem">
             <div>
               <strong>{order.planLabel}</strong>
-              <small>{formatOrderDate(order.createdAt)}</small>
+              <small>{order.orderNumber} · {formatOrderDate(order.createdAt)}</small>
             </div>
             <div className="order-history__meta">
               <span>{order.priceLabel}</span>
               <span className={cn("order-status", `order-status--${order.status}`)}>{orderStatusLabels[order.status]}</span>
+              {order.invoiceUrl ? (
+                <a href={order.invoiceUrl} target="_blank" rel="noopener noreferrer">
+                  Doklad
+                </a>
+              ) : null}
             </div>
           </div>
         ))}

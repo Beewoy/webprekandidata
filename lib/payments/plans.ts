@@ -24,3 +24,16 @@ export function isPaidPlanCode(value: string): value is PaidPlanCode {
 export function getPlanTotalCents(planCode: PaidPlanCode): number {
   return PLAN_PRICES_CENTS[planCode];
 }
+
+export function assertCheckoutAmountMatchesPlan(
+  planCode: PaidPlanCode,
+  amountTotal: number | null,
+  currency: string | null,
+) {
+  if (currency?.toLowerCase() !== "eur") {
+    throw new Error("order_currency_mismatch");
+  }
+  if (amountTotal !== getPlanTotalCents(planCode)) {
+    throw new Error("order_amount_mismatch");
+  }
+}

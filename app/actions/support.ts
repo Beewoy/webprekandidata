@@ -3,26 +3,12 @@
 import { getCurrentUser } from "@/lib/data/sites";
 import { isBrevoSmtpConfigured, sendSupportEmail } from "@/lib/email/brevo";
 import { isDemoMode } from "@/lib/env";
+import { consumeSupportRateLimit } from "@/lib/rate-limit";
 import { supportRateLimit, supportRecipientEmails } from "@/lib/support";
 import {
   supportSubmissionSchema,
   type SupportFormState,
 } from "@/lib/validation/support";
-
-const submissionTimestamps = new Map<string, number[]>();
-
-function acceptRateLimit(userKey: string) {
-  const now = Date.now();
-  const windowMs = supportRateLimit.windowMinutes * 60 * 1000;
-  const recent = (submissionTimestamps.get(userKey) ?? []).filter((timestamp) => now - timestamp < windowMs);
-  if (recent.length >= supportRateLimit.maximumSubmissions) {
-    submissionTimestamps.set(userKey, recent);
-    return false;
-  }
-  recent.push(now);
-  submissionTimestamps.set(userKey, recent);
-  return true;
-}
 
 export async function submitSupportForm(
   _previousState: SupportFormState,
@@ -51,12 +37,14 @@ export async function submitSupportForm(
     return { status: "error", message: "Pre odoslanie správy sa musíte prihlásiť." };
   }
 
-  const userKey = user?.id ?? "demo";
-  if (!acceptRateLimit(userKey)) {
-    return {
-      status: "error",
-      message: `Odoslali ste viac správ v krátkom čase. Skúste to znova o ${supportRateLimit.windowMinutes} minút.`,
-    };
+  if (!demo && user) {
+    const allowed = await consumeSupportRateLimit(user.id);
+    if (!allowed) {
+      return {
+        status: "error",
+        message: `Odoslali ste viac správ v krátkom čase. Skúste to znova o ${supportRateLimit.windowMinutes} minút.`,
+      };
+    }
   }
 
   const replyEmail = parsed.data.email.toLocaleLowerCase("sk");

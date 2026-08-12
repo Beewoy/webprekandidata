@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requirePlatformAdmin } from "@/lib/data/admin";
+import { maybeSendOrderConfirmation } from "@/lib/payments/order-confirmation";
 import { createClient } from "@/lib/supabase/server";
 import {
   adminGrantPlanSchema,
@@ -9,6 +10,7 @@ import {
   initialAdminActionState,
   type AdminActionState,
 } from "@/lib/validation/admin";
+import { z } from "zod";
 
 export async function setAdminSiteHoldAction(
   _previousState: AdminActionState,
@@ -125,7 +127,7 @@ export async function grantAdminSitePlanAction(
     .eq("id", parsed.data.siteId)
     .maybeSingle();
 
-  const { error } = await supabase.rpc("admin_grant_site_plan", {
+  const { data, error } = await supabase.rpc("admin_grant_site_plan", {
     p_site_id: parsed.data.siteId,
     p_plan_code: parsed.data.planCode,
     p_reason: parsed.data.reason,
@@ -137,6 +139,13 @@ export async function grantAdminSitePlanAction(
       status: "error",
       message: "Balík sa nepodarilo udeliť.",
     };
+  }
+
+  const grantResult = z
+    .object({ ok: z.boolean().optional(), order_id: z.string().uuid().optional() })
+    .safeParse(data);
+  if (grantResult.success && grantResult.data.order_id) {
+    await maybeSendOrderConfirmation(grantResult.data.order_id);
   }
 
   revalidatePath("/admin");

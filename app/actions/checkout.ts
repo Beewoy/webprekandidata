@@ -1,6 +1,7 @@
 "use server";
 
 import { randomBytes } from "node:crypto";
+import { requireVerifiedUser } from "@/lib/data/email-verification-gate";
 import { getAppUrl, isDemoMode } from "@/lib/env";
 import { getPlanTotalCents } from "@/lib/payments/plans";
 import {
@@ -52,6 +53,11 @@ export async function createCheckoutSessionAction(input: unknown): Promise<Creat
     return { ok: false, message: "Pred platbou sa musíte prihlásiť." };
   }
 
+  const verification = await requireVerifiedUser(authData.user.id);
+  if (!verification.ok) {
+    return { ok: false, message: verification.message };
+  }
+
   const { data: site, error: siteError } = await supabase
     .from("sites")
     .select("id, owner_user_id, plan_code, deleted_at")
@@ -83,7 +89,7 @@ export async function createCheckoutSessionAction(input: unknown): Promise<Creat
       buyer_snapshot: buyerSnapshot,
       seller_snapshot: sellerSnapshot,
     })
-    .select("id")
+    .select("id, order_number")
     .single();
 
   if (orderError || !order) {
@@ -101,6 +107,7 @@ export async function createCheckoutSessionAction(input: unknown): Promise<Creat
     );
     const metadata = {
       order_id: order.id,
+      order_number: order.order_number,
       site_id: siteId,
       plan_code: planCode,
       user_id: authData.user.id,

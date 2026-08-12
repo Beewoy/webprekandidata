@@ -19,6 +19,7 @@ type SellerSnapshot = {
 
 type CheckoutMetadata = {
   order_id: string;
+  order_number: string;
   plan_code: PaidPlanCode;
   site_id: string;
   user_id: string;
@@ -62,12 +63,17 @@ export function buildCheckoutSessionParams(input: {
   seller: SellerSnapshot;
   successUrl: string;
 }): Stripe.Checkout.SessionCreateParams {
+  const customFields: Stripe.Checkout.SessionCreateParams.InvoiceCreation.InvoiceData.CustomField[] = [
+    { name: "Číslo objednávky", value: input.metadata.order_number },
+  ];
+  if (input.buyer.ico) {
+    customFields.push({ name: "IČO", value: input.buyer.ico });
+  }
+
   const invoiceData: Stripe.Checkout.SessionCreateParams.InvoiceCreation.InvoiceData = {
     metadata: input.metadata,
     footer: buildInvoiceFooter(input.seller),
-    ...(input.buyer.ico
-      ? { custom_fields: [{ name: "IČO", value: input.buyer.ico }] }
-      : {}),
+    custom_fields: customFields,
   };
 
   return {
