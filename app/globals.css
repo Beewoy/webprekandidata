@@ -571,7 +571,12 @@ svg { flex: 0 0 auto; }
 .domain-dns-table code { font-size: 11px; overflow-wrap: anywhere; }
 .domain-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .domain-form-footer { border-top: 0; padding: 0; }
-.domain-empty-note { color: var(--slate-500); font-size: 12px; }
+.domain-empty-note { color: var(--slate-500); font-size: 12px; line-height: 1.5; }
+.domain-dns-guide { display: grid; gap: 12px; }
+.domain-dns-guide__steps { color: var(--slate-600); font-size: 11px; line-height: 1.55; margin: 0; padding-left: 18px; }
+.domain-dns-guide__steps li + li { margin-top: 6px; }
+.info-box--warning { background: #fff8eb; border-color: #f0d9a8; color: var(--navy-800); }
+.info-box--warning small { color: #7a5a1a; }
 
 .preview-toolbar { align-items: center; display: flex; gap: 9px; }
 .preview-actions { background: var(--slate-100); border-radius: 10px; display: flex; padding: 3px; }

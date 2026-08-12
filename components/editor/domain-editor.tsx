@@ -21,6 +21,7 @@ import {
   setPrimaryDomainAction,
 } from "@/app/actions/domains";
 import { PageHeading } from "@/components/ui/page-heading";
+import { DomainDnsGuide } from "@/components/editor/domain-dns-guide";
 import type { SiteDomainRecord, SiteDomainState } from "@/lib/data/domains";
 
 function CopyButton({ value, label }: { value: string; label: string }) {
@@ -45,13 +46,17 @@ function CopyButton({ value, label }: { value: string; label: string }) {
 
 function DnsTable({ records }: { records: SiteDomainRecord["dns"] }) {
   if (records.length === 0) {
-    return <p className="domain-empty-note">DNS inštrukcie sa zobrazia po pripojení domény.</p>;
+    return (
+      <p className="domain-empty-note">
+        DNS inštrukcie sa nepodarilo načítať. Skúste znova Skontrolovať DNS alebo doplňte A záznam @ → 76.76.21.21 u registrátora.
+      </p>
+    );
   }
 
   return (
     <div className="domain-dns-table-wrap">
       <table className="domain-dns-table">
-        <caption className="sr-only">DNS záznamy na nastavenie</caption>
+        <caption className="sr-only">DNS záznamy na nastavenie u registrátora (napr. Websupport)</caption>
         <thead>
           <tr>
             <th scope="col">Typ</th>
@@ -73,6 +78,10 @@ function DnsTable({ records }: { records: SiteDomainRecord["dns"] }) {
           ))}
         </tbody>
       </table>
+      <p className="domain-empty-note">
+        Tieto záznamy nastavte vo Websupporte (alebo u iného registrátora). Potom kliknite na Skontrolovať DNS.
+        Ak overenie zlyhá, skontrolujte aj odporúčania hostingu — niekedy treba odstrániť konfliktný AAAA záznam na root (@).
+      </p>
     </div>
   );
 }
@@ -234,6 +243,7 @@ export function DomainEditor({ siteId, state }: { siteId: string; state: SiteDom
                 </div>
 
                 <DnsTable records={custom.dns} />
+                <DomainDnsGuide hostname={custom.hostname} />
 
                 <div className="domain-actions">
                   <button className="button button--secondary" disabled={isPending} onClick={() => checkDomain(custom)} type="button">
@@ -268,7 +278,10 @@ export function DomainEditor({ siteId, state }: { siteId: string; state: SiteDom
                   <Info size={18} />
                   <span>
                     <strong>Po pripojení dostanete DNS údaje</strong>
-                    <small>Bežné sprevádzkovanie trvá od niekoľkých minút do 24 hodín podľa poskytovateľa DNS.</small>
+                    <small>
+                      Doménu nastavíte u registrátora (Websupport a pod.). Pri root doméne často treba odstrániť predvolený AAAA záznam.
+                      Bežné sprevádzkovanie trvá od niekoľkých minút do 24 hodín.
+                    </small>
                   </span>
                 </div>
                 <div className="editor-card__footer domain-form-footer">

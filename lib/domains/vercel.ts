@@ -1,14 +1,15 @@
 import "server-only";
 
 import { isDemoMode, isVercelDomainsConfigured } from "../env";
+import {
+  defaultDnsInstructions,
+  ensureDnsInstructions,
+  relativeDnsName,
+  type DnsRecordInstruction,
+} from "./dns-instructions";
 import { isApexHostname } from "./hostname";
 
-export type DnsRecordInstruction = {
-  name: string;
-  type: "A" | "AAAA" | "CNAME" | "TXT";
-  value: string;
-  purpose: "routing" | "verification";
-};
+export type { DnsRecordInstruction } from "./dns-instructions";
 
 export type VercelDomainSnapshot = {
   configured: boolean;
@@ -71,18 +72,14 @@ async function vercelFetch<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 function demoSnapshot(hostname: string): VercelDomainSnapshot {
-  const apex = isApexHostname(hostname);
+  const routing = defaultDnsInstructions(hostname);
+  const txtName = isApexHostname(hostname) ? "_vercel" : `_vercel.${hostname.split(".")[0] ?? ""}`;
   return {
     configured: true,
-    dns: apex
-      ? [
-          { name: "@", type: "A", value: "76.76.21.21", purpose: "routing" },
-          { name: "_vercel", type: "TXT", value: "vc-domain-verify=demo,demo", purpose: "verification" },
-        ]
-      : [
-          { name: hostname.split(".")[0] ?? "@", type: "CNAME", value: "cname.vercel-dns.com", purpose: "routing" },
-          { name: `_vercel.${hostname.split(".")[0] ?? ""}`, type: "TXT", value: "vc-domain-verify=demo,demo", purpose: "verification" },
-        ],
+    dns: [
+      ...routing,
+      { name: txtName, type: "TXT", value: "vc-domain-verify=demo,demo", purpose: "verification" },
+    ],
     misconfigured: false,
     name: hostname,
     sslReady: true,
@@ -92,29 +89,26 @@ function demoSnapshot(hostname: string): VercelDomainSnapshot {
 }
 
 function buildDnsInstructions(hostname: string, domain: VercelProjectDomainResponse, config: VercelDomainConfigResponse | null): DnsRecordInstruction[] {
-  const records: DnsRecordInstruction[] = [];
   const apex = isApexHostname(hostname);
   const cname = config?.recommendedCNAME?.sort((a, b) => a.rank - b.rank)[0]?.value ?? "cname.vercel-dns.com";
   const ipv4 = config?.recommendedIPv4?.sort((a, b) => a.rank - b.rank)[0]?.value ?? "76.76.21.21";
 
-  if (apex) {
-    records.push({ name: "@", type: "A", value: ipv4, purpose: "routing" });
-  } else {
-    const label = hostname.split(".")[0] ?? hostname;
-    records.push({ name: label, type: "CNAME", value: cname, purpose: "routing" });
-  }
+  const records: DnsRecordInstruction[] = apex
+    ? [{ name: "@", type: "A", value: ipv4, purpose: "routing" }]
+    : [{ name: hostname.split(".")[0] ?? hostname, type: "CNAME", value: cname, purpose: "routing" }];
 
   for (const challenge of domain.verification ?? []) {
     if (challenge.type.toUpperCase() !== "TXT") continue;
+    if (typeof challenge.domain !== "string" || typeof challenge.value !== "string") continue;
     records.push({
-      name: challenge.domain,
+      name: relativeDnsName(challenge.domain, hostname),
       type: "TXT",
       value: challenge.value,
       purpose: "verification",
     });
   }
 
-  return records;
+  return ensureDnsInstructions(hostname, records);
 }
 
 export function canUseVercelDomains() {

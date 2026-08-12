@@ -249,6 +249,8 @@ Pri vytvorení projektu `create_candidate_site` rezervuje subdomain hostname `{s
 
 Vercel tajomstvá (`VERCEL_TOKEN`, `VERCEL_PROJECT_ID`, voliteľne `VERCEL_TEAM_ID`) sú iba serverové. Demo režim Vercel nevolá. Canonical/OG URL berie aktívnu primary custom doménu, inak platformovú cestu.
 
+Po attachi alebo kontrole sa DNS inštrukcie vždy uložia (minimálne apex A `76.76.21.21` alebo CNAME na `cname.vercel-dns.com`). Ak metadáta v DB chýbajú, načítanie editora ich doplní z Vercel API alebo fallbackom. Nesprávne DNS pred dokončením u registrátora zostáva v stave `verifying`, nie okamžité `failed`.
+
 Hlavné súbory: `lib/domains/*`, `lib/data/domains.ts`, `app/actions/domains.ts`, `components/editor/domain-editor.tsx`, `proxy.ts`, migrácia `0014_domain_management.sql`.
 
 Stránka publikovania načíta vlastnený projekt na serveri a do klientského UI odovzdá iba jeho serializovateľné `planCode`. Pri Free stave ponúka nákupný výber, fakturačný formulár a históriu objednávok. Pri Basic alebo Plus sa nákupný výber aj objednávkové CTA skryjú a zobrazí sa iba aktívny balík s jeho benefitmi a funkčným odkazom na kontrolu náhľadu. Tým UI nežiada už zaplateného kandidáta o ďalšiu objednávku; oprávnenia platených funkcií však naďalej overuje databáza, nie tento vizuálny stav.

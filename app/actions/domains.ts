@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { isDemoMode } from "@/lib/env";
+import { ensureDnsInstructions } from "@/lib/domains/dns-instructions";
 import {
   addVercelProjectDomain,
   removeVercelProjectDomain,
@@ -32,9 +33,10 @@ function mapRpcError(error: { code?: string; message?: string } | null, fallback
 }
 
 function statusFromSnapshot(snapshot: VercelDomainSnapshot): "pending" | "verifying" | "active" | "failed" {
+  // Misconfigured DNS after attach is expected until the candidate updates registrar records.
+  // Keep "verifying" so the UI shows instructions instead of an immediate hard failure.
   if (snapshot.verified && snapshot.sslReady && !snapshot.misconfigured) return "active";
-  if (snapshot.misconfigured && snapshot.verified) return "failed";
-  if (snapshot.verified || snapshot.dns.length > 0) return "verifying";
+  if (snapshot.verified || snapshot.dns.length > 0 || snapshot.misconfigured) return "verifying";
   return "pending";
 }
 
@@ -101,13 +103,14 @@ export async function attachCustomDomainAction(input: unknown): Promise<DomainAc
 
   try {
     const snapshot = await addVercelProjectDomain(hostname);
-    const status = await syncSnapshot(domainId, snapshot);
+    const withDns = { ...snapshot, dns: ensureDnsInstructions(hostname, snapshot.dns) };
+    const status = await syncSnapshot(domainId, withDns);
     await revalidateDomainPaths(siteId, site.slug, hostname);
     return {
       ok: true,
       message: status === "active"
         ? "Doména je aktívna a HTTPS je pripravené."
-        : "Doména je pripojená. Dokončite DNS záznamy a potom spustite kontrolu.",
+        : "Doména je pripojená. Nižšie nastavte DNS záznamy u registrátora a potom spustite kontrolu.",
     };
   } catch (error) {
     try {
@@ -150,13 +153,20 @@ export async function checkCustomDomainAction(input: unknown): Promise<DomainAct
 
   try {
     const snapshot = await verifyVercelProjectDomain(domain.hostname);
-    const status = await syncSnapshot(domain.id, snapshot);
+    const withDns = {
+      ...snapshot,
+      dns: ensureDnsInstructions(domain.hostname, snapshot.dns),
+    };
+    const status = await syncSnapshot(domain.id, withDns);
     await revalidateDomainPaths(parsed.data.siteId, site?.slug, domain.hostname);
     if (status === "active") {
       return { ok: true, message: "Doména je overená a HTTPS certifikát je pripravený." };
     }
-    if (status === "failed") {
-      return { ok: false, message: "DNS záznamy ešte nie sú správne nastavené. Skontrolujte inštrukcie a skúste znova." };
+    if (snapshot.misconfigured) {
+      return {
+        ok: false,
+        message: "DNS záznamy ešte nie sú správne nastavené. Skontrolujte tabuľku nižšie u svojho registrátora a skúste znova.",
+      };
     }
     return { ok: true, message: "Overenie ešte nie je hotové. DNS zmeny môžu trvať niekoľko minút až 24 hodín." };
   } catch (checkError) {

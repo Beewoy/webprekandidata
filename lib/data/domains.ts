@@ -1,4 +1,4 @@
-import { isDemoMode } from "@/lib/env";
+import { isDemoMode, isVercelDomainsConfigured } from "@/lib/env";
 import { getSite } from "@/lib/data/sites";
 import {
   DOMAIN_STATUS_LABELS,
@@ -6,7 +6,8 @@ import {
   isDomainStatus,
   type DomainStatus,
 } from "@/lib/domains/platform";
-import type { DnsRecordInstruction } from "@/lib/domains/vercel";
+import { ensureDnsInstructions, type DnsRecordInstruction } from "@/lib/domains/dns-instructions";
+import { getVercelProjectDomain, snapshotToMetadata, snapshotToSslMetadata } from "@/lib/domains/vercel";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/database.types";
 
@@ -41,14 +42,12 @@ function readDns(metadata: Json): DnsRecordInstruction[] {
   return dns.flatMap((item) => {
     if (!item || typeof item !== "object" || Array.isArray(item)) return [];
     const row = item as Record<string, unknown>;
-    const type = row.type;
-    const purpose = row.purpose;
-    if (
-      typeof row.name !== "string"
-      || typeof row.value !== "string"
-      || (type !== "A" && type !== "AAAA" && type !== "CNAME" && type !== "TXT")
-      || (purpose !== "routing" && purpose !== "verification")
-    ) {
+    const rawType = typeof row.type === "string" ? row.type.toUpperCase() : "";
+    const type = rawType === "A" || rawType === "AAAA" || rawType === "CNAME" || rawType === "TXT"
+      ? rawType
+      : null;
+    const purpose = row.purpose === "verification" ? "verification" : "routing";
+    if (typeof row.name !== "string" || typeof row.value !== "string" || !type) {
       return [];
     }
     return [{ name: row.name, type, value: row.value, purpose }];
@@ -68,8 +67,11 @@ function mapDomain(row: {
   if (row.domain_type !== "subdomain" && row.domain_type !== "custom") return null;
   if (!isDomainStatus(row.status) || row.status === "removed") return null;
   const ssl = asObject(row.ssl_metadata);
+  const dns = row.domain_type === "custom"
+    ? ensureDnsInstructions(row.hostname, readDns(row.verification_metadata))
+    : readDns(row.verification_metadata);
   return {
-    dns: readDns(row.verification_metadata),
+    dns,
     domainType: row.domain_type,
     hostname: row.hostname,
     id: row.id,
@@ -79,6 +81,36 @@ function mapDomain(row: {
     statusLabel: DOMAIN_STATUS_LABELS[row.status],
     verifiedAt: row.verified_at,
   };
+}
+
+async function healCustomDomainDns(record: SiteDomainRecord): Promise<SiteDomainRecord> {
+  if (record.domainType !== "custom") return record;
+  if (!isVercelDomainsConfigured()) {
+    return { ...record, dns: ensureDnsInstructions(record.hostname, record.dns) };
+  }
+
+  try {
+    const snapshot = await getVercelProjectDomain(record.hostname);
+    const dns = ensureDnsInstructions(record.hostname, snapshot.dns);
+    const nextStatus: DomainStatus = record.status === "active" ? "active" : "verifying";
+    const supabase = await createClient();
+    await supabase.rpc("sync_domain_provider_state", {
+      p_domain_id: record.id,
+      p_status: nextStatus,
+      p_verification_metadata: snapshotToMetadata({ ...snapshot, dns }) as Json,
+      p_ssl_metadata: snapshotToSslMetadata(snapshot) as Json,
+      p_make_primary: false,
+    });
+    return {
+      ...record,
+      dns,
+      sslReady: snapshot.sslReady,
+      status: nextStatus,
+      statusLabel: DOMAIN_STATUS_LABELS[nextStatus],
+    };
+  } catch {
+    return { ...record, dns: ensureDnsInstructions(record.hostname, record.dns) };
+  }
 }
 
 export async function getSiteDomainState(siteId: string): Promise<SiteDomainState | null> {
@@ -120,18 +152,24 @@ export async function getSiteDomainState(siteId: string): Promise<SiteDomainStat
 
   if (domainsResult.error) throw new Error("Domény sa nepodarilo načítať.");
 
-  const records = (domainsResult.data ?? []).flatMap((row) => {
+  const records = await Promise.all((domainsResult.data ?? []).map(async (row) => {
     const mapped = mapDomain(row);
-    return mapped ? [mapped] : [];
-  });
-  const customDomain = records.find((row) => row.domainType === "custom") ?? null;
+    if (!mapped) return null;
+    if (mapped.domainType === "custom" && readDns(row.verification_metadata).length === 0) {
+      return healCustomDomainDns(mapped);
+    }
+    return mapped;
+  }));
+
+  const present = records.filter((row): row is SiteDomainRecord => row !== null);
+  const customDomain = present.find((row) => row.domainType === "custom") ?? null;
 
   return {
     canUseCustomDomain: entitlementResult.data === true,
     customDomain,
     platformUrl: getPlatformSiteUrl(site.slug),
     planCode: site.planCode,
-    records,
+    records: present,
     slug: site.slug,
   };
 }

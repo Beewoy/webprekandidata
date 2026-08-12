@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { isValidHostname, normalizeHostname } from "../lib/domains/hostname";
 import {
+  defaultDnsInstructions,
+  ensureDnsInstructions,
+  relativeDnsName,
+} from "../lib/domains/dns-instructions";
+import {
   getCanonicalPlatformHostname,
   getCanonicalPublicUrl,
   isPlatformHostname,
@@ -45,5 +50,37 @@ describe("domain hostname helpers", () => {
       primaryIsCustom: true,
       primaryStatus: "verifying",
     })).toMatch(/\/martin-novak$/);
+  });
+});
+
+describe("dns instructions", () => {
+  it("pre apex vráti A záznam na Vercel", () => {
+    expect(defaultDnsInstructions("volby27.sk")).toEqual([
+      { name: "@", type: "A", value: "76.76.21.21", purpose: "routing" },
+    ]);
+  });
+
+  it("doplní fallback keď provider nevráti záznamy", () => {
+    expect(ensureDnsInstructions("volby27.sk", [])).toHaveLength(1);
+  });
+
+  it("skráti FQDN overovacieho TXT na relatívny názov", () => {
+    expect(relativeDnsName("_vercel.volby27.sk", "volby27.sk")).toBe("_vercel");
+    expect(relativeDnsName("volby27.sk", "volby27.sk")).toBe("@");
+  });
+});
+
+describe("registrar guide", () => {
+  it("pre apex obsahuje varovanie o AAAA zázname", async () => {
+    const { getDomainRegistrarGuide } = await import("../lib/domains/registrar-guide");
+    const guide = getDomainRegistrarGuide("volby27.sk");
+    expect(guide.apexAaaaWarning).toMatch(/AAAA/);
+    expect(guide.steps.length).toBeGreaterThan(3);
+  });
+
+  it("pre subdoménu neobsahuje AAAA varovanie", async () => {
+    const { getDomainRegistrarGuide } = await import("../lib/domains/registrar-guide");
+    const guide = getDomainRegistrarGuide("volby.martin-novak.sk");
+    expect(guide.apexAaaaWarning).toBeNull();
   });
 });
