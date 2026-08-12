@@ -1,0 +1,1 @@
+-- Lokálny dev seed. Schéma a storage bucket prichádzajú z migrácií.

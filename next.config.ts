@@ -3,13 +3,18 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const isProduction = process.env.NODE_ENV === "production";
 
+// Local Docker Supabase is only reachable in development; keep production CSP on cloud hosts.
+const localSupabaseOrigins = isProduction
+  ? ""
+  : " http://127.0.0.1:54321 http://localhost:54321 ws://127.0.0.1:54321 ws://localhost:54321";
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline' https://www.googletagmanager.com${isProduction ? "" : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://*.supabase.co https://www.google-analytics.com",
+  `img-src 'self' data: blob: https://*.supabase.co https://www.google-analytics.com${localSupabaseOrigins}`,
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com",
+  `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com${localSupabaseOrigins}`,
   "frame-src https://checkout.stripe.com",
   "object-src 'none'",
   "base-uri 'self'",

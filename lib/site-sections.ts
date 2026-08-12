@@ -68,6 +68,7 @@ export const editorFields: Record<string, Array<{ label: string; name: string; t
     { label: "Meno a priezvisko", name: "name", value: "Martin Novák" },
     { label: "Na akú funkciu kandidujete", name: "position", value: "Kandidát na primátora mesta" },
     { label: "Obec / mesto", name: "city", value: "Trnava" },
+    { label: "Politická príslušnosť / podpora", name: "politicalAffiliation", hint: "Napr. SaS · KDH · Demokrati alebo Nezávislý kandidát" },
   ],
   kontakt: [
     { label: "E-mail", name: "email", value: "martin@novak.sk" },

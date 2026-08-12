@@ -124,6 +124,7 @@ export function SitePreview({ contactFormPreview = false, data, publicMode = fal
                 <div className="candidate-preview__container candidate-preview__hero-inner">
                   <div className="candidate-preview__hero-copy">
                     <p className="candidate-preview__eyebrow">{data.candidate.position}</p>
+                    {data.candidate.politicalAffiliation && <p className="candidate-preview__affiliation">{data.candidate.politicalAffiliation}</p>}
                     <h1>
                       {data.hero.headlineBefore}
                       {data.hero.highlight && <em>{data.hero.highlight}</em>}

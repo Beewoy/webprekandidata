@@ -28,6 +28,7 @@ const demoPreview: SitePreviewData = {
     city: "Trnava",
     initials: "MN",
     name: "Martin Novák",
+    politicalAffiliation: "",
     position: "Kandidát na primátora",
   },
   contact: {
@@ -81,7 +82,7 @@ const demoPreview: SitePreviewData = {
       url: "/images/demo-candidate-portrait.webp",
     },
     logo: {
-      altText: "Portrét Martina Nováka",
+      altText: "Znak kampane Martina Nováka",
       url: "/images/demo-candidate-logo.webp",
     },
   },

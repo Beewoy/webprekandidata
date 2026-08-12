@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import styles from "./campaign-page.module.css";
+import styles from "./election-countdown.module.css";
 
 type CountdownValue = {
   days: number;
@@ -23,7 +23,15 @@ function calculateCountdown(targetDate: string): CountdownValue {
   };
 }
 
-export function ElectionCountdown({ targetDate }: { targetDate: string }) {
+export function ElectionCountdown({
+  targetDate,
+  variant = "campaign",
+}: {
+  targetDate: string;
+  variant?: "campaign" | "auth" | "benefits";
+}) {
+  const isAuth = variant === "auth";
+  const isBenefits = variant === "benefits";
   const [countdown, setCountdown] = useState<CountdownValue | null>(null);
 
   useEffect(() => {
@@ -35,7 +43,12 @@ export function ElectionCountdown({ targetDate }: { targetDate: string }) {
 
   if (!countdown) {
     return (
-      <p className={styles.countdownLoading} aria-live="polite">
+      <p
+        className={
+          isBenefits ? styles.countdownBenefitsLoading : isAuth ? styles.countdownAuthLoading : styles.countdownLoading
+        }
+        aria-live="polite"
+      >
         Voľby sa konajú 24. októbra 2026.
       </p>
     );
@@ -43,7 +56,12 @@ export function ElectionCountdown({ targetDate }: { targetDate: string }) {
 
   if (countdown.finished) {
     return (
-      <p className={styles.countdownLoading} aria-live="polite">
+      <p
+        className={
+          isBenefits ? styles.countdownBenefitsLoading : isAuth ? styles.countdownAuthLoading : styles.countdownLoading
+        }
+        aria-live="polite"
+      >
         Volebný deň je tu.
       </p>
     );
@@ -58,7 +76,13 @@ export function ElectionCountdown({ targetDate }: { targetDate: string }) {
 
   return (
     <div
-      className={styles.countdown}
+      className={
+        isBenefits
+          ? `${styles.countdown} ${styles.countdownBenefits}`
+          : isAuth
+            ? `${styles.countdown} ${styles.countdownAuth}`
+            : styles.countdown
+      }
       role="timer"
       aria-label={`${countdown.days} dní, ${countdown.hours} hodín a ${countdown.minutes} minút do volieb`}
     >

@@ -73,7 +73,7 @@ export function buildSiteSectionStatuses(source: SiteSectionStatusSource): SiteS
   const theme = objectValue(source.theme);
   const themeHasColor = hasText(theme.primaryColor);
   const themeHasLayout = hasText(theme.layout);
-  const mediaKinds = new Set(source.mediaKinds ?? []);
+  const mediaKinds = new Set((source.mediaKinds ?? []).filter((kind) => kind !== "party_logo"));
   const postStatuses = source.postStatuses ?? [];
   const domainStatuses = source.domainStatuses ?? [];
 

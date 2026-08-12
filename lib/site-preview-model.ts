@@ -38,6 +38,7 @@ export type SitePreviewData = {
     city: string;
     initials: string;
     name: string;
+    politicalAffiliation: string;
     position: string;
   };
   contact: {
@@ -171,6 +172,7 @@ export function buildSitePreviewData(
       city,
       initials: initials(candidateName),
       name: candidateName,
+      politicalAffiliation: basics.politicalAffiliation.trim(),
       position: basics.position,
     },
     contact: {

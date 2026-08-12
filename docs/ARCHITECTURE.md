@@ -34,6 +34,51 @@ Vyžaduje Supabase premenné a `DEMO_MODE=false`.
 - RLS filtruje údaje podľa `auth.uid()`,
 - vytvorenie projektu a autosave používajú databázové RPC funkcie.
 
+## 2.1 Prostredia a databáza
+
+```mermaid
+flowchart TB
+  subgraph mac [Mac — lokálny vývoj]
+    Dev["next dev"]
+    LocalEnv[".env.local\n127.0.0.1:54321"]
+    LocalDB["Supabase Docker"]
+    Dev --> LocalEnv --> LocalDB
+  end
+
+  subgraph ci [GitHub Actions]
+    Merge["merge do main"]
+    Migrate["supabase db push"]
+    Merge --> Migrate
+  end
+
+  subgraph prod [Produkcia]
+    Vercel["Vercel deploy"]
+    CloudDB["Supabase cloud"]
+    Vercel --> CloudDB
+    Migrate --> CloudDB
+  end
+```
+
+| Prostredie | Databáza | Credentials |
+|---|---|---|
+| Lokálny vývoj | Docker Supabase na `:54321` | `.env.local` (nikdy `*.supabase.co`) |
+| Demo bez DB | Žiadna (in-memory fallback) | `DEMO_MODE=true` alebo chýbajúce Supabase env |
+| Produkcia | Cloud Supabase `iozvohajbtzxviytpufp` | Vercel env + GitHub Secrets |
+
+**Zero prod from Mac:** vývojár na Macu nespúšťa `supabase link`, `supabase db push` ani `supabase config push`. Nové migrácie sa testujú cez `npm run supabase:reset` a do produkcie idú workflow `.github/workflows/supabase-migrate.yml`.
+
+Lokálny `supabase/config.toml` má `site_url` na localhost a vypnutý Brevo SMTP; auth maily pri lokálnom stacku idú do Inbucketu. Produkčný Brevo SMTP zostáva v Supabase Dashboard.
+
+### Production safety checklist
+
+Pred každým lokálnym vývojom overte:
+
+- Docker beží a `npm run supabase:status` ukazuje lokálny stack,
+- `.env.local` obsahuje `http://127.0.0.1:54321`, nie cloud URL,
+- `supabase/.temp/linked-project.json` neexistuje.
+
+Zakázané príkazy na Macu: `supabase link`, `supabase db push`, `supabase config push`, `supabase db reset --linked`.
+
 ## 3. Rozdelenie kódu
 
 ```text
@@ -202,7 +247,7 @@ Kľúčové tabuľky:
 
 Po pripojení produkčnej databázy sa existujúce migrácie nemenia. Každá zmena schémy dostane nový očíslovaný súbor.
 
-Cloudová schéma je zdrojom pre generovaný súbor `lib/supabase/database.types.ts`. Po každej aplikovanej migrácii sa obnoví cez `npm run supabase:types`; browserový aj serverový klient používajú typ `Database`. Generovaný súbor sa neupravuje ručne.
+Cloudová schéma je zdrojom pre generovaný súbor `lib/supabase/database.types.ts`. Po každej lokálnej zmene schémy sa obnoví cez `npm run supabase:types` (z lokálneho Docker stacku); browserový aj serverový klient používajú typ `Database`. Generovaný súbor sa neupravuje ručne.
 
 Balík je vlastnosť konkrétneho webu, nie globálna vlastnosť prihlasovacieho účtu. `sites.plan_code = null` znamená Free; hodnoty `basic` a `plus` sa v dashboarde zobrazujú ako aktívny balík. Samotný textový stav v `sites` nie je bezpečnostným oprávnením na platené funkcie. Plus AI sa odomkne iba vtedy, keď pre ten istý web a vlastníka existuje zaplatená, stále platná Plus objednávka v `orders`. Produkčné odomknutie ide výhradne cez overený Stripe fulfillment (`fulfill_stripe_checkout`); admin môže výnimočne udeliť balík cez auditovanú RPC `admin_grant_site_plan`.
 
@@ -261,11 +306,11 @@ Médiá konceptu sa ukladajú do súkromného bucketu `candidate-media`. Cesta o
 
 Editor obrázkov prijíma iba JPEG, PNG a WebP do 15 MiB. Pred uploadom kontroluje signatúru súboru a rozmery, po orezaní cez canvas vytvorí optimalizovaný WebP, čím sa zároveň odstránia pôvodné EXIF metadata. Klient nahráva objekt cez autentifikovaný Supabase Storage klient; vlastníctvo cesty vynucuje Storage RLS. `registerMediaAssetAction()` následne znova autentifikuje používateľa, overí projekt a presnú cestu, stiahne uložený objekt a overí jeho veľkosť aj skutočnú WebP signatúru. Až potom zapíše metadata do `media_assets` a starší aktívny obrázok rovnakého typu označí ako zmazaný. Staré objekty zostávajú do budúceho retenčného cleanupu obnoviteľné.
 
-Galéria je samostatná obsahová sekcia, pretože na rozdiel od systémových obrázkov (logo, hero, „O mne“ a náhľad pre sociálne siete) obsahuje opakované verejné položky. Kandidát môže nahrať najviac 12 fotografií. Klient ich zmenší najviac na 1920 × 1440 px, odstráni pôvodné EXIF metadata a exportuje WebP. Server znovu overí skutočnú WebP signatúru, vlastníctvo projektu, počet položiek a spoločný 15 MiB limit aktívnych médií projektu. Titulok má najviac 160 znakov a zároveň slúži ako alternatívny text; pri prázdnom titulku sa použije neutrálny popis.
+Galéria je samostatná obsahová sekcia, pretože na rozdiel od systémových obrázkov (znak kampane, hero, „O mne“ a náhľad pre sociálne siete) obsahuje opakované verejné položky. Kandidát môže nahrať najviac 12 fotografií. Klient ich zmenší najviac na 1920 × 1440 px, odstráni pôvodné EXIF metadata a exportuje WebP. Server znovu overí skutočnú WebP signatúru, vlastníctvo projektu, počet položiek a spoločný 15 MiB limit aktívnych médií projektu. Titulok má najviac 160 znakov a zároveň slúži ako alternatívny text; pri prázdnom titulku sa použije neutrálny popis.
 
 Poradie galérie sa ukladá v `media_assets.sort_order`. Celý zoznam sa mení jedinou vlastnícky chránenou RPC `reorder_gallery_assets`, ktorá odmietne duplicity, cudzie ID aj neúplný zoznam. Odstránenie najprv záznam označí cez `deleted_at` a potom odstráni objekt zo Storage. Náhľady sa čítajú iba cez krátkodobé podpísané URL. `getSiteGallery()` poskytuje editoru položky v uloženom poradí aj súčet využitého aktívneho úložiska.
 
-Súkromné náhľady nepoužívajú verejné URL bucketu. `getSiteMedia()` vytvára krátkodobé podpísané odkazy a `getSitePreviewData()` ich pridáva do sanitizovaného modelu náhľadu pre logo, hero a fotografiu „O mne“. Verejný web skladá rovnaký zobrazovací model iba z `site_publications` a jeho samostatného media manifestu; aktuálny koncept ani aktívne objekty súkromného bucketu nečíta.
+Súkromné náhľady nepoužívajú verejné URL bucketu. `getSiteMedia()` vytvára krátkodobé podpísané odkazy a `getSitePreviewData()` ich pridáva do sanitizovaného modelu náhľadu pre znak kampane, hero a fotografiu „O mne“. Verejný web skladá rovnaký zobrazovací model iba z `site_publications` a jeho samostatného media manifestu; aktuálny koncept ani aktívne objekty súkromného bucketu nečíta. Politická príslušnosť je voliteľný text v základných údajoch (`politicalAffiliation`) a zobrazuje sa v hero sekcii, nie ako logo.
 
 ## 9. Stav obsahu
 
@@ -279,7 +324,7 @@ Opakované položky v sekciách „O mne“, „Prečo kandidujem“ a „Progra
 
 Náhľad webu sa neskladá z ukážkového JSX. Serverová funkcia `getSitePreviewData()` načíta vlastnený projekt a celý `site_drafts`, potom `buildSitePreviewData()` vytvorí typovaný, sanitizovaný model kandidátskeho webu. Model obsahuje základné údaje, hero, „O mne“, dôvody, program, galériu, kontakt, tému a číslo revízie. Galéria sa v tomto modeli zobrazuje v uloženom poradí a fotografie sa otvárajú v prístupnom lightboxe ovládateľnom tlačidlami, šípkami klávesnice a klávesom Escape. Náhľad používa rovnaký model pre desktopovú aj mobilnú simuláciu. Verejná cesta `/:slug` skladá ten istý model zo snapshotu, takže rozloženie a sanitizácia zostávajú zhodné, ale zdroj dát je striktne oddelený. Každé uloženie obsahovej sekcie alebo galérie revaliduje iba súkromný náhľad; verejná cesta sa revaliduje až publikačnou akciou.
 
-Prehľad projektu načítava rovnaký `SitePreviewData` a jeho kompaktná karta z neho preberá adresu, kandidáta, hero texty, zvolenú šablónu, farbu, logo a portrét. Karta preto nesmie obsahovať samostatné natvrdo zapísané ukážkové dáta, ktoré by sa mohli rozísť s úplným náhľadom.
+Prehľad projektu načítava rovnaký `SitePreviewData` a jeho kompaktná karta z neho preberá adresu, kandidáta, hero texty, zvolenú šablónu, farbu, znak kampane a portrét. Karta preto nesmie obsahovať samostatné natvrdo zapísané ukážkové dáta, ktoré by sa mohli rozísť s úplným náhľadom.
 
 Editor vzhľadu načítava `theme` a spoločnú `revision` z `site_drafts`. Serverová akcia ukladá normalizovaný objekt `{ layout, primaryColor }` priamym vlastnícky chráneným update-om s podmienkou na očakávanú revíziu. Zmena šablóny alebo platnej HEX farby sa ukladá automaticky; pri súbežnej úprave sa update nevykoná a klient zobrazí konflikt. Po úspechu sa revaliduje layout projektu aj úplný náhľad.
 

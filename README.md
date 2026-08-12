@@ -27,7 +27,30 @@ Ak je port 3000 obsadený:
 npm run dev -- -p 3107
 ```
 
-Repozitár je pripojený ku cloudovému projektu Supabase `Webprekandidata` a lokálny `.env.local` používa reálnu autentifikáciu. Demo režim zostáva podporovaný: bez `.env.local`, prípadne s `DEMO_MODE=true`, funguje aplikácia bez externých účtov.
+Repozitár podporuje lokálny Supabase stack (Docker) aj produkčný cloud projekt. Lokálny `.env.local` musí smerovať na `http://127.0.0.1:54321`, nie na `*.supabase.co`. Demo režim zostáva podporovaný: bez `.env.local`, prípadne s `DEMO_MODE=true`, funguje aplikácia bez externých účtov.
+
+## Lokálna databáza (odporúčané)
+
+Požiadavky: [Docker Desktop](https://www.docker.com/products/docker-desktop/) bežiaci na pozadí.
+
+```bash
+cp .env.local.example .env.local
+npm run supabase:start
+npm run supabase:env          # skopírujte anon a service_role kľúče do .env.local
+npm run supabase:reset        # aplikuje migrácie 0001–0018
+npm run supabase:types
+npm run dev
+```
+
+Lokálne služby:
+
+- API: `http://127.0.0.1:54321`
+- Studio: `http://127.0.0.1:54323`
+- Auth e-maily (Inbucket): `http://127.0.0.1:54324`
+
+Po zmene schémy: `npm run supabase:reset` a `npm run supabase:types`.
+
+**Zero prod from Mac:** na Macu nespúšťajte `supabase link`, `supabase db push` ani `supabase config push`. Migrácie do produkcie idú cez GitHub Actions pri merge do `main` (workflow `.github/workflows/supabase-migrate.yml`).
 
 ## Kontrolné príkazy
 
@@ -40,29 +63,44 @@ npm run build
 
 Pred odovzdaním zmeny musia prejsť všetky štyri kontroly.
 
-## Pripojenie Supabase
+## Supabase a prostredia
 
-Cloudový projekt je linkovaný cez Supabase CLI. Pri novom počítači alebo novom Supabase projekte:
+### Lokálny vývoj
 
-1. Skopírujte `.env.example` ako `.env.local` a doplňte URL, publishable key a serverový `SUPABASE_SERVICE_ROLE_KEY`.
-2. Nastavte `DEMO_MODE=false`.
-3. Prihláste CLI cez `npx supabase login`.
-4. Pripojte správny projekt cez `npx supabase link --project-ref <project-ref>`.
-5. Najprv skontrolujte migrácie cez `npx supabase db push --linked --dry-run`, potom ich aplikujte cez `npx supabase db push --linked`.
-6. Po každej zmene schémy obnovte typy cez `npm run supabase:types`.
-7. V Supabase Auth povoľte redirect URL pre `/auth/callback`.
+1. Skopírujte `.env.local.example` ako `.env.local`.
+2. Spustite `npm run supabase:start` a doplňte kľúče z `npm run supabase:env`.
+3. Nastavte `DEMO_MODE=false` a `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`.
+4. Po zmene schémy: `npm run supabase:reset` a `npm run supabase:types`.
 
-Aktuálna cloudová Auth konfigurácia povoľuje lokálne callbacky na portoch 3000 a 3107 aj budúce produkčné callbacky na `webprekandidata.sk`. Hlavná Site URL je počas lokálneho vývoja `http://localhost:3000`; pred produkčným nasadením sa zmení na finálnu HTTPS adresu.
-
-### Brevo SMTP
-
-Auth e-maily odosiela Brevo cez `smtp-relay.brevo.com:587`. Konfigurácia je v `supabase/config.toml`; SMTP login a SMTP key sa poskytujú cez `BREVO_SMTP_USER` a `BREVO_SMTP_KEY`. SMTP key sa nikdy nezapisuje do repozitára ani do premennej s prefixom `NEXT_PUBLIC_`.
+Auth e-maily pri lokálnom stacku idú do Inbucketu (`http://127.0.0.1:54324`), nie cez Brevo. Kontaktný formulár a aplikačné e-maily mimo Supabase Auth stále môžu používať Brevo cez `BREVO_SMTP_*` v `.env.local`.
 
 Registrácia vytvorí Supabase reláciu okamžite. Vlastníctvo adresy sa následne overuje aplikačným jednorazovým tokenom s 24-hodinovou platnosťou; v databáze sa uchováva iba jeho SHA-256 odtlačok. Vydávanie tokenov je dostupné iba serverovému `service_role`, zatiaľ čo verejný callback môže token iba spotrebovať. Kandidát môže e-mail odoslať znova najskôr po jednej minúte.
 
-Doména `webprekandidata.sk` je v Brevo autentifikovaná a odosielateľ `Web pre kandidáta <noreply@webprekandidata.sk>` je overený. DNS spravuje Websupport. Nastavené sú Brevo overovacie TXT a dva DKIM CNAME záznamy; pôvodný SPF pre Websupport poštu a existujúci DMARC `p=quarantine` zostali zachované. Pri budúcej zmene DNS sa tieto záznamy nesmú bez náhrady odstrániť.
+`SUPABASE_SERVICE_ROLE_KEY` patrí výlučne na server a nesmie byť použitý v klientskom komponente ani premennej s prefixom `NEXT_PUBLIC_`.
 
-`SUPABASE_SERVICE_ROLE_KEY` patrí výlučne na server a nesmie byť použitý v klientskom komponente ani premennej s prefixom `NEXT_PUBLIC_`. Používa sa na serverové vydanie overovacieho tokenu; bežný používateľ túto databázovú funkciu volať nemôže.
+### Produkcia
+
+Produkčný Supabase projekt `Webprekandidata` (`iozvohajbtzxviytpufp`) používa credentials iba vo Vercel env a GitHub Secrets. Migrácie sa aplikujú automaticky workflow `Supabase migrations` pri pushi do `main` (súbory v `supabase/migrations/`).
+
+Produkčná Auth Site URL je `https://webprekandidata.sk`. Brevo SMTP pre Auth je nakonfigurovaný v Supabase Dashboard, nie cez `config push` z lokálu.
+
+Doména `webprekandidata.sk` je v Brevo autentifikovaná a odosielateľ `Web pre kandidáta <noreply@webprekandidata.sk>` je overený. DNS spravuje Websupport.
+
+### Production safety checklist
+
+**Pred každým lokálnym vývojom:**
+
+- Docker beží a `npm run supabase:status` ukazuje `http://127.0.0.1:54321`
+- `.env.local` neobsahuje `*.supabase.co`
+- `supabase/.temp/linked-project.json` neexistuje (po `npx supabase unlink`)
+
+**Povolené na Macu:** `supabase:start`, `supabase:stop`, `supabase:reset`, `supabase:status`, `supabase:types`, `npm run dev`
+
+**Zakázané na Macu:** `supabase link`, `supabase db push`, `supabase config push`, `supabase db reset --linked`
+
+**Červené vlajky:** nový účet sa po lokálnej registrácii objaví v cloud Dashboard → Authentication.
+
+### Brevo SMTP (produkcia a voliteľný lokálny kontaktný formulár)
 
 ### Kontaktný formulár kandidáta
 
@@ -70,7 +108,7 @@ Formulár používa rovnaké premenné `BREVO_SMTP_USER` a `BREVO_SMTP_KEY`. Ser
 
 V sekcii Kontakt kandidát formulár vypne alebo zapne. Zmena sa na verejnom webe prejaví až po ďalšom publikovaní. Ochranu tvorí serverová validácia, skrytý honeypot a limit troch správ za 15 minút pre rovnaký e-mail a web.
 
-Supabase CLI je pripnuté ako lokálna dev dependency. Používajte `npx supabase ...` alebo npm skripty `supabase:start`, `supabase:status`, `supabase:reset`, `supabase:stop` a `supabase:types`.
+Supabase CLI je pripnuté ako lokálna dev dependency. Používajte `npx supabase ...` alebo npm skripty `supabase:start`, `supabase:status`, `supabase:reset`, `supabase:stop`, `supabase:types` a `supabase:env`.
 
 ### Publikovanie kandidátskeho webu
 

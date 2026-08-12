@@ -1,0 +1,113 @@
+.countdown {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(64px, 1fr));
+  margin: 26px 0 4px;
+  max-width: 420px;
+}
+
+.countdownUnit {
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid #d7e3eb;
+  border-radius: 11px;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 8px;
+  text-align: center;
+}
+
+.countdownUnit strong {
+  color: var(--campaign-navy, var(--navy-800));
+  font-size: 22px;
+  letter-spacing: -0.03em;
+}
+
+.countdownUnit small {
+  color: #68768a;
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.countdownLoading {
+  color: var(--campaign-navy, var(--navy-800));
+  font-size: 14px;
+  font-weight: 700;
+  margin: 22px 0 0;
+}
+
+.countdownAuth {
+  gap: 6px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 14px 0 0;
+  max-width: none;
+}
+
+.countdownAuth .countdownUnit {
+  background: var(--white);
+  border-color: var(--slate-200);
+  border-radius: 10px;
+  padding: 8px 4px;
+}
+
+.countdownAuth .countdownUnit strong {
+  color: var(--navy-800);
+  font-size: 18px;
+}
+
+.countdownAuth .countdownUnit small {
+  color: var(--slate-500);
+  font-size: 9px;
+}
+
+.countdownAuthLoading {
+  color: var(--slate-600);
+  font-size: 12px;
+  font-weight: 600;
+  margin: 12px 0 0;
+}
+
+.countdownBenefits {
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 14px 0 0;
+  max-width: none;
+}
+
+.countdownBenefits .countdownUnit {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.12);
+  border-radius: 11px;
+  padding: 10px 4px;
+}
+
+.countdownBenefits .countdownUnit strong {
+  color: var(--white);
+  font-size: 20px;
+}
+
+.countdownBenefits .countdownUnit small {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 9px;
+}
+
+.countdownBenefitsLoading {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 12px;
+  font-weight: 600;
+  margin: 12px 0 0;
+}
+
+@media (max-width: 640px) {
+  .countdown {
+    gap: 6px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .countdownUnit {
+    padding: 9px 3px;
+  }
+
+  .countdownUnit strong {
+    font-size: 19px;
+  }
+}

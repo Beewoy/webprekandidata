@@ -15,7 +15,7 @@ describe("site preview model", () => {
       { candidateName: "Pôvodné meno", locality: "Pôvodné mesto", slug: "jana-novakova" },
       {
         content: {
-          "zakladne-udaje": { name: "Jana Nováková", position: "Kandidátka na primátorku", city: "Žilina" },
+          "zakladne-udaje": { name: "Jana Nováková", position: "Kandidátka na primátorku", city: "Žilina", politicalAffiliation: "SaS · KDH · Demokrati" },
           kontakt: { email: "jana@example.sk", phone: "+421 900 111 222", facebook: "javascript:alert(1)", instagram: "https://instagram.com/jana", contactFormEnabled: "false" },
           uvod: { headline: "Spoločne pre lepšiu Žilinu", highlight: "lepšiu Žilinu", subheadline: "Mesto pre všetkých." },
           "o-mne": { body: '<p onclick="alert(1)"><strong>Môj príbeh</strong><script>alert(1)</script></p>', items_count: "1", item_0_icon: "services", item_0_title: "Otvorenosť", item_0_text: "Rozhodnutia vysvetlíme." },
@@ -39,7 +39,7 @@ describe("site preview model", () => {
       },
     );
 
-    expect(preview.candidate).toMatchObject({ name: "Jana Nováková", city: "Žilina", initials: "JN" });
+    expect(preview.candidate).toMatchObject({ name: "Jana Nováková", city: "Žilina", initials: "JN", politicalAffiliation: "SaS · KDH · Demokrati" });
     expect(preview.hero).toMatchObject({ headlineBefore: "Spoločne pre ", highlight: "lepšiu Žilinu" });
     expect(preview.about.bodyHtml).toBe("<p><strong>Môj príbeh</strong></p>");
     expect(preview.about.signature).toBe("— Jana");
@@ -70,5 +70,6 @@ describe("site preview model", () => {
     );
 
     expect(preview.contact.formEnabled).toBe(true);
+    expect(preview.candidate.politicalAffiliation).toBe("");
   });
 });

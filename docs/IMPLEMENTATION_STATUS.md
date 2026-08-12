@@ -48,7 +48,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - načítanie a automatické ukladanie vybranej šablóny aj farby do `site_drafts.theme` s ochranou revízie,
 - desktopový a mobilný náhľad,
 - dátový náhľad celého kandidátskeho webu z aktuálneho `site_drafts` s manuálnym obnovením revízie,
-- kompaktný náhľad na prehľade projektu napojený na rovnaký koncept, šablónu, farbu, logo a portrét ako úplný náhľad webu,
+- kompaktný náhľad na prehľade projektu napojený na rovnaký koncept, šablónu, farbu, znak kampane a portrét ako úplný náhľad webu,
 - kontaktný formulár nad pätičkou v náhľade verejnej šablóny a prepínač jeho viditeľnosti v sekcii Kontakt,
 - balíky Basic 49,99 € a Plus 89,99 € ako konečné jednorazové ceny,
 - stránka publikovania číta balík a reálne oprávnenie aktuálneho projektu zo servera: Free účtu zobrazí výber Basic/Plus, aktívnemu Basic/Plus účtu pripravenosť obsahu, stav verejnej verzie a akcie zverejniť, publikovať zmeny, pozastaviť alebo obnoviť,
@@ -90,18 +90,18 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - presúvanie opakovaných položiek myšou, dotykom aj klávesnicou s prístupnými oznámeniami,
 - výber a ukladanie tematických občianskych ikoniek pre hodnoty, dôvody a program vrátane zobrazenia v náhľade,
 - základná databázová schéma a RLS politiky,
-- cloudový Supabase projekt `Webprekandidata` linkovaný cez CLI,
-- cloudové migrácie `0001` až `0017` aplikované; `0015_production_operations.sql` rezervuje platformové slugy a pridáva service-role retenčnú RPC,
-- `0016_reserve_marketing_slugs.sql` dopĺňa rezervácie marketingových a systémových ciest; `0017_stripe_invoices.sql` pridáva nullable Stripe Invoice referencie a idempotentné `record_stripe_invoice`,
-- reálna verejná Supabase konfigurácia v ignorovanom `.env.local` a vypnutý demo režim,
-- cloudové Auth callbacky, okamžitá relácia po registrácii a bezpečnostné limity zosynchronizované z `supabase/config.toml`,
+- lokálny Supabase stack (Docker) pre vývoj; produkčný cloud projekt `Webprekandidata` (`iozvohajbtzxviytpufp`) s credentials iba vo Vercel a GitHub Secrets,
+- migrácie `0001` až `0019` v repozitári; produkčné nasadenie migrácií cez GitHub Actions workflow `Supabase migrations` pri pushi do `main`,
+- `.env.local.example` a aktualizovaný `.env.example` pre lokálny vývoj na `127.0.0.1:54321`,
+- politika zero prod from Mac: na vývojárskom Macu sa nespúšťa `supabase link` ani `db push` proti produkcii,
+- reálna produkčná Supabase konfigurácia vo Vercel env; lokálny `.env.local` smeruje na Docker stack,
 - samostatný Brevo SMTP key `WebPreKandidata.sk` vytvorený a bezpečne pripojený k Supabase Auth,
-- Brevo SMTP tajné údaje uložené iba v ignorovanom lokálnom `.env.local`,
+- Brevo SMTP tajné údaje pre kontaktný formulár môžu byť v ignorovanom lokálnom `.env.local`; produkčný Auth SMTP je v Supabase Dashboard,
 - doména `webprekandidata.sk` autentifikovaná v Brevo cez overovací TXT a dva DKIM CNAME záznamy vo Websupport DNS,
 - odosielateľ `Web pre kandidáta <noreply@webprekandidata.sk>` v Brevo vytvorený a overený,
 - existujúci SPF pre Websupport poštu a DMARC politika `p=quarantine` zachované,
 - migrácie `0004` a `0005` pre hashované overovacie tokeny, 24-hodinovú expiráciu a server-only vydávanie aplikované,
-- TypeScript databázové typy generované z cloudovej schémy a použité v oboch Supabase klientoch,
+- TypeScript databázové typy generované z lokálnej schémy (`npm run supabase:types --local`) a použité v oboch Supabase klientoch,
 - Supabase CLI 2.113.0 a lokálny `config.toml`,
 - súkromný Storage bucket `candidate-media` s vlastníckymi RLS politikami.
 
@@ -170,6 +170,8 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - titulky do 160 znakov, mazanie a uložené poradie cez vlastnícky chránenú databázovú RPC,
 - galéria v dátovom náhľade webu s desktopovým aj mobilným rozložením a lightboxom ovládateľným myšou aj klávesnicou.
 - titulný obrázok článku so serverovým overením WebP, vlastníctva a spoločného 15 MiB limitu projektu.
+- voliteľná textová politická príslušnosť / podpora v Základných údajoch (`politicalAffiliation`); zobrazuje sa decentne v hero sekcii, nie ako logo,
+- staršie `party_logo` médiá sa už nenahrávajú ani nezobrazujú; DB constraint z `0018_party_logo_media.sql` ostáva kvôli spätnej kompatibilite.
 
 ### Aktuality a AI články
 
@@ -196,7 +198,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 
 ### Overenie
 
-- 93 jednotkových testov,
+- 99 jednotkových testov,
 - TypeScript bez chýb,
 - ESLint bez chýb a varovaní,
 - úspešný produkčný build,

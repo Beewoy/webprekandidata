@@ -301,43 +301,6 @@
   text-align: center;
 }
 
-.countdown {
-  display: grid;
-  gap: 8px;
-  grid-template-columns: repeat(4, minmax(64px, 1fr));
-  margin: 26px 0 4px;
-  max-width: 420px;
-}
-
-.countdownUnit {
-  background: rgba(255, 255, 255, 0.84);
-  border: 1px solid #d7e3eb;
-  border-radius: 11px;
-  display: flex;
-  flex-direction: column;
-  padding: 10px 8px;
-  text-align: center;
-}
-
-.countdownUnit strong {
-  color: var(--campaign-navy);
-  font-size: 22px;
-  letter-spacing: -0.03em;
-}
-
-.countdownUnit small {
-  color: #68768a;
-  font-size: 10px;
-  margin-top: 2px;
-}
-
-.countdownLoading {
-  color: var(--campaign-navy);
-  font-size: 14px;
-  font-weight: 700;
-  margin: 22px 0 0;
-}
-
 .reasonSection,
 .pricingSection,
 .faqSection,
@@ -1063,19 +1026,6 @@
   .microTrust {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .countdown {
-    gap: 6px;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .countdownUnit {
-    padding: 9px 3px;
-  }
-
-  .countdownUnit strong {
-    font-size: 19px;
   }
 
   .reasonSection,

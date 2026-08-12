@@ -29,6 +29,7 @@ Before changing code, read these sources in order:
 - Supported social networks in MVP are Facebook and Instagram.
 - Do not expose `SUPABASE_SERVICE_ROLE_KEY`, Stripe secrets, e-mail secrets or AI keys to Client Components.
 - After production starts, database migrations are append-only. Add a new numbered migration instead of rewriting applied migrations.
+- Local development uses the Docker Supabase stack (`127.0.0.1:54321`). Never run `supabase link`, `supabase db push`, or `supabase config push` from a developer Mac against production. Production migrations run only via GitHub Actions (`.github/workflows/supabase-migrate.yml`) on merge to `main`.
 - Use Lucide icons and the existing navy/teal/Inter platform design system.
 - Preserve accessibility: visible labels, keyboard focus, text error messages and 44 px touch targets.
 - Add comments only for non-obvious invariants or tradeoffs; do not narrate obvious code.

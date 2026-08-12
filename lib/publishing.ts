@@ -9,7 +9,7 @@ export const publicationMediaItemSchema = z.object({
   assetId: z.string().uuid(),
   caption: z.string().max(160).default(""),
   height: z.number().int().positive(),
-  kind: z.enum(["logo", "hero", "about", "social", "gallery", "post"]),
+  kind: z.enum(["logo", "party_logo", "hero", "about", "social", "gallery", "post"]),
   sortOrder: z.number().int().nonnegative().default(0),
   storagePath: z.string().min(1).max(700),
   width: z.number().int().positive(),

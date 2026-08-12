@@ -2,6 +2,7 @@ const DAY_IN_MILLISECONDS = 86_400_000;
 const ELECTION_TIME_ZONE = "Europe/Bratislava";
 
 export const ELECTION_DATE = "2026-10-24";
+export const ELECTION_DATE_ISO = "2026-10-24T07:00:00+02:00";
 
 function getCalendarDate(date: Date) {
   const parts = new Intl.DateTimeFormat("en-CA", {

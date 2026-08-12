@@ -155,7 +155,7 @@ max_indexes = 5
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "https://webprekandidata.sk"
+site_url = "http://127.0.0.1:3000"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
@@ -242,7 +242,7 @@ otp_expiry = 3600
 # Brevo SMTP. Pri `supabase config push` musia byť tajné premenné dostupné
 # iba v lokálnom shelli; nikdy ich nezapisujte priamo do tohto súboru.
 [auth.email.smtp]
-enabled = true
+enabled = false
 host = "smtp-relay.brevo.com"
 port = 587
 user = "env(BREVO_SMTP_USER)"
