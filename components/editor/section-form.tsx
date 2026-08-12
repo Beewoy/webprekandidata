@@ -29,6 +29,7 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
   const fields = editorFields[section.slug] ?? [];
   const [saveState, setSaveState] = useState<"saved" | "saving" | "error">("saved");
   const [saveMessage, setSaveMessage] = useState("");
+  const [revisionConflict, setRevisionConflict] = useState(false);
   const repeatable = repeatableContent[section.slug];
   const [items, setItems] = useState<RepeatableItem[]>(() => buildRepeatableItems(repeatable?.items ?? [], initialValues));
   const itemsRef = useRef(items);
@@ -41,6 +42,7 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const revisionRef = useRef(initialRevision);
+  const revisionConflictRef = useRef(false);
   const dirtyVersionRef = useRef(0);
   const savingRef = useRef(false);
   const activeDragIdRef = useRef<string | null>(null);
@@ -59,7 +61,7 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
   }, [items]);
 
   async function flushChanges() {
-    if (savingRef.current || !formRef.current) return;
+    if (revisionConflictRef.current || savingRef.current || !formRef.current) return;
     savingRef.current = true;
     const capturedVersion = dirtyVersionRef.current;
     const values = Object.fromEntries(
@@ -75,6 +77,12 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
     savingRef.current = false;
 
     if (!result.ok) {
+      if (result.conflict) {
+        revisionConflictRef.current = true;
+        setRevisionConflict(true);
+        if (timer.current) clearTimeout(timer.current);
+        if (result.currentRevision) revisionRef.current = result.currentRevision;
+      }
       setSaveState("error");
       setSaveMessage(result.message);
       return;
@@ -92,11 +100,16 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
   }
 
   function scheduleSave(delay = 700) {
+    if (revisionConflictRef.current) return;
     dirtyVersionRef.current += 1;
     setSaveState("saving");
     setSaveMessage("");
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => void flushChanges(), delay);
+  }
+
+  function reloadForConflict() {
+    window.location.reload();
   }
 
   function announceMove(item: RepeatableItem, targetIndex: number) {
@@ -219,9 +232,19 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
         </span>
       } />
 
-      {saveState === "error" && <div className="autosave-error" role="alert"><AlertCircle size={18} /><span>{saveMessage}</span><button type="button" onClick={() => { setSaveState("saving"); void flushChanges(); }}>Skúsiť znova</button></div>}
+      {saveState === "error" && (
+        <div className="autosave-error" role="alert">
+          <AlertCircle size={18} />
+          <span>{saveMessage}</span>
+          {revisionConflict ? (
+            <button type="button" onClick={reloadForConflict}>Obnoviť stránku</button>
+          ) : (
+            <button type="button" onClick={() => { setSaveState("saving"); void flushChanges(); }}>Skúsiť znova</button>
+          )}
+        </div>
+      )}
 
-      <form ref={formRef} className="editor-card" onChange={() => scheduleSave()} onBlur={() => { if (timer.current) clearTimeout(timer.current); timer.current = setTimeout(() => void flushChanges(), 120); }} onSubmit={(event) => event.preventDefault()}>
+      <form ref={formRef} className="editor-card" onChange={() => scheduleSave()} onBlur={() => { if (revisionConflictRef.current) return; if (timer.current) clearTimeout(timer.current); timer.current = setTimeout(() => void flushChanges(), 120); }} onSubmit={(event) => event.preventDefault()}>
         <div className="editor-card__intro">
           <span className="section-symbol"><section.icon size={21} /></span>
           <div><h2>{section.label}</h2><p>Text môžete kedykoľvek upraviť. Na verejný web sa prenesie až po jeho zverejnení.</p></div>

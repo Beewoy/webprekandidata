@@ -85,13 +85,14 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - atómové vytvorenie projektu cez PostgreSQL RPC,
 - načítanie konceptu sekcie,
 - serverové autosave s optimistic concurrency cez číslo revízie,
+- po `revision_conflict` server vráti aktuálnu revíziu, nastaví krátky cooldown pre `(user, site)` a UI vypne autosave do obnovenia stránky; DB cooldown (`0021`) tlmí ERROR spam v `postgres_logs` (`0020`+`0021`, `lib/draft-save-guard.ts`),
 - funkčné pridávanie, mazanie a zoraďovanie hodnôt, dôvodov a bodov programu s autosave,
 - opätovné načítanie dynamických položiek z konceptu po refreshi,
 - presúvanie opakovaných položiek myšou, dotykom aj klávesnicou s prístupnými oznámeniami,
 - výber a ukladanie tematických občianskych ikoniek pre hodnoty, dôvody a program vrátane zobrazenia v náhľade,
 - základná databázová schéma a RLS politiky,
 - lokálny Supabase stack (Docker) pre vývoj; produkčný cloud projekt `Webprekandidata` (`iozvohajbtzxviytpufp`) s credentials iba vo Vercel a GitHub Secrets,
-- migrácie `0001` až `0019` v repozitári; produkčné nasadenie migrácií cez GitHub Actions workflow `Supabase migrations` pri pushi do `main`,
+- migrácie `0001` až `0021` v repozitári; produkčné nasadenie migrácií cez GitHub Actions workflow `Supabase migrations` pri pushi do `main`,
 - `.env.local.example` a aktualizovaný `.env.example` pre lokálny vývoj na `127.0.0.1:54321`,
 - politika zero prod from Mac: na vývojárskom Macu sa nespúšťa `supabase link` ani `db push` proti produkcii,
 - reálna produkčná Supabase konfigurácia vo Vercel env; lokálny `.env.local` smeruje na Docker stack,
@@ -198,7 +199,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 
 ### Overenie
 
-- 99 jednotkových testov,
+- 103 jednotkových testov,
 - TypeScript bez chýb,
 - ESLint bez chýb a varovaní,
 - úspešný produkčný build,

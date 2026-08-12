@@ -219,13 +219,19 @@ zmena poľa
   → nová revízia sa vráti klientovi
 ```
 
-Ak revízia nesedí, databáza vráti `revision_conflict`. UI nesmie konflikt potichu prepísať; zobrazí chybu a vyžiada obnovenie stránky.
+Ak revízia nesedí, databáza vráti `revision_conflict` a v `DETAIL` aktuálnu revíziu konceptu. Server action konflikt zaznamená, nastaví krátky in-process cooldown pre `(userId, siteId)` (zdieľaný pre ukladanie sekcie aj témy), vráti `conflict` + `currentRevision` a UI vypne autosave až do obnovenia stránky. UI nesmie konflikt potichu prepísať.
+
+Incidentová analýza (2026-08-12): `docs/incidents/revision-conflict-burst-2026-08-12.md` — Service Health ukázal ~3,3 M Postgres ERROR logov/h pri ~231 API Gateway requestoch; chart počíta `postgres_logs`, nie HTTP. Migrácia `0020` dopĺňa aktuálnu revíziu do DETAIL; `0021` pridáva DB cooldown a potláča ERROR spam počas stormu.
 
 Hlavné súbory:
 
 - `components/editor/section-form.tsx`,
+- `components/editor/appearance-editor.tsx`,
 - `app/actions/sites.ts`,
-- `supabase/migrations/0002_site_functions.sql`.
+- `lib/draft-save-guard.ts`,
+- `supabase/migrations/0002_site_functions.sql`,
+- `supabase/migrations/0020_revision_conflict_detail.sql`,
+- `supabase/migrations/0021_draft_revision_cooldown.sql`.
 
 Opakované položky používajú v klientskom stave stabilné ID, podporujú pridanie, odstránenie a zmenu poradia úchytom, dotykom aj šípkami na klávesnici. Autosave serializuje autoritatívny klientsky stav, nie ešte neaktualizované DOM prvky: posiela aktuálny počet v `items_count` a položky ako ploché kľúče `item_{index}_title`, `item_{index}_text`, `item_{index}_icon` a pri programe aj `item_{index}_detail`. Načítanie konceptu zachová všetky reťazcové kľúče sekcie vrátane dynamických položiek. Databázová RPC vždy nahradí celý payload sekcie, takže odstránené položky nezostávajú v koncepte. Pri budúcom rozšírení o samostatné entity alebo zdieľané odkazy sa má úložisko migrovať na položky s perzistentným ID.
 

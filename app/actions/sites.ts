@@ -19,6 +19,12 @@ import {
 } from "@/lib/validation/site";
 import { normalizeCampaignColor } from "@/lib/site-theme";
 import { galleryLimits, type GalleryMediaAsset } from "@/lib/site-media";
+import {
+  draftConflictKey,
+  isDraftSaveCoolingDown,
+  markDraftRevisionConflict,
+  parseRevisionConflictDetail,
+} from "@/lib/draft-save-guard";
 
 function slugify(value: string) {
   return value
@@ -53,8 +59,23 @@ export async function createSiteAction(_previousState: SiteActionState, formData
   redirect(`/app/web/${data}`);
 }
 
-export type SaveSectionResult = { ok: true; revision: number } | { ok: false; message: string; conflict?: boolean };
+export type SaveSectionResult =
+  | { ok: true; revision: number }
+  | { ok: false; message: string; conflict?: boolean; currentRevision?: number };
 export type SaveThemeResult = SaveSectionResult;
+
+const CONFLICT_MESSAGE = "Obsah bol medzičasom upravený v inom okne. Obnovte stránku.";
+const THEME_CONFLICT_MESSAGE = "Vzhľad bol medzičasom upravený v inom okne. Obnovte stránku.";
+const COOLDOWN_MESSAGE = "Ukladanie je dočasne pozastavené po konflikte revízie. Obnovte stránku.";
+
+async function readCurrentDraftRevision(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  siteId: string,
+): Promise<number | undefined> {
+  const { data } = await supabase.from("site_drafts").select("revision").eq("site_id", siteId).maybeSingle();
+  const revision = data ? Number(data.revision) : NaN;
+  return Number.isSafeInteger(revision) && revision > 0 ? revision : undefined;
+}
 export type RegisterMediaAssetResult = { ok: true; asset: { altText: string; createdAt: string; height: number; id: string; kind: "logo" | "hero" | "about" | "social"; previewUrl: string; width: number } } | { ok: false; message: string };
 export type RegisterGalleryAssetResult = { ok: true; asset: GalleryMediaAsset } | { ok: false; message: string };
 export type GalleryMutationResult = { ok: true } | { ok: false; message: string };
@@ -66,7 +87,18 @@ export async function saveSectionAction(input: unknown): Promise<SaveSectionResu
   if (parsed.data.siteId === "demo" && isDemoMode()) return { ok: true, revision: parsed.data.revision + 1 };
   if (isDemoMode()) return { ok: false, message: "Tento projekt nie je v demo režime dostupný." };
 
-  await requireCurrentUser();
+  const user = await requireCurrentUser();
+  const guardKey = draftConflictKey(parsed.data.siteId, user.id);
+  if (isDraftSaveCoolingDown(guardKey)) {
+    console.warn("update_site_section blocked by conflict cooldown", {
+      siteId: parsed.data.siteId,
+      sectionSlug: parsed.data.sectionSlug,
+      revision: parsed.data.revision,
+      userId: user.id,
+    });
+    return { ok: false, conflict: true, message: COOLDOWN_MESSAGE };
+  }
+
   const supabase = await createClient();
   const values = sanitizeSectionRichText(parsed.data.sectionSlug, parsed.data.values);
   const { data, error } = await supabase.rpc("update_site_section", {
@@ -78,7 +110,31 @@ export async function saveSectionAction(input: unknown): Promise<SaveSectionResu
 
   if (error) {
     const conflict = error.code === "40001" || error.message.includes("revision_conflict");
-    return { ok: false, conflict, message: conflict ? "Obsah bol medzičasom upravený v inom okne. Obnovte stránku." : "Zmeny sa nepodarilo uložiť. Skúste to znova." };
+    let currentRevision = conflict ? parseRevisionConflictDetail(error.details) : undefined;
+    if (conflict && currentRevision == null) {
+      currentRevision = await readCurrentDraftRevision(supabase, parsed.data.siteId);
+    }
+    if (conflict) markDraftRevisionConflict(guardKey);
+
+    console.error("update_site_section failed", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      siteId: parsed.data.siteId,
+      sectionSlug: parsed.data.sectionSlug,
+      revision: parsed.data.revision,
+      currentRevision,
+      conflict,
+      userId: user.id,
+    });
+
+    return {
+      ok: false,
+      conflict,
+      currentRevision,
+      message: conflict ? CONFLICT_MESSAGE : "Zmeny sa nepodarilo uložiť. Skúste to znova.",
+    };
   }
 
   revalidatePath(`/app/web/${parsed.data.siteId}`, "layout");
@@ -93,6 +149,16 @@ export async function saveThemeAction(input: unknown): Promise<SaveThemeResult> 
   if (isDemoMode()) return { ok: false, message: "Tento projekt nie je v demo režime dostupný." };
 
   const user = await requireCurrentUser();
+  const guardKey = draftConflictKey(parsed.data.siteId, user.id);
+  if (isDraftSaveCoolingDown(guardKey)) {
+    console.warn("saveThemeAction blocked by conflict cooldown", {
+      siteId: parsed.data.siteId,
+      revision: parsed.data.revision,
+      userId: user.id,
+    });
+    return { ok: false, conflict: true, message: COOLDOWN_MESSAGE };
+  }
+
   const supabase = await createClient();
   const nextRevision = parsed.data.revision + 1;
   const { data, error } = await supabase
@@ -111,8 +177,28 @@ export async function saveThemeAction(input: unknown): Promise<SaveThemeResult> 
     .select("revision")
     .maybeSingle();
 
-  if (error) return { ok: false, message: "Vzhľad sa nepodarilo uložiť. Skúste to znova." };
-  if (!data) return { ok: false, conflict: true, message: "Vzhľad bol medzičasom upravený v inom okne. Obnovte stránku." };
+  if (error) {
+    console.error("saveThemeAction failed", {
+      code: error.code,
+      message: error.message,
+      siteId: parsed.data.siteId,
+      revision: parsed.data.revision,
+      userId: user.id,
+    });
+    return { ok: false, message: "Vzhľad sa nepodarilo uložiť. Skúste to znova." };
+  }
+
+  if (!data) {
+    const currentRevision = await readCurrentDraftRevision(supabase, parsed.data.siteId);
+    markDraftRevisionConflict(guardKey);
+    console.warn("saveThemeAction revision_conflict", {
+      siteId: parsed.data.siteId,
+      revision: parsed.data.revision,
+      currentRevision,
+      userId: user.id,
+    });
+    return { ok: false, conflict: true, currentRevision, message: THEME_CONFLICT_MESSAGE };
+  }
 
   revalidatePath(`/app/web/${parsed.data.siteId}`, "layout");
   revalidatePath(`/app/web/${parsed.data.siteId}/nahlad`);

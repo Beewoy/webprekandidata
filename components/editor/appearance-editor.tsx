@@ -31,8 +31,10 @@ export function AppearanceEditor({ initialRevision, initialTheme, siteId }: Appe
   const [template, setTemplate] = useState<CampaignTemplateId>(initialTheme.template);
   const [saveState, setSaveState] = useState<"saved" | "saving" | "error">("saved");
   const [saveMessage, setSaveMessage] = useState("");
+  const [revisionConflict, setRevisionConflict] = useState(false);
   const themeRef = useRef(initialTheme);
   const revisionRef = useRef(initialRevision);
+  const revisionConflictRef = useRef(false);
   const dirtyVersionRef = useRef(0);
   const savingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -42,13 +44,19 @@ export function AppearanceEditor({ initialRevision, initialTheme, siteId }: Appe
   const isDefaultTheme = color === defaultCampaignTheme.color && template === defaultCampaignTheme.template;
 
   async function flushTheme() {
-    if (savingRef.current) return;
+    if (revisionConflictRef.current || savingRef.current) return;
     savingRef.current = true;
     const capturedVersion = dirtyVersionRef.current;
     const result = await saveThemeAction({ siteId, revision: revisionRef.current, theme: themeRef.current });
     savingRef.current = false;
 
     if (!result.ok) {
+      if (result.conflict) {
+        revisionConflictRef.current = true;
+        setRevisionConflict(true);
+        if (timerRef.current) clearTimeout(timerRef.current);
+        if (result.currentRevision) revisionRef.current = result.currentRevision;
+      }
       setSaveState("error");
       setSaveMessage(result.message);
       return;
@@ -66,11 +74,16 @@ export function AppearanceEditor({ initialRevision, initialTheme, siteId }: Appe
   }
 
   function scheduleThemeSave(delay = 450) {
+    if (revisionConflictRef.current) return;
     dirtyVersionRef.current += 1;
     setSaveState("saving");
     setSaveMessage("");
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => void flushTheme(), delay);
+  }
+
+  function reloadForConflict() {
+    window.location.reload();
   }
 
   function applyTheme(next: { color: string; template: CampaignTemplateId }, delay?: number) {
@@ -117,7 +130,17 @@ export function AppearanceEditor({ initialRevision, initialTheme, siteId }: Appe
           </span>
         )}
       />
-      {saveState === "error" && <div className="autosave-error" role="alert"><AlertCircle size={18} /><span>{saveMessage}</span><button onClick={() => { setSaveState("saving"); void flushTheme(); }} type="button">Skúsiť znova</button></div>}
+      {saveState === "error" && (
+        <div className="autosave-error" role="alert">
+          <AlertCircle size={18} />
+          <span>{saveMessage}</span>
+          {revisionConflict ? (
+            <button onClick={reloadForConflict} type="button">Obnoviť stránku</button>
+          ) : (
+            <button onClick={() => { setSaveState("saving"); void flushTheme(); }} type="button">Skúsiť znova</button>
+          )}
+        </div>
+      )}
       <div className="appearance-grid">
         <section className="editor-card appearance-controls">
           <div className="appearance-section-heading">
