@@ -18,7 +18,7 @@ describe("publish readiness", () => {
     expect(result.warnings.map((warning) => warning.section)).toEqual(["seo", "obrazky"]);
   });
 
-  it("blocks incomplete program and an enabled form without a valid email", () => {
+  it("blocks incomplete program and an invalid contact email", () => {
     const result = getPublishReadiness({
       content: { ...completeContent, kontakt: { email: "zly-email", contactFormEnabled: "true" }, program: { headline: "Program" } },
       seo: {},
@@ -27,9 +27,10 @@ describe("publish readiness", () => {
     expect(result.blockers.map((issue) => issue.section)).toEqual(["program", "kontakt"]);
   });
 
-  it("does not require an email when the contact form is disabled", () => {
+  it("requires a valid email for mailto contact even when the form toggle is off", () => {
     const result = getPublishReadiness({ content: { ...completeContent, kontakt: { contactFormEnabled: "false" } }, seo: {} });
-    expect(result.ready).toBe(true);
+    expect(result.ready).toBe(false);
+    expect(result.blockers.map((issue) => issue.section)).toEqual(["kontakt"]);
   });
 });
 

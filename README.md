@@ -37,7 +37,7 @@ Požiadavky: [Docker Desktop](https://www.docker.com/products/docker-desktop/) b
 cp .env.local.example .env.local
 npm run supabase:start
 npm run supabase:env          # skopírujte anon a service_role kľúče do .env.local
-npm run supabase:reset        # aplikuje migrácie 0001–0018
+npm run supabase:reset        # aplikuje migrácie 0001–0028
 npm run supabase:types
 npm run dev
 ```
@@ -100,13 +100,11 @@ Doména `webprekandidata.sk` je v Brevo autentifikovaná a odosielateľ `Web pre
 
 **Červené vlajky:** nový účet sa po lokálnej registrácii objaví v cloud Dashboard → Authentication.
 
-### Brevo SMTP (produkcia a voliteľný lokálny kontaktný formulár)
+### Brevo SMTP (produkcia a aplikačné e-maily)
 
 ### Kontaktný formulár kandidáta
 
-Formulár používa rovnaké premenné `BREVO_SMTP_USER` a `BREVO_SMTP_KEY`. Server prijme správu iba vtedy, keď je projekt publikovaný a má aktívny `current_publication_id`; adresu príjemcu aj prepínač viditeľnosti vždy načíta z tohto publikovaného snapshotu. Na bezpečný zápis stavu doručenia do `contact_submissions` potrebuje serverový `SUPABASE_SERVICE_ROLE_KEY`.
-
-V sekcii Kontakt kandidát formulár vypne alebo zapne. Zmena sa na verejnom webe prejaví až po ďalšom publikovaní. Ochranu tvorí serverová validácia, skrytý honeypot a limit troch správ za 15 minút pre rovnaký e-mail a web.
+Hosted kontaktný formulár kandidáta je dočasne vypnutý (`HOSTED_CONTACT_FORM_ENABLED=false`). Verejný web zobrazuje iba `mailto:` odkaz, telefón a Facebook/Instagram. Starý serverový tok a tabuľka zostávajú dormantné; pri vypnutom stave akcia skončí ešte pred validáciou, databázou a e-mailom.
 
 Supabase CLI je pripnuté ako lokálna dev dependency. Používajte `npx supabase ...` alebo npm skripty `supabase:start`, `supabase:status`, `supabase:reset`, `supabase:stop`, `supabase:types` a `supabase:env`.
 
@@ -142,7 +140,7 @@ Kandidát si rolu sám nenastaví. Admin panel v demo režime nie je dostupný. 
 
 ## Stripe Checkout
 
-Po aplikovaní migrácie `0012_stripe_fulfillment.sql` kandidát na stránke Publikovanie zaplatí Basic alebo Plus cez Stripe-hosted Checkout. Do `.env.local` doplňte:
+Po aplikovaní migrácie `0012_stripe_fulfillment.sql` kandidát v samostatnej sekcii Objednávky zaplatí Basic alebo Plus cez Stripe-hosted Checkout. Po aktivácii balíka pokračuje priamo do sekcie Publikovanie. Do `.env.local` doplňte:
 
 - `STRIPE_SECRET_KEY`,
 - `STRIPE_WEBHOOK_SECRET`,

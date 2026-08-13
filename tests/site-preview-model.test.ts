@@ -63,13 +63,13 @@ describe("site preview model", () => {
     expect(preview.revision).toBe(12);
   });
 
-  it("zobrazí kontaktný formulár predvolene pre staršie koncepty bez uloženého prepínača", () => {
+  it("pri dočasne vypnutom formulári nezobrazí hosted form ani pri starších konceptoch", () => {
     const preview = buildSitePreviewData(
       { candidateName: "Martin Novák", locality: "Trnava", slug: "martin-novak" },
       { content: { kontakt: { email: "martin@example.sk" } }, revision: 1, theme: {} },
     );
 
-    expect(preview.contact.formEnabled).toBe(true);
+    expect(preview.contact.formEnabled).toBe(false);
     expect(preview.candidate.politicalAffiliation).toBe("");
   });
 });

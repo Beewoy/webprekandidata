@@ -34,7 +34,7 @@ const demoPreview: SitePreviewData = {
   contact: {
     email: "martin@novak.sk",
     facebook: "https://www.facebook.com/",
-    formEnabled: true,
+    formEnabled: false,
     instagram: "https://www.instagram.com/",
     phone: "+421 900 123 456",
   },
@@ -149,5 +149,5 @@ const demoPreview: SitePreviewData = {
 };
 
 export default function DemoCandidatePage() {
-  return <SitePreview contactFormPreview data={demoPreview} publicMode siteId="demo" />;
+  return <SitePreview data={demoPreview} publicMode siteId="demo" />;
 }

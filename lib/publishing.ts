@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
+import { HOSTED_CONTACT_FORM_ENABLED } from "./contact-form";
 import { deriveContentSectionStatuses } from "./site-section-status";
 
 const objectSchema = z.record(z.string(), z.unknown());
@@ -77,8 +78,20 @@ export function getPublishReadiness(input: { content: unknown; mediaKinds?: stri
   ));
   const content = asObject(input.content);
   const contact = asObject(content.kontakt);
-  if (contact.contactFormEnabled !== "false" && !hasValidEmail(contact.email)) {
-    blockers.push({ label: "Kontaktný formulár", message: "Doplňte platný e-mail alebo kontaktný formulár vypnite.", section: "kontakt" });
+  if (HOSTED_CONTACT_FORM_ENABLED) {
+    if (contact.contactFormEnabled !== "false" && !hasValidEmail(contact.email)) {
+      blockers.push({
+        label: "Kontaktný formulár",
+        message: "Doplňte platný e-mail alebo kontaktný formulár vypnite.",
+        section: "kontakt",
+      });
+    }
+  } else if (!hasValidEmail(contact.email)) {
+    blockers.push({
+      label: "Kontaktný e-mail",
+      message: "Doplňte platný e-mail. Návštevníci sa ozvú cez mailto odkaz.",
+      section: "kontakt",
+    });
   }
 
   const warnings: PublishIssue[] = [];

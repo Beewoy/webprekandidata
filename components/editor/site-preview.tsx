@@ -244,10 +244,26 @@ export function SitePreview({ contactFormPreview = false, data, publicMode = fal
 
               <section className="candidate-preview__contact" id="kontakt">
                 <div className="candidate-preview__container">
-                  <div className="candidate-preview__contact-heading"><p className="candidate-preview__eyebrow">Kontakt</p><h2>Ozvite sa mi</h2><span>Máte otázku alebo podnet? Napíšte mi.</span></div>
+                  <div className="candidate-preview__contact-heading">
+                    <p className="candidate-preview__eyebrow">Kontakt</p>
+                    <h2>Ozvite sa mi</h2>
+                    <span>
+                      {data.contact.formEnabled
+                        ? "Máte otázku alebo podnet? Napíšte mi."
+                        : "Máte otázku alebo podnet? Napíšte mi e-mail."}
+                    </span>
+                  </div>
                   <div className={`candidate-preview__contact-grid${data.contact.formEnabled ? "" : " candidate-preview__contact-grid--links-only"}`}>
                     <div className="candidate-preview__contact-links">
-                      {data.contact.email && <a href={`mailto:${data.contact.email}`}><Mail size={20} /><span><small>E-mail</small>{data.contact.email}</span></a>}
+                      {data.contact.email && (
+                        <a className="candidate-preview__mailto-cta" href={`mailto:${data.contact.email}`}>
+                          <Mail size={20} />
+                          <span>
+                            <small>Napísať e-mail</small>
+                            {data.contact.email}
+                          </span>
+                        </a>
+                      )}
                       {data.contact.phone && <a href={`tel:${data.contact.phone.replace(/[^+\d]/g, "")}`}><Phone size={20} /><span><small>Telefón</small>{data.contact.phone}</span></a>}
                       {data.contact.facebook && <a href={data.contact.facebook} rel="noreferrer" target="_blank">Facebook <ExternalLink size={16} /></a>}
                       {data.contact.instagram && <a href={data.contact.instagram} rel="noreferrer" target="_blank">Instagram <ExternalLink size={16} /></a>}

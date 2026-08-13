@@ -93,7 +93,7 @@ export function DashboardOverview({ site, preview, sectionStatuses, onboardingPa
             <p>Adresa bude dostupná po zverejnení.</p>
             <div className="website-card__actions">
               <Link className="button button--secondary" href={`/app/web/${siteId}/nahlad`}><Globe2 size={17} /> Náhľad</Link>
-              <Link className="button button--primary" href={`/app/web/${siteId}/publikovanie`}>Zverejniť <ArrowRight size={17} /></Link>
+              <Link className="button button--primary" href={`/app/web/${siteId}/${site.planCode ? "publikovanie" : "objednavky"}`}>{site.planCode ? "Zverejniť" : "Vybrať balík"} <ArrowRight size={17} /></Link>
             </div>
           </div>
         </aside>

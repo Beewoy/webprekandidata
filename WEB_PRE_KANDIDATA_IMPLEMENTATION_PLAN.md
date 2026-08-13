@@ -404,7 +404,7 @@ Prvý template bude obsahovať:
 5. volebný program,
 6. najnovšie aktuality a samostatné stránky článkov,
 7. kontakty, Facebook, Instagram a kontaktný formulár,
-8. pätičku s povinnými informáciami, odkazmi na súkromie a prípadným transparentným označením politickej reklamy.
+8. pätičku s kontaktnými a povinnými informáciami a odkazmi na súkromie.
 
 Vlastnosti šablóny:
 
@@ -565,8 +565,7 @@ Prijatý výsledok sa uloží ako bežný obsah do `site_drafts`; odmietnutý v�
 - `email_deliveries`,
 - `contact_submissions` s krátkou retenčnou lehotou a stavom doručenia,
 - `posts` pre P0 aktuality,
-- `content_reports`, `moderation_cases`, `moderation_actions` a `moderation_appeals`,
-- `political_ad_disclosures` po právnom potvrdení presného rozsahu,
+- prípadné `content_reports`, `moderation_cases`, `moderation_actions` a `moderation_appeals` až podľa potvrdeného rozsahu DSA,
 - `analytics_daily` pre P1 agregované návštevy,
 - `site_members` pre budúce tímové roly.
 
@@ -713,7 +712,7 @@ Každý e-mail bude mať evidovaný stav doručenia bez zbytočného ukladania c
 
 Právne texty, cookies, politický obsah, fakturácia a pravidlá priameho oslovovania musí pred ostrým spustením skontrolovať príslušný odborník.
 
-Pracovný proces nahlasovania, zásahov, odvolania a politicky neutrálnej moderácie je v [CONTENT_MODERATION_POLICY_DRAFT.md](CONTENT_MODERATION_POLICY_DRAFT.md). Keďže služba za odplatu pripravuje a zverejňuje politické posolstvá, pred spustením sa musí osobitne posúdiť jej postavenie podľa nariadenia (EÚ) 2024/900 o transparentnosti politickej reklamy. Dátový model bude pripravený na sponzora, súvisiace voľby, cenu, obdobie, označenie a verzie transparentného oznámenia.
+Pracovný proces nahlasovania, zásahov, odvolania a politicky neutrálnej moderácie je v [CONTENT_MODERATION_POLICY_DRAFT.md](CONTENT_MODERATION_POLICY_DRAFT.md). Aktuálny produkt je samoobslužný editor a hosting vlastného webu kandidáta: kandidát určuje obsah, kontroluje ho a sám spúšťa organické publikovanie. Platforma neposkytuje platený dosah, boosting, nákup médií, personalizované cielenie ani distribúciu cez vlastné publikum. Politicko-reklamný profil, označenie a transparentné úložisko preto nie sú súčasťou aktuálneho rozsahu. Rozšírenie za túto hranicu vyžaduje nové právne posúdenie nariadenia (EÚ) 2024/900 ešte pred návrhom dátového modelu.
 
 ## 17. Interný admin
 
@@ -749,7 +748,6 @@ Prvý admin má byť účelový operačný nástroj, nie rozsiahly backoffice.
 - primerané zásahy od upozornenia po dočasné znepublikovanie,
 - povinný konkrétny dôvod pri každom obmedzení,
 - správa kandidátovi s možnosťou nápravy a odvolania,
-- evidencia prípadných transparentných údajov politickej reklamy,
 - oddelenie moderácie od nezaplateného alebo technicky neaktívneho webu.
 
 ## 18. Testovanie
@@ -969,7 +967,7 @@ MVP je pripravené na pilot, keď:
 | Moderácia | navrhnuté | implementovať podľa `CONTENT_MODERATION_POLICY_DRAFT.md`, finálne právne skontrolovať |
 | AI audit | navrhnuté | bez trvalých promptov a odmietnutých odpovedí; metadata podľa `AI_DATA_RETENTION_POLICY_DRAFT.md` |
 
-Pred ostrým predajom zostáva povinné uzavrieť najmä trvanie služby, kompletné údaje SZČO, daňové znenie cien, fakturačný nástroj a právne posúdenie politickej reklamy.
+Pred ostrým predajom zostáva povinné uzavrieť najmä trvanie služby, kompletné údaje SZČO, daňové znenie cien, fakturačný nástroj a právne potvrdenie produktovej hranice voči politickej reklame.
 
 ## 24. Odporúčané realizačné rozhodnutie
 

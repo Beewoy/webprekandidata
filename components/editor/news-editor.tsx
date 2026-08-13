@@ -75,7 +75,7 @@ export function NewsEditor({ ai, initialPosts, siteId }: { ai: PostAiEntitlement
         </section>
       )}
 
-      {!ai.canUseAi && <Link className="text-link" href={`/app/web/${siteId}/publikovanie`}>Pozrieť možnosti balíka Plus <ArrowRight size={15} /></Link>}
+      {!ai.canUseAi && <Link className="text-link" href={`/app/web/${siteId}/objednavky`}>Pozrieť možnosti balíka Plus <ArrowRight size={15} /></Link>}
     </div>
   );
 }

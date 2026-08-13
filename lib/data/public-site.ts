@@ -20,7 +20,6 @@ const publicationSchema = z.object({
   theme: z.record(z.string(), z.unknown()),
   version_number: z.number().int().positive(),
 });
-
 export type PublicCandidateSite = {
   canonicalUrl: string;
   data: SitePreviewData;

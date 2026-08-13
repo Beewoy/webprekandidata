@@ -46,6 +46,22 @@ describe("site section status", () => {
     expect(statuses.galeria).toBe("complete");
     expect(statuses.aktuality).toBe("started");
     expect(statuses.domena).toBe("complete");
+    expect(statuses.objednavky).toBe("complete");
     expect(statuses.publikovanie).toBe("started");
+    expect(statuses).not.toHaveProperty("udaje-zverejnenia");
+  });
+
+  it("oddelí stav objednávky od publikovania", () => {
+    const statuses = buildSiteSectionStatuses({
+      content: {},
+      orderStatuses: ["pending"],
+      planCode: null,
+      seo: {},
+      siteStatus: "draft",
+      theme: {},
+    });
+
+    expect(statuses.objednavky).toBe("started");
+    expect(statuses.publikovanie).toBe("empty");
   });
 });

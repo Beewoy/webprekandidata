@@ -17,19 +17,14 @@ function envFlag(name: string) {
 
 /**
  * Central production publish / paid-checkout readiness check.
- * No admin bypass. Later phases append blockers for DPA, political ads, repository.
+ * No admin bypass.
  */
 export function evaluateLegalLaunchGate(options?: {
   /** When true, require LEGAL_DOCUMENTS_APPROVED (checkout / public publish). */
   requireDocumentsApproved?: boolean;
-  /** Phase 5: require political-ad repository adapter. Default false until wired. */
-  requirePoliticalRepository?: boolean;
 }): LegalLaunchGateResult {
   const blockers: LegalLaunchBlocker[] = [];
   const requireDocumentsApproved = options?.requireDocumentsApproved !== false;
-  const requirePoliticalRepository =
-    options?.requirePoliticalRepository
-    ?? envFlag("POLITICAL_REPOSITORY_ENFORCEMENT");
 
   if (!isSellerIdentityComplete()) {
     for (const issue of getSellerIdentityIssues()) {
@@ -46,14 +41,6 @@ export function evaluateLegalLaunchGate(options?: {
       code: "legal_documents_not_approved",
       message: "LEGAL_DOCUMENTS_APPROVED must be true before paid checkout and public publish",
       requirementId: "LB-09",
-    });
-  }
-
-  if (requirePoliticalRepository && !envFlag("EU_POLITICAL_AD_REPOSITORY_READY")) {
-    blockers.push({
-      code: "political_repository_unavailable",
-      message: "EU political advertising repository production adapter is not ready",
-      requirementId: "LB-06",
     });
   }
 

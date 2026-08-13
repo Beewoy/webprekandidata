@@ -31,7 +31,6 @@ export function getProductionConfigIssues(options?: { includeSoft?: boolean }) {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
     issues.push("missing SUPABASE_SERVICE_ROLE_KEY");
   }
-
   if (!includeSoft) return issues;
 
   if (!process.env.STRIPE_SECRET_KEY?.trim()) issues.push("missing STRIPE_SECRET_KEY");

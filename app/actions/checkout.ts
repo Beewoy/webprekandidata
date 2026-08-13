@@ -221,8 +221,8 @@ export async function createCheckoutSessionAction(input: unknown): Promise<Creat
   } as never);
 
   const appUrl = getAppUrl().replace(/\/$/, "");
-  const successUrl = `${appUrl}/app/web/${siteId}/publikovanie?checkout=success&session_id={CHECKOUT_SESSION_ID}`;
-  const cancelUrl = `${appUrl}/app/web/${siteId}/publikovanie?checkout=cancelled`;
+  const successUrl = `${appUrl}/app/web/${siteId}/objednavky?checkout=success&session_id={CHECKOUT_SESSION_ID}`;
+  const cancelUrl = `${appUrl}/app/web/${siteId}/objednavky?checkout=cancelled`;
 
   try {
     const stripe = getStripeClient();

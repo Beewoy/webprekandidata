@@ -4,6 +4,7 @@ import { DomainEditor } from "@/components/editor/domain-editor";
 import { GalleryEditor } from "@/components/editor/gallery-editor";
 import { ImageEditor } from "@/components/editor/image-editor";
 import { NewsEditor } from "@/components/editor/news-editor";
+import { OrdersEditor } from "@/components/editor/orders-editor";
 import { PublishingEditor } from "@/components/editor/publishing-editor";
 import { SectionForm } from "@/components/editor/section-form";
 import { SitePreview } from "@/components/editor/site-preview";
@@ -14,6 +15,7 @@ import { getSitePosts } from "@/lib/data/posts";
 import { getPublishingState } from "@/lib/data/publishing";
 import { getSectionDraft, getSiteGallery, getSiteMedia, getSitePreviewData, getSiteThemeDraft } from "@/lib/data/sites";
 import { isDemoMode } from "@/lib/env";
+import { formatVatStatusLabel, getSellerIdentity } from "@/lib/legal/seller";
 import { parseCheckoutReturnState } from "@/lib/payments/checkout-return";
 import { isStripeConfigured } from "@/lib/payments/stripe";
 import { editorFields, getSection } from "@/lib/site-sections";
@@ -59,7 +61,8 @@ export default async function EditorSectionPage({
     if (!preview) notFound();
     return <SitePreview data={preview} siteId={siteId} />;
   }
-  if (slug === "publikovanie") {
+  if (slug === "objednavky") {
+    const seller = getSellerIdentity();
     const [publishingState, orders, account, query] = await Promise.all([
       getPublishingState(siteId),
       listSiteOrders(siteId),
@@ -68,7 +71,7 @@ export default async function EditorSectionPage({
     ]);
     if (!publishingState) notFound();
     return (
-      <PublishingEditor
+      <OrdersEditor
         checkoutEnabled={isStripeConfigured()}
         checkoutNotice={parseCheckoutReturnState({ checkout: query.checkout, entitled: publishingState.entitled })}
         defaultEmail={account.email}
@@ -76,9 +79,15 @@ export default async function EditorSectionPage({
         isDemo={isDemoMode() || siteId === "demo"}
         orders={orders}
         publishingState={publishingState}
+        seller={{ address: seller.address, ico: seller.ico, name: seller.name, vatStatusLabel: formatVatStatusLabel(seller) }}
         siteId={siteId}
       />
     );
+  }
+  if (slug === "publikovanie") {
+    const publishingState = await getPublishingState(siteId);
+    if (!publishingState) notFound();
+    return <PublishingEditor publishingState={publishingState} siteId={siteId} />;
   }
   if (editorFields[slug]) {
     const draft = await getSectionDraft(siteId, slug);

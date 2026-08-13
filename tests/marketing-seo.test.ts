@@ -11,6 +11,11 @@ import {
   getCampaignMetadata,
   serializeStructuredData,
 } from "../lib/marketing/campaign-pages";
+import {
+  PLAN_DESCRIPTIONS,
+  PLAN_FEATURES,
+  PLAN_PRICE_LABELS,
+} from "../lib/payments/plans";
 
 describe("campaign marketing routes", () => {
   it("obsahuje päť unikátnych indexovateľných stránok", () => {
@@ -30,7 +35,23 @@ describe("campaign marketing routes", () => {
   });
 
   it("používa produktové ceny Basic a Plus", () => {
-    expect(MARKETING_PLAN_PRICES).toEqual({ basic: "49,99 €", plus: "89,99 €" });
+    expect(MARKETING_PLAN_PRICES).toEqual(PLAN_PRICE_LABELS);
+  });
+
+  it("má jeden produktový obsah pre landing aj objednávky", () => {
+    expect(PLAN_DESCRIPTIONS).toEqual({
+      basic: "Profesionálny základ pre vašu kandidatúru.",
+      plus: "Viac podpory pre pravidelnú komunikáciu.",
+    });
+    expect(PLAN_FEATURES.basic).toContain("AI návrh prvotného obsahu");
+    expect(PLAN_FEATURES.basic).toContain("Aktuality, galéria a e-mailový kontakt");
+    expect(PLAN_FEATURES.plus).toContain("Pripojenie jednej existujúcej vlastnej domény");
+    expect(PLAN_FEATURES.plus).toContain("Najviac 20 AI návrhov článkov");
+
+    const landing = readFileSync(join(process.cwd(), "landing-page/index.html"), "utf8");
+    expect(landing).toContain("<!-- BASIC_PLAN_FEATURES -->");
+    expect(landing).toContain("<!-- PLUS_PLAN_FEATURES -->");
+    expect(landing).not.toContain("Aktuality, galéria a kontaktný formulár");
   });
 
   it("generuje viditeľnému FAQ zodpovedajúce a bezpečne serializované JSON-LD", () => {

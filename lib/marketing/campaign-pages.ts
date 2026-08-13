@@ -190,7 +190,7 @@ export const CAMPAIGN_PAGES: Record<MarketingRoute, CampaignPageData> = {
       {
         icon: "users",
         title: "Zostanete dostupní voličom",
-        text: "Kontaktný formulár a sociálne siete dávajú obyvateľom jednoduchú cestu, ako sa vám ozvať.",
+        text: "E-mailový kontakt a sociálne siete dávajú obyvateľom jednoduchú cestu, ako sa vám ozvať.",
       },
     ],
     faqTitle: "Otázky kandidátov na poslanca",

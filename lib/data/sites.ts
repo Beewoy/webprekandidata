@@ -239,17 +239,19 @@ export const getSiteSectionStatuses = cache(async (siteId: string): Promise<Site
   }
 
   const supabase = await createClient();
-  const [draftResult, mediaResult, postsResult, domainsResult] = await Promise.all([
+  const [draftResult, mediaResult, postsResult, domainsResult, ordersResult] = await Promise.all([
     supabase.from("site_drafts").select("content, seo, theme").eq("site_id", siteId).single(),
     supabase.from("media_assets").select("kind").eq("site_id", siteId).is("deleted_at", null),
     supabase.from("posts").select("status").eq("site_id", siteId),
     supabase.from("domains").select("status").eq("site_id", siteId),
+    supabase.from("orders").select("status").eq("site_id", siteId),
   ]);
 
   return buildSiteSectionStatuses({
     content: draftResult.data?.content ?? {},
     domainStatuses: (domainsResult.data ?? []).map((domain) => domain.status),
     mediaKinds: (mediaResult.data ?? []).map((asset) => asset.kind),
+    orderStatuses: (ordersResult.data ?? []).map((order) => order.status),
     planCode: site.planCode,
     postStatuses: (postsResult.data ?? []).map((post) => post.status),
     seo: draftResult.data?.seo ?? {},

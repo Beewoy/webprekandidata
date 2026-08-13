@@ -81,15 +81,7 @@ describe("legal launch gate", () => {
 
   it("prejde pri schválených dokumentoch a kompletnej identite", () => {
     process.env.LEGAL_DOCUMENTS_APPROVED = "true";
-    const result = evaluateLegalLaunchGate({ requirePoliticalRepository: false });
+    const result = evaluateLegalLaunchGate();
     expect(result.ok).toBe(true);
-  });
-
-  it("blokuje politické úložisko keď je enforcement zapnutý", () => {
-    process.env.LEGAL_DOCUMENTS_APPROVED = "true";
-    process.env.EU_POLITICAL_AD_REPOSITORY_READY = "false";
-    const result = evaluateLegalLaunchGate({ requirePoliticalRepository: true });
-    expect(result.ok).toBe(false);
-    expect(result.blockers.some((b) => b.code === "political_repository_unavailable")).toBe(true);
   });
 });

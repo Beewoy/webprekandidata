@@ -8,6 +8,7 @@ export type SiteSectionStatusSource = {
   content: unknown;
   domainStatuses?: string[];
   mediaKinds?: string[];
+  orderStatuses?: string[];
   planCode?: "basic" | "plus" | null;
   postStatuses?: string[];
   seo: unknown;
@@ -76,6 +77,7 @@ export function buildSiteSectionStatuses(source: SiteSectionStatusSource): SiteS
   const mediaKinds = new Set((source.mediaKinds ?? []).filter((kind) => kind !== "party_logo"));
   const postStatuses = source.postStatuses ?? [];
   const domainStatuses = source.domainStatuses ?? [];
+  const orderStatuses = source.orderStatuses ?? [];
 
   statuses.vzhlad = themeHasColor && themeHasLayout ? "complete" : themeHasColor || themeHasLayout ? "started" : "empty";
   statuses.obrazky = mediaKinds.has("hero") ? "complete" : mediaKinds.size > 0 ? "started" : "empty";
@@ -83,6 +85,7 @@ export function buildSiteSectionStatuses(source: SiteSectionStatusSource): SiteS
   statuses.aktuality = postStatuses.includes("published") ? "complete" : postStatuses.length > 0 ? "started" : "empty";
   statuses.domena = domainStatuses.includes("active") ? "complete" : domainStatuses.length > 0 ? "started" : "empty";
   statuses.nahlad = "empty";
+  statuses.objednavky = source.planCode || orderStatuses.includes("paid") ? "complete" : orderStatuses.length > 0 ? "started" : "empty";
   statuses.publikovanie = source.siteStatus === "published"
     ? "complete"
     : source.siteStatus === "ready" || source.siteStatus === "payment_pending" || Boolean(source.planCode)

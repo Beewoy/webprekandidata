@@ -113,7 +113,7 @@ supabase/migrations/      verzovaná databázová schéma a RPC
 tests/                    jednotkové testy
 ```
 
-Root `/` sa staticky generuje zo zdrojového dokumentu `landing-page/index.html`, ale metadata, Open Graph obrázok, robots a sitemap používa Next.js Metadata API. `/app` a `/admin` zostávajú samostatné chránené stromy. Platformové `www` sa v `proxy.ts` presmeruje 308 na apex; custom hostname sa naďalej prepisuje iba na publikovaný snapshot.
+Root `/` sa staticky generuje zo zdrojového dokumentu `landing-page/index.html`, ale metadata, Open Graph obrázok, robots a sitemap používa Next.js Metadata API. Produktové placeholdery cenníka sa pri generovaní napĺňajú z `lib/payments/plans.ts`; rovnaký katalóg používajú kampanové stránky a klientský editor Objednávok, takže cena, opis a funkcie balíka sa nemenia oddelene. `/app` a `/admin` zostávajú samostatné chránené stromy. Platformové `www` sa v `proxy.ts` presmeruje 308 na apex; custom hostname sa naďalej prepisuje iba na publikovaný snapshot.
 
 Výnimkou z autentifikácie stromu `/app` je verejná ukážka `/app/web/demo`. `proxy.ts` ju na platformovom hoste interne prepisuje na noindex cestu `/ukazka`, takže odkaz z prihlasovacej stránky funguje bez účtu a nedotýka sa produkčných konceptov ani publikovaných snapshotov.
 
@@ -267,7 +267,7 @@ Balík je vlastnosť konkrétneho webu, nie globálna vlastnosť prihlasovacieho
 
 Tok nákupu Basic/Plus:
 
-1. kandidát na Publikovanie vyberie balík a vyplní fakturačné údaje,
+1. kandidát v sekcii Objednávky vyberie balík a vyplní fakturačné údaje,
 2. server overí vlastníctvo, Free stav a Zod vstup, vytvorí `orders` so stavom `pending` (buyer/seller snapshot) a číslom `order_number` vo formáte `WPK-YYYY-NNNNN`,
 3. server vytvorí Stripe Customer z buyer snapshotu; názov firmy má prednosť pred menom a IČO zostáva v Customer metadata,
 4. server vytvorí Stripe Checkout Session s Price ID z env, `mode=payment`, konkrétnym Customerom a zapnutou post-purchase Invoice; rovnaké mapovacie metadata (`order_id`, `order_number`, …) sú na Session, PaymentIntente aj budúcej Invoice,
@@ -276,7 +276,7 @@ Tok nákupu Basic/Plus:
 7. RPC idempotentne podľa `payment_events.provider_event_id` označí objednávku `paid`, nastaví `sites.plan_code` a zapíše audit `order.fulfilled`,
 8. pri prvom (neidempotentnom) fulfill aplikácia pošle Brevo potvrdenie s číslom objednávky; `orders.confirmation_email_sent_at` bráni duplicite a zlyhanie e-mailu nevracia webhook na retry,
 9. samostatný `invoice.paid` webhook mapuje Invoice cez `invoice.metadata.order_id`; `record_stripe_invoice` uloží Invoice ID, PDF URL a Hosted Invoice URL a skontroluje zhodu Customer ID,
-10. návratová URL iba obnoví UI; balík sa z nej ani z Invoice eventu nikdy neaktivuje. História objednávok (Publikovanie aj `/admin/objednavky`) zobrazuje `order_number` a odkaz na doklad.
+10. návratová URL iba obnoví UI sekcie Objednávky; balík sa z nej ani z Invoice eventu nikdy neaktivuje. História objednávok (kandidátske `objednavky` aj `/admin/objednavky`) zobrazuje `order_number` a odkaz na doklad.
 
 Ceny sú viazané na `STRIPE_PRICE_BASIC` / `STRIPE_PRICE_PLUS` a zároveň na DB constraint `total_cents in (4999, 8999)`. `valid_until` ostáva `null` do schválenia pravidiel kampane. Demo režim Checkout nevolá.
 
@@ -286,7 +286,7 @@ Post-purchase Invoice preberá meno/názov a billing adresu z Customer objektu. 
 
 Hlavné súbory: `lib/payments/*`, `lib/legal/*`, `lib/validation/checkout.ts`, `app/actions/checkout.ts`, `app/actions/withdrawal.ts`, `app/api/webhooks/stripe/route.ts`, `lib/data/orders.ts`, migrácie `0012_stripe_fulfillment.sql`, `0017_stripe_invoices.sql`, `0024_order_numbers_and_confirmation.sql`, `0025_legal_foundation_and_consumer_checkout.sql` a `0026_withdrawal_and_complaints.sql`.
 
-Checkout vyžaduje B2C/B2B vyhlásenie, potvrdenie VOP a voliteľné skoré plnenie (iba B2C). Pri B2C bez skorého plnenia `fulfill_stripe_checkout` neodovzdá `sites.plan_code` hneď — aktiváciu dokončí `activate_deferred_orders` (volané z retention cronu) po `public_activation_at`. Identita predávajúceho je v `lib/legal/seller.ts`; launch gate v `lib/legal/launch-gate.ts` blokuje checkout aj publikovanie bez `LEGAL_DOCUMENTS_APPROVED`.
+Checkout vyžaduje B2C/B2B vyhlásenie, potvrdenie VOP a voliteľné skoré plnenie (iba B2C). Pri B2C bez skorého plnenia `fulfill_stripe_checkout` neodovzdá `sites.plan_code` hneď — aktiváciu dokončí `activate_deferred_orders` (volané z retention cronu) po `public_activation_at`. Identita predávajúceho je v `lib/legal/seller.ts`; route Objednávky ju vyhodnotí na serveri a klientskému formuláru odovzdá iba serializovateľné zobrazovacie údaje, aby serverový a hydratovaný obsah zostali totožné. Launch gate v `lib/legal/launch-gate.ts` blokuje checkout aj publikovanie bez `LEGAL_DOCUMENTS_APPROVED`.
 
 ## 8.2 Domény, DNS a SSL
 
@@ -313,7 +313,7 @@ Po attachi alebo kontrole sa DNS inštrukcie vždy uložia (minimálne apex A `7
 
 Hlavné súbory: `lib/domains/*`, `lib/data/domains.ts`, `app/actions/domains.ts`, `components/editor/domain-editor.tsx`, `proxy.ts`, migrácia `0014_domain_management.sql`.
 
-Stránka publikovania načíta vlastnený projekt na serveri a do klientského UI odovzdá iba jeho serializovateľné `planCode`. Pri Free stave ponúka nákupný výber, fakturačný formulár a históriu objednávok. Pri Basic alebo Plus sa nákupný výber aj objednávkové CTA skryjú a zobrazí sa iba aktívny balík s jeho benefitmi a funkčným odkazom na kontrolu náhľadu. Tým UI nežiada už zaplateného kandidáta o ďalšiu objednávku; oprávnenia platených funkcií však naďalej overuje databáza, nie tento vizuálny stav.
+Zverejňovací tok má dve hlboko odkazovateľné routy. `objednavky` načíta balík, checkout stav a históriu platieb; pri Free stave ponúka nákupný výber a fakturačný formulár, pri Basic/Plus iba aktívny balík a doklady. `publikovanie` načíta pripravenosť a stav poslednej verejnej verzie. Oprávnenia platených funkcií naďalej overuje databáza, nie vizuálny stav navigácie.
 
 Publikovanie nepovažuje samotný `sites.plan_code` za oprávnenie. RPC `has_publish_entitlement` vyžaduje vlastníctvo projektu a zhodnú zaplatenú, neexpirovanú objednávku. UI navyše dostáva serverom odvodenú pripravenosť obsahu, stav poslednej publikácie a informáciu, či sa fingerprint konceptu líši od verejnej verzie.
 
@@ -358,6 +358,7 @@ Sekcie editorov:
 - `seo`,
 - `domena`,
 - `nahlad`,
+- `objednavky`,
 - `publikovanie`.
 
 Nie všetky špeciálne editory už zapisujú do databázy. Presný stav je v `docs/IMPLEMENTATION_STATUS.md`.
@@ -392,11 +393,11 @@ Hlavné súbory:
 - `lib/ai/article.ts`,
 - `supabase/migrations/0009_candidate_posts.sql`.
 
-## 11. Kontaktný formulár
+## 11. Kontakt (dočasne mailto)
 
-Sekcia Kontakt ukladá prepínač `contactFormEnabled` ako súčasť obsahu konceptu. Staršie koncepty bez tohto kľúča majú formulár predvolene zapnutý. Náhľad vykresľuje spoločný komponent formulára tesne pred pätičkou, ale odosielanie je v náhľade zámerne vypnuté.
+Hosted kontaktný formulár je dočasne vypnutý (`HOSTED_CONTACT_FORM_ENABLED = false` v `lib/contact-form.ts`). Verejný web a náhľad zobrazujú mailto odkaz na e-mail zo sekcie Kontakt; pred publikovaním je platný e-mail povinný.
 
-Verejné odoslanie je neautentifikovaná mutácia a preto sa považuje za nedôveryhodný vstup:
+Kód formulára, `submitContactForm`, Brevo doručenie a `contact_submissions` ostávajú v repozitári. Po zapnutí flagu sa znova uplatní pôvodný tok:
 
 ```text
 návštevník → serverová Zod validácia + honeypot
@@ -408,10 +409,9 @@ návštevník → serverová Zod validácia + honeypot
             → contact_submissions(sent | failed)
 ```
 
-Klient posiela iba ID webu a polia správy; cieľovú adresu ani stav prepínača neposiela. Server nikdy nečíta cieľový e-mail zo `site_drafts`, takže rozpracovaná zmena kontaktu sa na verejnom webe prejaví až po novom publikovaní. Pre rovnaký e-mail a web sú povolené najviac tri pokusy za 15 minút. Viditeľné polia sú meno, e-mail, voliteľný telefón a popis; telefón sa minimalizuje na doručovaný e-mail a neukladá sa do databázy. Záznam správy používa existujúcu 90-dňovú retenčnú lehotu.
-
 Hlavné súbory:
 
+- `lib/contact-form.ts`,
 - `components/public-site/contact-form.tsx`,
 - `app/actions/contact.ts`,
 - `lib/email/brevo.ts`.
@@ -436,6 +436,12 @@ Snapshot obsahuje `content`, `theme`, `seo`, zoznam publikovaných článkov, `m
 Verejný loader používa serverový Supabase klient, vyžaduje `sites.status = published`, zhodný `current_publication_id` a snapshot bez `unpublished_at`. Z neho vytvorí sanitizovaný `SitePreviewData`, verejné URL immutable médií a SEO metadata. Pri stave `suspended` rovnaká cesta vráti 404, no snapshot zostane pripravený na obnovenie. Kontaktný formulár vykonáva totožnú kontrolu publikovaného projektu a cieľový e-mail číta iba zo snapshotu.
 
 Migrácia: `supabase/migrations/0010_candidate_publications.sql`. Hlavné súbory: `app/actions/publishing.ts`, `lib/data/publishing.ts`, `lib/data/public-site.ts`, `lib/publishing.ts`, `app/[slug]/page.tsx` a `components/editor/publishing-editor.tsx`.
+
+### 12.1 Hranica služby voči politickej reklame
+
+WebPreKandidata.sk poskytuje samoobslužný editor, technické publikovanie a hosting vlastného webu kandidáta. Kandidát určuje obsah, vykonáva jeho kontrolu a sám spúšťa publikovanie. Platforma neposkytuje platené umiestnenie konkrétnej správy, boosting, nákup mediálneho priestoru, personalizované cielenie ani distribúciu cez vlastné publikum.
+
+Z tohto produktového vymedzenia vychádza implementácia bez politicko-reklamného profilu, verejného označenia, transparentného snapshotu a európskeho úložiska. Hranica je architektonický invariant: ak sa pridá platený dosah, cielenie, automatické publikovanie alebo distribúcia kampane cez kanály platformy, zmena musí pred implementáciou absolvovať nové právne posúdenie nariadenia (EÚ) 2024/900.
 
 ## 13. Interný admin prevádzkovateľa
 
@@ -470,6 +476,7 @@ update public.profiles set role = 'admin' where id = '<user-uuid>';
 - Vercel Domains tajomstvá (`VERCEL_TOKEN`, `VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID`) iba na serveri.
 - Custom doménu smie pripojiť iba vlastník so zaplatenou Plus objednávkou; zápisy idú cez RPC.
 - Publikovanie vytvára snapshot; verejný web nečíta `site_drafts`.
+- Platforma neposkytuje platený dosah, boosting ani personalizované cielenie politických správ; ich pridanie vyžaduje nové právne a architektonické posúdenie.
 - AI výstup je návrh a nesmie sa automaticky publikovať.
 - Kontaktné správy a AI audit musia mať automatické retenčné mazanie.
 - Admin zásahy a pozastavenia webu sa auditujú.

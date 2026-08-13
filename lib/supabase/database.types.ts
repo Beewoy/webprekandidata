@@ -129,6 +129,94 @@ export type Database = {
           },
         ]
       }
+      complaints: {
+        Row: {
+          channel: string
+          complaint_number: string
+          confirmation_email_sent_at: string | null
+          created_at: string
+          deadline_at: string
+          decision_at: string | null
+          decision_reason: string | null
+          description: string
+          desired_remedy: string | null
+          email: string
+          full_name: string
+          id: string
+          order_id: string | null
+          received_at: string
+          remedy: string | null
+          site_id: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          channel?: string
+          complaint_number?: string
+          confirmation_email_sent_at?: string | null
+          created_at?: string
+          deadline_at: string
+          decision_at?: string | null
+          decision_reason?: string | null
+          description: string
+          desired_remedy?: string | null
+          email: string
+          full_name: string
+          id?: string
+          order_id?: string | null
+          received_at?: string
+          remedy?: string | null
+          site_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          channel?: string
+          complaint_number?: string
+          confirmation_email_sent_at?: string | null
+          created_at?: string
+          deadline_at?: string
+          decision_at?: string | null
+          decision_reason?: string | null
+          description?: string
+          desired_remedy?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          order_id?: string | null
+          received_at?: string
+          remedy?: string | null
+          site_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaints_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_submissions: {
         Row: {
           consent_recorded_at: string
@@ -293,6 +381,104 @@ export type Database = {
           },
         ]
       }
+      legal_audit_events: {
+        Row: {
+          action: string
+          actor_service: string | null
+          actor_user_id: string | null
+          after_hash: string | null
+          before_hash: string | null
+          correlation_id: string | null
+          entity_id: string | null
+          entity_type: string
+          entity_version: string | null
+          id: number
+          legal_basis_tag: string | null
+          metadata: Json
+          occurred_at: string
+          result: string
+        }
+        Insert: {
+          action: string
+          actor_service?: string | null
+          actor_user_id?: string | null
+          after_hash?: string | null
+          before_hash?: string | null
+          correlation_id?: string | null
+          entity_id?: string | null
+          entity_type: string
+          entity_version?: string | null
+          id?: never
+          legal_basis_tag?: string | null
+          metadata?: Json
+          occurred_at?: string
+          result?: string
+        }
+        Update: {
+          action?: string
+          actor_service?: string | null
+          actor_user_id?: string | null
+          after_hash?: string | null
+          before_hash?: string | null
+          correlation_id?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          entity_version?: string | null
+          id?: never
+          legal_basis_tag?: string | null
+          metadata?: Json
+          occurred_at?: string
+          result?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_audit_events_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_document_versions: {
+        Row: {
+          content_hash: string
+          content_markdown: string
+          created_at: string
+          doc_type: string
+          effective_from: string
+          id: string
+          locale: string
+          published_at: string
+          title: string
+          version: string
+        }
+        Insert: {
+          content_hash: string
+          content_markdown: string
+          created_at?: string
+          doc_type: string
+          effective_from: string
+          id?: string
+          locale?: string
+          published_at?: string
+          title: string
+          version: string
+        }
+        Update: {
+          content_hash?: string
+          content_markdown?: string
+          created_at?: string
+          doc_type?: string
+          effective_from?: string
+          id?: string
+          locale?: string
+          published_at?: string
+          title?: string
+          version?: string
+        }
+        Relationships: []
+      }
       media_assets: {
         Row: {
           alt_text: string
@@ -365,8 +551,73 @@ export type Database = {
           },
         ]
       }
+      order_legal_acceptances: {
+        Row: {
+          acceptance_kind: string
+          accepted: boolean
+          accepted_at: string
+          actor_user_id: string | null
+          document_version_id: string | null
+          id: string
+          ip_hash: string | null
+          order_id: string
+          statement_text: string
+          statement_version: string
+          user_agent: string | null
+        }
+        Insert: {
+          acceptance_kind: string
+          accepted: boolean
+          accepted_at?: string
+          actor_user_id?: string | null
+          document_version_id?: string | null
+          id?: string
+          ip_hash?: string | null
+          order_id: string
+          statement_text: string
+          statement_version: string
+          user_agent?: string | null
+        }
+        Update: {
+          acceptance_kind?: string
+          accepted?: boolean
+          accepted_at?: string
+          actor_user_id?: string | null
+          document_version_id?: string | null
+          id?: string
+          ip_hash?: string | null
+          order_id?: string
+          statement_text?: string
+          statement_version?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_legal_acceptances_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_legal_acceptances_document_version_id_fkey"
+            columns: ["document_version_id"]
+            isOneToOne: false
+            referencedRelation: "legal_document_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_legal_acceptances_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
+          activation_deferred: boolean
           buyer_snapshot: Json
           confirmation_email_sent_at: string | null
           created_at: string
@@ -377,7 +628,6 @@ export type Database = {
           early_performance_requested: boolean
           early_performance_statement_text: string | null
           early_performance_statement_version: string | null
-          activation_deferred: boolean
           fulfilled_at: string | null
           id: string
           net_cents: number | null
@@ -405,6 +655,7 @@ export type Database = {
           withdrawal_notice_version_id: string | null
         }
         Insert: {
+          activation_deferred?: boolean
           buyer_snapshot: Json
           confirmation_email_sent_at?: string | null
           created_at?: string
@@ -415,7 +666,6 @@ export type Database = {
           early_performance_requested?: boolean
           early_performance_statement_text?: string | null
           early_performance_statement_version?: string | null
-          activation_deferred?: boolean
           fulfilled_at?: string | null
           id?: string
           net_cents?: number | null
@@ -443,6 +693,7 @@ export type Database = {
           withdrawal_notice_version_id?: string | null
         }
         Update: {
+          activation_deferred?: boolean
           buyer_snapshot?: Json
           confirmation_email_sent_at?: string | null
           created_at?: string
@@ -453,7 +704,6 @@ export type Database = {
           early_performance_requested?: boolean
           early_performance_statement_text?: string | null
           early_performance_statement_version?: string | null
-          activation_deferred?: boolean
           fulfilled_at?: string | null
           id?: string
           net_cents?: number | null
@@ -482,6 +732,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "orders_plan_version_id_fkey"
+            columns: ["plan_version_id"]
+            isOneToOne: false
+            referencedRelation: "plan_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_privacy_version_id_fkey"
+            columns: ["privacy_version_id"]
+            isOneToOne: false
+            referencedRelation: "legal_document_versions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "orders_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
@@ -489,10 +753,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "orders_terms_version_id_fkey"
+            columns: ["terms_version_id"]
+            isOneToOne: false
+            referencedRelation: "legal_document_versions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "orders_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_withdrawal_notice_version_id_fkey"
+            columns: ["withdrawal_notice_version_id"]
+            isOneToOne: false
+            referencedRelation: "legal_document_versions"
             referencedColumns: ["id"]
           },
         ]
@@ -527,6 +805,57 @@ export type Database = {
           processing_status?: string
           provider_event_id?: string
           received_at?: string
+        }
+        Relationships: []
+      }
+      plan_versions: {
+        Row: {
+          created_at: string
+          currency: string
+          duration_rule: string
+          effective_from: string
+          effective_to: string | null
+          features: Json
+          id: string
+          limits: Json
+          plan_code: Database["public"]["Enums"]["plan_code"]
+          price_cents: number
+          service_ends_at: string
+          support_summary: string
+          tax_regime: string
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          duration_rule?: string
+          effective_from: string
+          effective_to?: string | null
+          features?: Json
+          id?: string
+          limits?: Json
+          plan_code: Database["public"]["Enums"]["plan_code"]
+          price_cents: number
+          service_ends_at: string
+          support_summary?: string
+          tax_regime?: string
+          version: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          duration_rule?: string
+          effective_from?: string
+          effective_to?: string | null
+          features?: Json
+          id?: string
+          limits?: Json
+          plan_code?: Database["public"]["Enums"]["plan_code"]
+          price_cents?: number
+          service_ends_at?: string
+          support_summary?: string
+          tax_regime?: string
+          version?: string
         }
         Relationships: []
       }
@@ -853,11 +1182,141 @@ export type Database = {
           },
         ]
       }
+      withdrawal_requests: {
+        Row: {
+          channel: string
+          confirmation_email_sent_at: string | null
+          confirmed_at: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          notes: string | null
+          order_id: string
+          refund_amount_cents: number | null
+          refund_currency: string | null
+          refund_deadline_at: string | null
+          refunded_at: string | null
+          site_id: string
+          statement_text: string
+          status: string
+          stripe_refund_id: string | null
+          submitted_at: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          channel: string
+          confirmation_email_sent_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          notes?: string | null
+          order_id: string
+          refund_amount_cents?: number | null
+          refund_currency?: string | null
+          refund_deadline_at?: string | null
+          refunded_at?: string | null
+          site_id: string
+          statement_text: string
+          status?: string
+          stripe_refund_id?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          channel?: string
+          confirmation_email_sent_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          notes?: string | null
+          order_id?: string
+          refund_amount_cents?: number | null
+          refund_currency?: string | null
+          refund_deadline_at?: string | null
+          refunded_at?: string | null
+          site_id?: string
+          statement_text?: string
+          status?: string
+          stripe_refund_id?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "withdrawal_requests_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "withdrawal_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      withdrawal_tokens: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          order_id: string
+          token_hash: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          order_id: string
+          token_hash: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          order_id?: string
+          token_hash?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_tokens_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      activate_deferred_orders: { Args: { p_limit?: number }; Returns: Json }
       admin_dashboard_metrics: { Args: never; Returns: Json }
       admin_grant_site_plan: {
         Args: {
@@ -925,10 +1384,6 @@ export type Database = {
         }
         Returns: Json
       }
-      activate_deferred_orders: {
-        Args: { p_limit?: number }
-        Returns: Json
-      }
       has_plus_entitlement: { Args: { p_site_id: string }; Returns: boolean }
       has_publish_entitlement: { Args: { p_site_id: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
@@ -945,6 +1400,7 @@ export type Database = {
         }
         Returns: Json
       }
+      next_complaint_number: { Args: never; Returns: string }
       next_order_number: { Args: never; Returns: string }
       owns_site: { Args: { target_site_id: string }; Returns: boolean }
       publish_candidate_site: {
@@ -1182,4 +1638,3 @@ export const Constants = {
     },
   },
 } as const
-

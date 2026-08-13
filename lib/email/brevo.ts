@@ -257,7 +257,7 @@ export async function sendOrderConfirmationEmail({
       "",
       scopeText,
       "",
-      `Správa webu: ${publishingUrl}`,
+      `Pokračovať k zverejneniu: ${publishingUrl}`,
       invoiceUrl ? `Doklad: ${invoiceUrl}` : "Doklad (ak je k dispozícii) nájdete v sekcii Publikovanie.",
       "",
       "Právne dokumenty:",
@@ -281,7 +281,7 @@ export async function sendOrderConfirmationEmail({
             <p style="font-size:14px;line-height:1.6;margin:0"><strong>Web:</strong> ${safeSite}</p>
           </div>
           <p style="font-size:13px;line-height:1.65;color:#465468;margin:0 0 22px">${safeScopeText}</p>
-          <a href="${safePublishingUrl}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;font-size:14px;font-weight:700;padding:13px 20px;border-radius:10px">Otvoriť Publikovanie</a>
+          <a href="${safePublishingUrl}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;font-size:14px;font-weight:700;padding:13px 20px;border-radius:10px">Pokračovať k zverejneniu</a>
           ${safeInvoiceUrl
             ? `<p style="font-size:13px;line-height:1.55;margin:18px 0 0"><a href="${safeInvoiceUrl}" style="color:#0f766e;font-weight:600">Otvoriť doklad</a></p>`
             : `<p style="font-size:12px;line-height:1.55;color:#7c8ba1;margin:18px 0 0">Doklad (ak je k dispozícii) nájdete v sekcii Publikovanie.</p>`}

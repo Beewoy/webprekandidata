@@ -15,7 +15,7 @@ vi.mock("@/lib/payments/order-confirmation", () => ({
   maybeSendOrderConfirmation: (...args: unknown[]) => maybeSendOrderConfirmation(...args),
 }));
 
-import { processStripeEvent } from "../app/api/webhooks/stripe/route";
+import { processStripeEvent } from "../lib/payments/stripe-webhook";
 
 function stripeEvent(
   id: string,

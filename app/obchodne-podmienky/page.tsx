@@ -45,7 +45,7 @@ export default function TermsPage() {
         <ul>
           <li>
             <strong>Basic za 49,99 €</strong> zahŕňa verejný kandidátsky web na adrese platformy,
-            obsahový editor, aktuality, kontaktný formulár, základné SEO a štandardnú podporu.
+            obsahový editor, aktuality, e-mailový kontakt (mailto), základné SEO a štandardnú podporu.
           </li>
           <li>
             <strong>Plus za 89,99 €</strong> zahŕňa funkcie balíka Basic, pripojenie jednej
@@ -98,14 +98,15 @@ export default function TermsPage() {
         <p>
           Zákazník zodpovedá za pravdivosť a zákonnosť textov, fotografií, log, kontaktných údajov a
           ostatného obsahu, ktorý vloží alebo publikuje. Zároveň vyhlasuje, že má všetky potrebné
-          súhlasy a práva na jeho použitie. Zákazník je povinný doplniť zákonné označenia a údaje
-          vyžadované pravidlami volebnej kampane a politickej reklamy.
+          súhlasy a práva na jeho použitie. Zákazník zodpovedá aj za splnenie povinností, ktoré sa na
+          jeho vlastnú volebnú kampaň a konkrétny obsah vzťahujú podľa platných predpisov.
         </p>
         <p>
           Zakázaný je najmä nezákonný, klamlivý, hanlivý alebo nenávistný obsah, porušovanie práv
           tretích osôb, vydávanie sa za inú osobu bez oprávnenia, šírenie škodlivého kódu, automatizované
           zneužívanie služby a obchádzanie jej zabezpečenia. Platforma nie je nástrojom na prijímanie
-          politických darov ani na automatické rozosielanie kampaní.
+          politických darov, nákup reklamného priestoru, platený boosting, personalizované cielenie ani
+          automatické rozosielanie kampaní.
         </p>
       </section>
       <section>

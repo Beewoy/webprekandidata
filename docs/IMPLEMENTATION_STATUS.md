@@ -45,25 +45,26 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - responzívny app shell a mobilný drawer,
 - viditeľný aktívny balík Free, Basic alebo Plus v sidebare, mobilnej hlavičke, prehľade webu a zozname projektov; nový web má predvolene Free,
 - prehľad projektu a stav dokončenia odvodený z aktuálne uloženého konceptu,
-- všetkých 14 plánovaných navigačných sekcií vrátane samostatnej Galérie,
+- 15 navigačných sekcií vrátane samostatnej Galérie a Objednávok,
 - obsahové formuláre,
 - prístupný WYSIWYG editor pre dlhý text „O mne“ a voliteľné podrobné popisy bodov programu s manuálnym uložením a serverovou sanitizáciou,
-- UI pre vzhľad, obrázky, aktuality, SEO, doménu a publikovanie,
+- UI pre vzhľad, obrázky, aktuality, SEO, doménu, objednávky a publikovanie,
 - plnohodnotný zoznam aktualít a editor článku pre Basic aj Plus: koncept, zverejnenie, skrytie, mazanie, krátky popis, TipTap obsah a titulný obrázok,
 - verejný model aktualít bez samostatných URL: karty v náhľade otvárajú detail v modálnej vrstve bez zmeny adresy,
 - Plus AI návrh článku z podkladov kandidáta s kvótou 20 návrhov na projekt; návrh sa iba vloží do editora a nikdy sa automaticky neuloží ani nezverejní,
 - výber z troch responzívnych celostránkových šablón s prístupnými stavmi a živým náhľadom: občiansko-editoriálny Horizont, dynamický Impulz a reprezentatívna Dôvera,
-- samostatná ukážková cesta `/app/web/demo` a jej verejný alias `/ukazka` prezentujú vyplnený kandidátsky web v šablóne Horizont vrátane hlavného portrétu kandidáta, profilového loga, fotografie v sekcii O mne, aktualít, trojfotkovej galérie a neaktívneho náhľadu kontaktného formulára aj pri zapnutom produkčnom dátovom režime,
+- samostatná ukážková cesta `/app/web/demo` a jej verejný alias `/ukazka` prezentujú vyplnený kandidátsky web v šablóne Horizont vrátane hlavného portrétu kandidáta, profilového loga, fotografie v sekcii O mne, aktualít, trojfotkovej galérie a e-mailového mailto kontaktu (hosted formulár dočasne vypnutý),
 - verejné šablóny používajú spoločný 1200 px obsahový kontajner, verejnú typografickú mierku, responzívne menu a lokálne načítanú serifovú display typografiu pre Dôveru,
 - načítanie a manuálne ukladanie vybranej šablóny aj farby do `site_drafts.theme` s ochranou revízie a varovaním pred odchodom pri neuložených zmenách,
 - desktopový a mobilný náhľad,
 - dátový náhľad celého kandidátskeho webu z aktuálneho `site_drafts` s manuálnym obnovením revízie,
 - kompaktný náhľad na prehľade projektu napojený na rovnaký koncept, šablónu, farbu, znak kampane a portrét ako úplný náhľad webu,
-- kontaktný formulár nad pätičkou v náhľade verejnej šablóny a prepínač jeho viditeľnosti v sekcii Kontakt,
+- kontaktný e-mail (mailto) nad pätičkou v náhľade verejnej šablóny; hosted kontaktný formulár je dočasne vypnutý (`HOSTED_CONTACT_FORM_ENABLED=false`) do DPA/privacy gate,
 - balíky Basic 49,99 € a Plus 89,99 € ako konečné jednorazové ceny,
-- stránka publikovania číta balík a reálne oprávnenie aktuálneho projektu zo servera: Free účtu zobrazí výber Basic/Plus, aktívnemu Basic/Plus účtu pripravenosť obsahu, stav verejnej verzie a akcie zverejniť, publikovať zmeny, pozastaviť alebo obnoviť,
+- názvy, ceny, opisy a zahrnuté funkcie balíkov majú jeden zdroj pravdy v `lib/payments/plans.ts`; root landing, kampanové SEO stránky, Objednávky aj Publikovanie používajú rovnaké produktové údaje,
+- zverejňovací tok je rozdelený na samostatné routy: `objednavky` pre balík, platbu a doklady a `publikovanie` pre pripravenosť, stav verejnej verzie a akcie zverejniť, publikovať zmeny, pozastaviť alebo obnoviť,
 - verejná kandidátska cesta `/:slug` používa posledný nemenný snapshot; koncept ani neuložené rozpracované zmeny nikdy nečíta,
-- verejný web zdieľa sanitizovaný zobrazovací model s náhľadom, pričom články zostávajú v modálnej vrstve bez samostatnej URL a kontaktný formulár sa aktivuje iba vo verejnom režime,
+- verejný web zdieľa sanitizovaný zobrazovací model s náhľadom, pričom články zostávajú v modálnej vrstve bez samostatnej URL; kontakt je cez mailto, kým sa znova nezapne hosted formulár,
 - dvojkrokový uvítací dialóg po registrácii s možnosťou preskočenia,
 - editovateľná kontrola prvého návrhu pred vytvorením webu,
 - dialóg Pomoc a podpora v sidebare editora s telefónom +421 948 473 255 a formulárom, ktorý cez Brevo SMTP pošle správu na podporné e-maily.
@@ -104,7 +105,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - výber a ukladanie tematických občianskych ikoniek pre hodnoty, dôvody a program vrátane zobrazenia v náhľade,
 - základná databázová schéma a RLS politiky,
 - lokálny Supabase stack (Docker) pre vývoj; produkčný cloud projekt `Webprekandidata` (`iozvohajbtzxviytpufp`) s credentials iba vo Vercel a GitHub Secrets,
-- migrácie `0001` až `0024` v repozitári; produkčné nasadenie migrácií cez GitHub Actions workflow `Supabase migrations` pri pushi do `main`,
+- migrácie `0001` až `0028` v repozitári; produkčné nasadenie migrácií cez GitHub Actions workflow `Supabase migrations` pri pushi do `main`,
 - `.env.local.example` a aktualizovaný `.env.example` pre lokálny vývoj na `127.0.0.1:54321`,
 - politika zero prod from Mac: na vývojárskom Macu sa nespúšťa `supabase link` ani `db push` proti produkcii,
 - reálna produkčná Supabase konfigurácia vo Vercel env; lokálny `.env.local` smeruje na Docker stack,
@@ -129,6 +130,13 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - pozastavenie skryje verejnú cestu bez odstránenia snapshotu a obnovenie znova sprístupní poslednú verziu,
 - verejná stránka poskytuje vlastné SEO metadata, canonical adresu, Open Graph obrázok a povolené indexovanie iba pri stave `published`,
 - audit log zaznamenáva publikovanie, pozastavenie a obnovenie.
+
+### Vlastný web kandidáta a politická reklama
+
+- produkt je vedený ako samoobslužný editor a hosting vlastného webu kandidáta, nie ako platené umiestňovanie, propagácia alebo cielená distribúcia konkrétnych politických správ,
+- platforma preto nevyžaduje politicko-reklamný profil sponzora, verejné označenie, transparentný snapshot ani napojenie na európske úložisko,
+- WebPreKandidata.sk neposkytuje platený dosah, boosting ani personalizované cielenie; ak sa produkt o takú službu rozšíri, rozsah nariadenia (EÚ) 2024/900 sa musí pred implementáciou znovu posúdiť,
+- AI zostáva návrhovým nástrojom: kandidát text kontroluje a publikuje sám.
 
 ### Interný admin prevádzkovateľa
 
@@ -158,16 +166,12 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - canonical a Open Graph URL preferujú aktívnu primary custom doménu, inak platformovú cestu,
 - migrácia `0014_domain_management.sql`,
 - demo režim Vercel nevolá; bez `VERCEL_TOKEN` / `VERCEL_PROJECT_ID` produkčné pripojenie custom domény odmietne.
-### Kontaktný formulár
+### Kontakt (dočasne mailto)
 
-- viditeľné polia meno, e-mail, voliteľný telefón a popis,
-- prístupné labely, textové chyby, stav odosielania a úspešné potvrdenie,
-- serverová Zod validácia, honeypot a limit troch správ za 15 minút pre rovnaký e-mail a web,
-- odoslanie je povolené iba pre stav `published` a aktívny `current_publication_id`,
-- cieľový e-mail sa vždy načíta zo sekcie Kontakt aktuálneho publikovaného snapshotu; klient ho neposiela ani neurčuje,
-- prepínač formulára sa tiež vyhodnocuje z publikovaného snapshotu, takže nepublikovaná zmena neovplyvní verejný web,
-- Brevo SMTP doručenie s bezpečným `replyTo` na návštevníka a stavom `pending`, `sent` alebo `failed` v `contact_submissions`,
-- telo správy sa uchováva najviac podľa existujúcej 90-dňovej retenčnej lehoty; voliteľný telefón sa použije iba v doručovanom e-maile a ďalej sa neukladá.
+- hosted kontaktný formulár je dočasne vypnutý prepínačom `HOSTED_CONTACT_FORM_ENABLED` v `lib/contact-form.ts`,
+- verejný web zobrazuje zvýraznený mailto odkaz na e-mail zo sekcie Kontakt (povinný pred publikovaním),
+- kód formulára, Brevo doručenie a `contact_submissions` ostávajú v repozitári pre neskoršie znovuzapnutie po DPA/privacy gate,
+- serverová akcia `submitContactForm` pri vypnutom režime odmietne odoslanie.
 
 ### Médiá
 
@@ -199,21 +203,21 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 
 ### Stripe Checkout a objednávky
 
-- výber Basic 49,99 € / Plus 89,99 € ako konečných cien na stránke Publikovanie,
+- výber Basic 49,99 € / Plus 89,99 € ako konečných cien v samostatnej sekcii Objednávky,
 - fakturačné údaje kupujúceho a súhlas pred Checkoutom,
 - server vytvorí pending `orders` s ľudsky čitateľným číslom `WPK-YYYY-NNNNN` (`order_number`), reálneho Stripe Customer s fakturačnou adresou a Stripe Checkout Session,
 - jednorazový Checkout používa post-purchase invoice; po úspešnej platbe Stripe automaticky vytvorí paid Invoice s číslom objednávky, voliteľným zákazníckym IČO a dodávateľským footerom bez výpočtu DPH,
 - podpísaný webhook `/api/webhooks/stripe` idempotentne splní objednávku a nastaví `sites.plan_code`,
 - po prvom (neidempotentnom) fulfill pošle Brevo potvrdenie objednávky; `confirmation_email_sent_at` bráni duplicite; zlyhanie e-mailu nevracia Stripe webhook na retry,
 - samostatný `invoice.paid` webhook idempotentne uloží Invoice ID, PDF URL a Hosted Invoice URL bez vplyvu na aktiváciu balíka,
-- návrat do aplikácie obnoví Publikovanie; aktivácia balíka čaká na webhook,
-- história objednávok na stránke Publikovanie a v `/admin/objednavky` zobrazuje číslo a odkaz na doklad (vlastník cez RLS),
+- návrat do aplikácie obnoví sekciu Objednávky; aktivácia balíka čaká na webhook,
+- história objednávok v sekcii Objednávky a v `/admin/objednavky` zobrazuje číslo a odkaz na doklad (vlastník cez RLS),
 - demo režim platbu neponúka,
 - migrácie `0012_stripe_fulfillment.sql`, `0017_stripe_invoices.sql` a `0024_order_numbers_and_confirmation.sql`.
 
 ### Overenie
 
-- 130 jednotkových testov,
+- 149 jednotkových testov,
 - TypeScript bez chýb,
 - ESLint bez chýb a varovaní,
 - úspešný produkčný build,
@@ -253,7 +257,7 @@ Supabase, Brevo, OpenAI a Vercel sú pripojené. AI onboarding bez `OPENAI_API_K
 
 1. Zosúladiť DNS apexu a `www` vo Websupporte podľa Vercelu bez odstránenia poštových záznamov.
 2. Doplniť live Stripe secret, webhook secret, `SELLER_*`, právne schválenie, Vercel token a Sentry konfiguráciu.
-3. Nasadiť produkciu a end-to-end overiť registráciu, Checkout Basic/Plus, webhook fulfillment, publikovanie a Plus custom doménu.
+3. End-to-end overiť registráciu, Checkout Basic/Plus, webhook fulfillment, publikovanie a Plus custom doménu.
 4. Po úspešnom overení nastaviť `LEGAL_DOCUMENTS_APPROVED=true` a odoslať sitemapu do Search Console.
 
 ## Otvorené produktové rozhodnutia
@@ -263,7 +267,7 @@ Supabase, Brevo, OpenAI a Vercel sú pripojené. AI onboarding bez `OPENAI_API_K
 - kompletné fakturačné údaje SZČO,
 - produkčné právne a retenčné potvrdenie OpenAI spracovania a výber modelu po evaloch,
 - monitoring a produktová analytika,
-- právne potvrdenie rozsahu pravidiel politickej reklamy.
+- opätovné právne posúdenie politickej reklamy iba pred pridaním plateného dosahu, boostingu, cielenia alebo publikovania kampane vo vlastných kanáloch platformy.
 
 ## Pravidlo aktualizácie
 

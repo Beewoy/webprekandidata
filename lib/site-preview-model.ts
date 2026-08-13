@@ -1,4 +1,5 @@
 import type { CivicIconName } from "./civic-icons";
+import { getPublicationContactSettings } from "./contact-form";
 import { getPlatformSiteLabel } from "./domains/platform";
 import { buildRepeatableItems } from "./repeatable-items";
 import { repeatableContent } from "./repeatable-content";
@@ -179,7 +180,7 @@ export function buildSitePreviewData(
     contact: {
       email: contact.email.trim(),
       facebook: safeSocialUrl(contact.facebook),
-      formEnabled: contact.contactFormEnabled !== "false",
+      formEnabled: getPublicationContactSettings({ kontakt: contact }).enabled,
       instagram: safeSocialUrl(contact.instagram),
       phone: contact.phone.trim(),
     },

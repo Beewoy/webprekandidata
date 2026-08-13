@@ -295,7 +295,7 @@ export function DomainEditor({ siteId, state }: { siteId: string; state: SiteDom
             )}
 
             {locked && (
-              <Link className="text-link" href={`/app/web/${siteId}/publikovanie`}>
+              <Link className="text-link" href={`/app/web/${siteId}/objednavky`}>
                 Pozrieť balík Plus <ArrowRight size={15} />
               </Link>
             )}

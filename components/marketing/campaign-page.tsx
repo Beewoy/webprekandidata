@@ -25,6 +25,7 @@ import {
   type BenefitIcon,
   type CampaignPageData,
 } from "@/lib/marketing/campaign-pages";
+import { PLAN_DESCRIPTIONS, PLAN_FEATURES } from "@/lib/payments/plans";
 import { ElectionCountdown } from "./election-countdown";
 import styles from "./campaign-page.module.css";
 
@@ -36,21 +37,6 @@ const benefitIcons = {
   map: Map,
   users: Users,
 } satisfies Record<BenefitIcon, typeof Search>;
-
-const basicFeatures = [
-  "Profesionálny responzívny web",
-  "Adresa na WebPreKandidata.sk",
-  "Program, aktuality, galéria a kontakt",
-  "AI návrh prvotného obsahu",
-  "Základné SEO, zdieľanie a hosting",
-];
-
-const plusFeatures = [
-  "Všetko z balíka Basic",
-  "Pripojenie jednej existujúcej domény",
-  "Najviac 20 AI návrhov článkov",
-  "Prioritná e-mailová podpora",
-];
 
 function Brand({ inverse = false }: { inverse?: boolean }) {
   return (
@@ -88,7 +74,7 @@ function PriceCard({
   name: string;
   price: string;
   description: string;
-  features: string[];
+  features: readonly string[];
 }) {
   return (
     <article className={`${styles.priceCard} ${featured ? styles.priceCardFeatured : ""}`}>
@@ -253,15 +239,15 @@ export function CampaignPage({ page }: { page: CampaignPageData }) {
             <PriceCard
               name="Basic"
               price={MARKETING_PLAN_PRICES.basic}
-              description="Profesionálny základ pre vašu kandidatúru."
-              features={basicFeatures}
+              description={PLAN_DESCRIPTIONS.basic}
+              features={PLAN_FEATURES.basic}
             />
             <PriceCard
               featured
               name="Plus"
               price={MARKETING_PLAN_PRICES.plus}
-              description="Viac možností pre pravidelnú komunikáciu."
-              features={plusFeatures}
+              description={PLAN_DESCRIPTIONS.plus}
+              features={PLAN_FEATURES.plus}
             />
           </div>
           <div className={styles.trustGrid}>

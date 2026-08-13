@@ -15,6 +15,7 @@ import {
   ListChecks,
   Newspaper,
   Palette,
+  ReceiptText,
   Rocket,
   Search,
 } from "lucide-react";
@@ -48,7 +49,8 @@ export const contentSections: SiteSection[] = [
 export const publishSections: SiteSection[] = [
   { slug: "domena", label: "Doména", description: "Adresa vášho webu", icon: Globe2, status: "started", group: "publish" },
   { slug: "nahlad", label: "Náhľad webu", description: "Kontrola pred zverejnením", icon: Eye, status: "empty", group: "publish" },
-  { slug: "publikovanie", label: "Publikovanie", description: "Balík a zverejnenie webu", icon: Rocket, status: "empty", group: "publish" },
+  { slug: "objednavky", label: "Objednávky", description: "Balík, platby a doklady", icon: ReceiptText, status: "empty", group: "publish" },
+  { slug: "publikovanie", label: "Publikovanie", description: "Verejná verzia webu", icon: Rocket, status: "empty", group: "publish" },
 ];
 
 export const allSections = [...contentSections, ...publishSections];
@@ -71,11 +73,11 @@ export const editorFields: Record<string, Array<{ label: string; name: string; t
     { label: "Politická príslušnosť / podpora", name: "politicalAffiliation", hint: "Napr. SaS · KDH · Demokrati alebo Nezávislý kandidát" },
   ],
   kontakt: [
-    { label: "E-mail", name: "email", value: "martin@novak.sk" },
+    { label: "E-mail", name: "email", value: "martin@novak.sk", hint: "Zobrazí sa na webe ako odkaz napísať e-mail (mailto)." },
     { label: "Telefón", name: "phone", value: "+421 900 123 456" },
     { label: "Facebook", name: "facebook", type: "url", hint: "Odkaz na verejný profil alebo stránku" },
     { label: "Instagram", name: "instagram", type: "url", hint: "Odkaz na verejný profil" },
-    { label: "Zobrazovať kontaktný formulár", name: "contactFormEnabled", type: "checkbox", value: "true", hint: "Správy sa po zverejnení webu doručia na e-mail uvedený vyššie." },
+    // Hosted form temporarily disabled — see HOSTED_CONTACT_FORM_ENABLED in lib/contact-form.ts
   ],
   uvod: [
     { label: "Hlavný nadpis", name: "headline", value: "Spoločne pre lepšiu Trnavu", hint: "Krátka a zapamätateľná hlavná myšlienka" },

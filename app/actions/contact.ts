@@ -1,7 +1,11 @@
 "use server";
 
 import { z } from "zod";
-import { contactRateLimit, getPublicationContactSettings } from "@/lib/contact-form";
+import {
+  HOSTED_CONTACT_FORM_ENABLED,
+  contactRateLimit,
+  getPublicationContactSettings,
+} from "@/lib/contact-form";
 import { sendCandidateContactEmail } from "@/lib/email/brevo";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { contactSubmissionSchema } from "@/lib/validation/site";
@@ -17,6 +21,13 @@ export async function submitContactForm(
   _previousState: ContactFormState,
   formData: FormData,
 ): Promise<ContactFormState> {
+  if (!HOSTED_CONTACT_FORM_ENABLED) {
+    return {
+      status: "error",
+      message: "Kontaktný formulár je dočasne vypnutý. Použite e-mailový odkaz na stránke.",
+    };
+  }
+
   if (formData.get("website")) {
     return { status: "success", message: "Správa bola odoslaná. Ďakujeme." };
   }

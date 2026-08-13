@@ -10,6 +10,12 @@ import "../landing-page/assets/mobile-navigation.css";
 import "../landing-page/assets/video-demo.css";
 import { LandingVideoDialog } from "../components/marketing/landing-video-dialog";
 import { getDaysUntilElection } from "../lib/marketing/election-countdown";
+import {
+  BASIC_UNAVAILABLE_FEATURES,
+  PLAN_DESCRIPTIONS,
+  PLAN_FEATURES,
+  PLAN_PRICE_LABELS,
+} from "../lib/payments/plans";
 
 const canonicalUrl = "https://webprekandidata.sk/";
 const title = "Web pre kandidáta na voľby 2026 | WebPreKandidata.sk";
@@ -50,6 +56,27 @@ export const metadata: Metadata = {
 };
 
 const electionCountdownPlaceholder = "<!-- ELECTION_COUNTDOWN -->";
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function renderPlanFeatures(features: readonly string[], included = true) {
+  const className = included ? "" : ' class="not-included"';
+  const symbol = included ? "✓" : "×";
+
+  return features
+    .map(
+      (feature) =>
+        `<li${className}><span aria-hidden="true">${symbol}</span>${escapeHtml(feature)}</li>`,
+    )
+    .join("\n");
+}
 
 function buildElectionCountdown(now = new Date()) {
   const daysRemaining = getDaysUntilElection(now);
@@ -96,6 +123,34 @@ function readLandingDocument() {
     .replaceAll(
       'src="assets/martin-kandidat-mobil.png"',
       `src="${mobilePreviewImage.src}"`,
+    )
+    .replace(
+      "<!-- BASIC_PLAN_DESCRIPTION -->",
+      escapeHtml(PLAN_DESCRIPTIONS.basic),
+    )
+    .replace(
+      "<!-- PLUS_PLAN_DESCRIPTION -->",
+      escapeHtml(PLAN_DESCRIPTIONS.plus),
+    )
+    .replace(
+      "<!-- BASIC_PLAN_PRICE -->",
+      escapeHtml(PLAN_PRICE_LABELS.basic),
+    )
+    .replace(
+      "<!-- PLUS_PLAN_PRICE -->",
+      escapeHtml(PLAN_PRICE_LABELS.plus),
+    )
+    .replace(
+      "<!-- BASIC_PLAN_FEATURES -->",
+      renderPlanFeatures(PLAN_FEATURES.basic),
+    )
+    .replace(
+      "<!-- BASIC_UNAVAILABLE_FEATURES -->",
+      renderPlanFeatures(BASIC_UNAVAILABLE_FEATURES, false),
+    )
+    .replace(
+      "<!-- PLUS_PLAN_FEATURES -->",
+      renderPlanFeatures(PLAN_FEATURES.plus),
     )
     .replace(electionCountdownPlaceholder, buildElectionCountdown());
 

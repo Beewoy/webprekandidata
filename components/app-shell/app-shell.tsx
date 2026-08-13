@@ -168,7 +168,7 @@ export function AppShell({ site, sectionStatuses, emailVerified, accountEmail, c
             <p>{bannerText}</p>
             {isPublished
               ? <a href={`/${site.slug}`} target="_blank" rel="noreferrer">Otvoriť verejný web <ExternalLink size={14} /></a>
-              : <GuardedLink href={`/app/web/${siteId}/publikovanie`}>{isSuspended ? "Spravovať web" : site.planCode ? "Dokončiť zverejnenie" : "Zverejniť web"} <ChevronRight size={15} /></GuardedLink>}
+              : <GuardedLink href={`/app/web/${siteId}/${site.planCode || isSuspended ? "publikovanie" : "objednavky"}`}>{isSuspended ? "Spravovať web" : site.planCode ? "Dokončiť zverejnenie" : "Vybrať balík"} <ChevronRight size={15} /></GuardedLink>}
           </div>
           <Suspense fallback={null}>
             <EmailVerificationBanner
