@@ -1,14 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState, type ChangeEvent, type KeyboardEvent, type PointerEvent } from "react";
-import { AlertCircle, Check, GripVertical, ImagePlus, LoaderCircle, Trash2, Upload } from "lucide-react";
+import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent, type PointerEvent } from "react";
+import { AlertCircle, Check, GripVertical, ImagePlus, LoaderCircle, Save, Trash2, Upload } from "lucide-react";
 import {
   deleteGalleryAssetAction,
   registerGalleryAssetAction,
   reorderGalleryAssetsAction,
   updateGalleryAssetAction,
 } from "@/app/actions/sites";
+import { useRegisterDirty } from "@/components/editor/unsaved-changes";
 import { PageHeading } from "@/components/ui/page-heading";
 import { createClient } from "@/lib/supabase/client";
 import { galleryCaptionFromFilename, prepareGalleryImage } from "@/lib/gallery-image";
@@ -21,6 +22,8 @@ type GalleryEditorProps = {
   siteId: string;
 };
 
+type SaveState = "saved" | "dirty" | "saving" | "error";
+
 function formatMegabytes(bytes: number) {
   return `${(bytes / 1024 / 1024).toLocaleString("sk-SK", { maximumFractionDigits: 1 })} MB`;
 }
@@ -28,8 +31,11 @@ function formatMegabytes(bytes: number) {
 export function GalleryEditor({ initialAssets, initialStorageUsedBytes, siteId }: GalleryEditorProps) {
   const [assets, setAssets] = useState(initialAssets);
   const assetsRef = useRef(assets);
+  const [savedCaptions, setSavedCaptions] = useState<Record<string, string>>(
+    () => Object.fromEntries(initialAssets.map((asset) => [asset.id, asset.caption])),
+  );
   const [storageUsedBytes, setStorageUsedBytes] = useState(initialStorageUsedBytes);
-  const [status, setStatus] = useState<"saved" | "saving" | "error">("saved");
+  const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -38,6 +44,10 @@ export function GalleryEditor({ initialAssets, initialStorageUsedBytes, siteId }
   const inputRef = useRef<HTMLInputElement>(null);
   const storagePercent = Math.min(100, storageUsedBytes / galleryLimits.maxProjectBytes * 100);
   const canUpload = assets.length < galleryLimits.maxAssets && storageUsedBytes < galleryLimits.maxProjectBytes && siteId !== "demo";
+  const captionsDirty = assets.some((asset) => (savedCaptions[asset.id] ?? "") !== asset.caption);
+  const saveState: SaveState = status === "saving" ? "saving" : status === "error" ? "error" : captionsDirty ? "dirty" : "saved";
+
+  useRegisterDirty("gallery", captionsDirty || status === "error");
 
   function replaceAssets(next: GalleryMediaAsset[]) {
     assetsRef.current = next;
@@ -54,7 +64,7 @@ export function GalleryEditor({ initialAssets, initialStorageUsedBytes, siteId }
     const result = await reorderGalleryAssetsAction({ assetIds: next.map((asset) => asset.id), siteId });
     if (!result.ok) return showError(result.message);
     setMessage("");
-    setStatus("saved");
+    setStatus("idle");
   }
 
   async function uploadFiles(event: ChangeEvent<HTMLInputElement>) {
@@ -90,11 +100,12 @@ export function GalleryEditor({ initialAssets, initialStorageUsedBytes, siteId }
           throw new Error(result.message);
         }
         replaceAssets([...assetsRef.current, result.asset]);
+        setSavedCaptions((current) => ({ ...current, [result.asset.id]: result.asset.caption }));
         projectedStorageBytes += result.asset.byteSize;
         setStorageUsedBytes((current) => current + result.asset.byteSize);
       }
       setMessage("");
-      setStatus("saved");
+      setStatus("idle");
     } catch (error) {
       showError(error instanceof Error ? error.message : "Fotografie sa nepodarilo nahrať.");
     } finally {
@@ -103,18 +114,50 @@ export function GalleryEditor({ initialAssets, initialStorageUsedBytes, siteId }
   }
 
   function updateCaption(assetId: string, caption: string) {
+    setStatus("idle");
     replaceAssets(assetsRef.current.map((asset) => asset.id === assetId ? { ...asset, altText: caption || "Fotografia z kampane", caption } : asset));
   }
 
-  async function saveCaption(asset: GalleryMediaAsset) {
-    setBusyId(asset.id);
+  async function saveCaptions() {
+    const dirtyAssets = assetsRef.current.filter((asset) => (savedCaptions[asset.id] ?? "") !== asset.caption);
+    if (!dirtyAssets.length) {
+      setStatus("idle");
+      return;
+    }
     setStatus("saving");
-    const result = await updateGalleryAssetAction({ assetId: asset.id, caption: asset.caption, siteId });
+    const nextSaved = { ...savedCaptions };
+    for (const asset of dirtyAssets) {
+      setBusyId(asset.id);
+      const result = await updateGalleryAssetAction({ assetId: asset.id, caption: asset.caption, siteId });
+      if (!result.ok) {
+        setBusyId(null);
+        return showError(result.message);
+      }
+      nextSaved[asset.id] = asset.caption;
+    }
     setBusyId(null);
-    if (!result.ok) return showError(result.message);
+    setSavedCaptions(nextSaved);
     setMessage("");
-    setStatus("saved");
+    setStatus("idle");
   }
+
+  const saveCaptionsRef = useRef(saveCaptions);
+  const captionsDirtyRef = useRef(captionsDirty);
+
+  useEffect(() => {
+    saveCaptionsRef.current = saveCaptions;
+    captionsDirtyRef.current = captionsDirty;
+  });
+
+  useEffect(() => {
+    function onKeyDown(event: globalThis.KeyboardEvent) {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "s") return;
+      event.preventDefault();
+      if (captionsDirtyRef.current) void saveCaptionsRef.current();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   async function removeAsset(asset: GalleryMediaAsset) {
     if (!window.confirm(`Odstrániť fotografiu${asset.caption ? ` „${asset.caption}“` : ""}? Táto akcia sa nedá vrátiť.`)) return;
@@ -125,9 +168,14 @@ export function GalleryEditor({ initialAssets, initialStorageUsedBytes, siteId }
     if (!result.ok) return showError(result.message);
     const next = assetsRef.current.filter((item) => item.id !== asset.id).map((item, index) => ({ ...item, sortOrder: index }));
     replaceAssets(next);
+    setSavedCaptions((current) => {
+      const nextCaptions = { ...current };
+      delete nextCaptions[asset.id];
+      return nextCaptions;
+    });
     setStorageUsedBytes((current) => Math.max(0, current - result.reclaimedBytes));
     if (next.length) await saveOrder(next);
-    else setStatus("saved");
+    else setStatus("idle");
   }
 
   function moveWithKeyboard(event: KeyboardEvent<HTMLButtonElement>, assetId: string) {
@@ -170,14 +218,25 @@ export function GalleryEditor({ initialAssets, initialStorageUsedBytes, siteId }
   return (
     <div className="page-container">
       <PageHeading eyebrow="Médiá" title="Galéria" description="Ukážte ľuďom stretnutia, podujatia a život vašej kampane." action={(
-        <span className="save-state" aria-live="polite">
-          {status === "saved" && <><Check size={15} /> Všetky zmeny uložené</>}
-          {status === "saving" && <><LoaderCircle className="spin" size={15} /> Ukladám…</>}
-          {status === "error" && <><AlertCircle size={15} /> Uloženie zlyhalo</>}
-        </span>
+        <div className="section-form-actions">
+          <span className="save-state" aria-live="polite">
+            {saveState === "saved" && <><Check size={15} /> Všetky zmeny uložené</>}
+            {saveState === "dirty" && <>Máte neuložené zmeny</>}
+            {saveState === "saving" && <><LoaderCircle className="spin" size={15} /> Ukladám…</>}
+            {saveState === "error" && <><AlertCircle size={15} /> Uloženie zlyhalo</>}
+          </span>
+          <button
+            className="button button--primary button--small"
+            disabled={saveState === "saving" || !captionsDirty}
+            onClick={() => void saveCaptions()}
+            type="button"
+          >
+            <Save size={15} /> Uložiť
+          </button>
+        </div>
       )} />
 
-      {status === "error" && <div className="autosave-error" role="alert"><AlertCircle size={18} /><span>{message}</span></div>}
+      {saveState === "error" && <div className="autosave-error" role="alert"><AlertCircle size={18} /><span>{message}</span></div>}
       <section className="editor-card gallery-editor">
         <div className="editor-card__intro">
           <span className="section-symbol"><ImagePlus size={21} /></span>
@@ -201,7 +260,7 @@ export function GalleryEditor({ initialAssets, initialStorageUsedBytes, siteId }
                   <button aria-label={`Presunúť fotografiu ${index + 1}. Použite potiahnutie alebo šípky.`} className="gallery-drag-handle" onKeyDown={(event) => moveWithKeyboard(event, asset.id)} onPointerCancel={endDrag} onPointerDown={(event) => beginDrag(event, asset.id)} onPointerMove={continueDrag} onPointerUp={endDrag} title="Presunúť fotografiu" type="button"><GripVertical size={17} /></button>
                   <button aria-label={`Odstrániť fotografiu ${index + 1}`} className="gallery-delete" disabled={busyId === asset.id} onClick={() => void removeAsset(asset)} type="button"><Trash2 size={16} /></button>
                 </div>
-                <label><span>Titulok fotografie</span><input maxLength={160} onBlur={() => void saveCaption(asset)} onChange={(event) => updateCaption(asset.id, event.target.value)} placeholder="Napr. Stretnutie s obyvateľmi" value={asset.caption} /></label>
+                <label><span>Titulok fotografie</span><input maxLength={160} onChange={(event) => updateCaption(asset.id, event.target.value)} placeholder="Napr. Stretnutie s obyvateľmi" value={asset.caption} /></label>
               </article>
             ))}
           </div>

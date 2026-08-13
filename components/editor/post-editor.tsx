@@ -1,12 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type ChangeEvent } from "react";
-import { AlertCircle, ArrowLeft, Check, ChevronDown, ExternalLink, ImagePlus, LoaderCircle, LockKeyhole, Save, Sparkles, Trash2, Upload, WandSparkles, X } from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, ExternalLink, EyeOff, Globe, ImagePlus, LoaderCircle, LockKeyhole, Save, Sparkles, Trash2, Upload, WandSparkles, X } from "lucide-react";
 import { deletePostAction, deletePostCoverAction, generateArticleAction, registerPostCoverAction, savePostAction } from "@/app/actions/posts";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
+import { GuardedLink, useRegisterDirty } from "@/components/editor/unsaved-changes";
 import { prepareGalleryImage } from "@/lib/gallery-image";
 import type { PostAiEntitlement, PostDetail, PostStatus } from "@/lib/posts";
 import { slugifyPostTitle } from "@/lib/posts";
@@ -14,8 +15,28 @@ import { createClient } from "@/lib/supabase/client";
 
 type Tone = "informative" | "personal" | "firm";
 
+const statusLabels: Record<PostStatus, string> = {
+  archived: "Skrytý",
+  draft: "Koncept",
+  published: "Zverejnený",
+};
+
+const statusHints: Record<PostStatus, string> = {
+  archived: "Návštevníci ho na webe nevidia.",
+  draft: "Ešte nie je na webe. Uloženie konceptu ho nezverejní.",
+  published: "Je viditeľný na vašom webe.",
+};
+
 function internalPostSlug(title: string, postId: string) {
   return `${slugifyPostTitle(title).slice(0, 81)}-${postId.slice(0, 8)}`;
+}
+
+function saveFeedback(status: PostStatus, previousStatus: PostStatus) {
+  if (status === "published" && previousStatus !== "published") return "Článok je zverejnený na webe.";
+  if (status === "archived" && previousStatus !== "archived") return "Článok je skrytý. Návštevníci ho už nevidia.";
+  if (status === "draft") return "Koncept je uložený. Článok ešte nie je na webe.";
+  if (status === "published") return "Zmeny v zverejnenom článku sú uložené.";
+  return "Článok je uložený.";
 }
 
 export function PostEditor({ ai, initialPost, siteId }: { ai: PostAiEntitlement; initialPost: PostDetail; siteId: string }) {
@@ -32,15 +53,15 @@ export function PostEditor({ ai, initialPost, siteId }: { ai: PostAiEntitlement;
   const [uploadingCover, setUploadingCover] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const postRef = useRef(post);
+  const stateRef = useRef(state);
+
+  useRegisterDirty(`post:${initialPost.id}`, state === "dirty" || state === "error");
 
   useEffect(() => {
-    function warnBeforeLeave(event: BeforeUnloadEvent) {
-      if (state !== "dirty") return;
-      event.preventDefault();
-    }
-    window.addEventListener("beforeunload", warnBeforeLeave);
-    return () => window.removeEventListener("beforeunload", warnBeforeLeave);
-  }, [state]);
+    postRef.current = post;
+    stateRef.current = state;
+  });
 
   function update<K extends keyof PostDetail>(key: K, value: PostDetail[K]) {
     setPost((current) => ({ ...current, [key]: value }));
@@ -56,22 +77,24 @@ export function PostEditor({ ai, initialPost, siteId }: { ai: PostAiEntitlement;
     setMessageIsError(false);
   }
 
-  function save() {
+  function save(nextStatus: PostStatus) {
+    const currentPost = postRef.current;
+    const previousStatus = currentPost.status;
     setState("saving");
     setMessage("");
     setMessageIsError(false);
     startTransition(async () => {
       const result = await savePostAction({
-        bodyHtml: post.bodyHtml,
-        excerpt: post.excerpt,
-        postId: post.id,
-        revision: post.revision,
-        seoDescription: post.seoDescription,
-        seoTitle: post.seoTitle,
+        bodyHtml: currentPost.bodyHtml,
+        excerpt: currentPost.excerpt,
+        postId: currentPost.id,
+        revision: currentPost.revision,
+        seoDescription: currentPost.seoDescription,
+        seoTitle: currentPost.seoTitle,
         siteId,
-        slug: post.slug,
-        status: post.status,
-        title: post.title,
+        slug: currentPost.slug,
+        status: nextStatus,
+        title: currentPost.title,
       });
       if (!result.ok) {
         setMessage(result.message);
@@ -79,11 +102,34 @@ export function PostEditor({ ai, initialPost, siteId }: { ai: PostAiEntitlement;
         setState("error");
         return;
       }
-      setPost((current) => ({ ...current, publishedAt: result.publishedAt, revision: result.revision }));
+      setPost((current) => ({
+        ...current,
+        publishedAt: result.publishedAt,
+        revision: result.revision,
+        status: nextStatus,
+      }));
       setState("saved");
+      setMessage(saveFeedback(nextStatus, previousStatus));
+      setMessageIsError(false);
       router.refresh();
     });
   }
+
+  const saveRef = useRef(save);
+
+  useEffect(() => {
+    saveRef.current = save;
+  });
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "s") return;
+      event.preventDefault();
+      if (stateRef.current === "dirty") saveRef.current(postRef.current.status);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   function generate() {
     setMessage("");
@@ -180,18 +226,51 @@ export function PostEditor({ ai, initialPost, siteId }: { ai: PostAiEntitlement;
   }
 
   const remainingAi = Math.max(0, ai.limit - aiUsed);
+  const busy = isPending || state === "saving";
+  const savedLabel =
+    post.status === "draft" ? "Koncept uložený" : post.status === "published" ? "Zverejnené zmeny uložené" : "Skrytý článok uložený";
+
   return (
     <div className="page-container page-container--wide post-editor-page">
       <div className="post-editor-topbar">
-        <Link className="back-link" href={`/app/web/${siteId}/aktuality`}><ArrowLeft size={16} /> Späť na aktuality</Link>
+        <GuardedLink className="back-link" href={`/app/web/${siteId}/aktuality`}><ArrowLeft size={16} /> Späť na aktuality</GuardedLink>
         <div className="post-editor-topbar__actions">
           <span className={`save-state${state === "error" ? " save-state--error" : ""}`} aria-live="polite">
-            {state === "saved" && <><Check size={15} /> Uložené</>}
+            {state === "saved" && <><Check size={15} /> {savedLabel}</>}
             {state === "dirty" && <>Máte neuložené zmeny</>}
             {state === "saving" && <><LoaderCircle className="spin" size={15} /> Ukladám…</>}
             {state === "error" && <><AlertCircle size={15} /> Uloženie zlyhalo</>}
           </span>
-          <button className="button button--primary" disabled={isPending || state === "saving"} onClick={save} type="button"><Save size={16} /> Uložiť článok</button>
+          {post.status === "draft" && (
+            <>
+              <button className="button button--secondary" disabled={busy} onClick={() => save("draft")} type="button">
+                <Save size={16} /> Uložiť koncept
+              </button>
+              <button className="button button--primary" disabled={busy} onClick={() => save("published")} type="button">
+                <Globe size={16} /> Zverejniť
+              </button>
+            </>
+          )}
+          {post.status === "published" && (
+            <>
+              <button className="button button--secondary" disabled={busy} onClick={() => save("archived")} type="button">
+                <EyeOff size={16} /> Skryť
+              </button>
+              <button className="button button--primary" disabled={busy} onClick={() => save("published")} type="button">
+                <Save size={16} /> Uložiť zmeny
+              </button>
+            </>
+          )}
+          {post.status === "archived" && (
+            <>
+              <button className="button button--secondary" disabled={busy} onClick={() => save("archived")} type="button">
+                <Save size={16} /> Uložiť
+              </button>
+              <button className="button button--primary" disabled={busy} onClick={() => save("published")} type="button">
+                <Globe size={16} /> Zverejniť znova
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -200,7 +279,16 @@ export function PostEditor({ ai, initialPost, siteId }: { ai: PostAiEntitlement;
       <div className="post-editor-layout">
         <main className="post-editor-main">
           <section className="editor-card post-editor-card">
-            <div className="post-editor-card__heading"><div><p className="eyebrow">Obsah článku</p><h1>{post.title || "Nový článok"}</h1></div><label className="post-status-select"><span>Stav</span><select onChange={(event) => update("status", event.target.value as PostStatus)} value={post.status}><option value="draft">Koncept</option><option value="published">Zverejnený</option><option value="archived">Skrytý</option></select><ChevronDown size={15} /></label></div>
+            <div className="post-editor-card__heading">
+              <div>
+                <p className="eyebrow">Obsah článku</p>
+                <h1>{post.title || "Nový článok"}</h1>
+              </div>
+              <div className={`post-visibility post-visibility--${post.status}`} role="status">
+                <span className={`post-status post-status--${post.status}`}>{statusLabels[post.status]}</span>
+                <p>{statusHints[post.status]}</p>
+              </div>
+            </div>
             <div className="post-editor-fields">
               <label className="field"><span>Nadpis *</span><input maxLength={140} onChange={(event) => updateTitle(event.target.value)} value={post.title} /></label>
               <label className="field"><span>Krátky popis</span><textarea maxLength={320} onChange={(event) => update("excerpt", event.target.value)} rows={3} value={post.excerpt} /><small>{post.excerpt.length} / 320 · zobrazí sa v zozname aktualít</small></label>

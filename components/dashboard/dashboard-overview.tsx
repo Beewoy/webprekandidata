@@ -101,7 +101,7 @@ export function DashboardOverview({ site, preview, sectionStatuses, onboardingPa
 
       <section className="tip-card">
         <span className="tip-card__icon"><Check size={17} /></span>
-        <div><strong>Údaje sa ukladajú automaticky</strong><p>Pri vypĺňaní nemusíte hľadať tlačidlo Uložiť. Stav ukladania vždy uvidíte hore vo formulári.</p></div>
+        <div><strong>Zmeny uložíte tlačidlom Uložiť</strong><p>Pri vypĺňaní uvidíte stav neuložených zmien. Pred prechodom do inej sekcie vás upozorníme, ak ste ešte neuložili.</p></div>
       </section>
     </div>
   );

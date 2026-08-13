@@ -37,3 +37,10 @@ export type AuthActionState = {
 };
 
 export const initialAuthState: AuthActionState = { status: "idle" };
+
+export type ResendVerificationState = {
+  status: "idle" | "success" | "error" | "rate_limit" | "already_verified";
+  message?: string;
+};
+
+export const initialResendVerificationState: ResendVerificationState = { status: "idle" };

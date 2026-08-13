@@ -1,9 +1,10 @@
 "use client";
 
 import { AlertCircle, Check, Eye, RotateCcw, Save } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { saveThemeAction } from "@/app/actions/sites";
 import { CampaignTemplatePreview } from "@/components/editor/campaign-template-preview";
+import { useRegisterDirty } from "@/components/editor/unsaved-changes";
 import { cn } from "@/lib/cn";
 import {
   campaignColors,
@@ -24,29 +25,38 @@ type AppearanceEditorProps = {
   siteId: string;
 };
 
+type SaveState = "saved" | "dirty" | "saving" | "error";
+
 export function AppearanceEditor({ initialRevision, initialTheme, siteId }: AppearanceEditorProps) {
   const [color, setColor] = useState<string>(initialTheme.color);
   const [lastValidColor, setLastValidColor] = useState<string>(initialTheme.color);
   const [colorTouched, setColorTouched] = useState(false);
   const [template, setTemplate] = useState<CampaignTemplateId>(initialTheme.template);
-  const [saveState, setSaveState] = useState<"saved" | "saving" | "error">("saved");
+  const [saveState, setSaveState] = useState<SaveState>("saved");
   const [saveMessage, setSaveMessage] = useState("");
   const [revisionConflict, setRevisionConflict] = useState(false);
   const themeRef = useRef(initialTheme);
   const revisionRef = useRef(initialRevision);
   const revisionConflictRef = useRef(false);
-  const dirtyVersionRef = useRef(0);
   const savingRef = useRef(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const colorIsValid = hexColorPattern.test(color);
   const previewColor = colorIsValid ? color : lastValidColor;
   const selectedTemplate = campaignTemplates.find((item) => item.id === template) ?? campaignTemplates[0];
   const isDefaultTheme = color === defaultCampaignTheme.color && template === defaultCampaignTheme.template;
 
+  useRegisterDirty("appearance", saveState === "dirty" || saveState === "error");
+
   async function flushTheme() {
     if (revisionConflictRef.current || savingRef.current) return;
+    if (!hexColorPattern.test(themeRef.current.color)) {
+      setColorTouched(true);
+      setSaveState("error");
+      setSaveMessage("Zadajte platnú farbu vo formáte #163B65.");
+      return;
+    }
     savingRef.current = true;
-    const capturedVersion = dirtyVersionRef.current;
+    setSaveState("saving");
+    setSaveMessage("");
     const result = await saveThemeAction({ siteId, revision: revisionRef.current, theme: themeRef.current });
     savingRef.current = false;
 
@@ -54,7 +64,6 @@ export function AppearanceEditor({ initialRevision, initialTheme, siteId }: Appe
       if (result.conflict) {
         revisionConflictRef.current = true;
         setRevisionConflict(true);
-        if (timerRef.current) clearTimeout(timerRef.current);
         if (result.currentRevision) revisionRef.current = result.currentRevision;
       }
       setSaveState("error");
@@ -63,58 +72,71 @@ export function AppearanceEditor({ initialRevision, initialTheme, siteId }: Appe
     }
 
     revisionRef.current = result.revision;
-    if (dirtyVersionRef.current > capturedVersion) {
-      setSaveState("saving");
-      void flushTheme();
-      return;
-    }
-
     setSaveMessage("");
     setSaveState("saved");
   }
 
-  function scheduleThemeSave(delay = 450) {
-    if (revisionConflictRef.current) return;
-    dirtyVersionRef.current += 1;
-    setSaveState("saving");
-    setSaveMessage("");
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => void flushTheme(), delay);
-  }
+  const saveStateRef = useRef(saveState);
+  const flushThemeRef = useRef(flushTheme);
+
+  useEffect(() => {
+    saveStateRef.current = saveState;
+    flushThemeRef.current = flushTheme;
+  });
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "s") return;
+      event.preventDefault();
+      if (saveStateRef.current === "dirty" && !revisionConflictRef.current) void flushThemeRef.current();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   function reloadForConflict() {
     window.location.reload();
   }
 
-  function applyTheme(next: { color: string; template: CampaignTemplateId }, delay?: number) {
+  function markDirtyTheme(next: { color: string; template: CampaignTemplateId }) {
+    if (revisionConflictRef.current) return;
     themeRef.current = next;
     setColor(next.color);
     setLastValidColor(next.color);
     setTemplate(next.template);
-    scheduleThemeSave(delay);
+    setSaveState("dirty");
+    setSaveMessage("");
   }
 
   function selectTemplate(nextTemplate: CampaignTemplateId) {
-    applyTheme({ ...themeRef.current, template: nextTemplate }, 150);
+    markDirtyTheme({ ...themeRef.current, template: nextTemplate });
   }
 
   function selectColor(nextColor: string) {
     setColorTouched(false);
-    applyTheme({ ...themeRef.current, color: nextColor }, 150);
+    markDirtyTheme({ ...themeRef.current, color: nextColor });
   }
 
   function changeCustomColor(nextColor: string) {
     setColor(nextColor);
-    if (!hexColorPattern.test(nextColor)) return;
+    if (!hexColorPattern.test(nextColor)) {
+      setSaveState("dirty");
+      return;
+    }
     themeRef.current = { ...themeRef.current, color: nextColor };
     setLastValidColor(nextColor);
-    scheduleThemeSave();
+    if (!revisionConflictRef.current) {
+      setSaveState("dirty");
+      setSaveMessage("");
+    }
   }
 
   function resetTheme() {
     setColorTouched(false);
-    applyTheme(defaultCampaignTheme, 0);
+    markDirtyTheme(defaultCampaignTheme);
   }
+
+  const busy = saveState === "saving";
 
   return (
     <div className="page-container page-container--wide">
@@ -123,11 +145,22 @@ export function AppearanceEditor({ initialRevision, initialTheme, siteId }: Appe
         title="Vyberte vzhľad svojho webu"
         description="Zvoľte šablónu a farbu kampane. Obsah môžete kedykoľvek doplniť alebo zmeniť bez straty zvoleného vzhľadu."
         action={(
-          <span className="save-state" aria-live="polite">
-            {saveState === "saved" && <><Check size={15} /> Vzhľad uložený</>}
-            {saveState === "saving" && <><Save size={15} /> Ukladám vzhľad…</>}
-            {saveState === "error" && <><AlertCircle size={15} /> Uloženie zlyhalo</>}
-          </span>
+          <div className="section-form-actions">
+            <span className="save-state" aria-live="polite">
+              {saveState === "saved" && <><Check size={15} /> Vzhľad uložený</>}
+              {saveState === "dirty" && <>Máte neuložené zmeny</>}
+              {saveState === "saving" && <><Save size={15} /> Ukladám vzhľad…</>}
+              {saveState === "error" && <><AlertCircle size={15} /> Uloženie zlyhalo</>}
+            </span>
+            <button
+              className="button button--primary button--small"
+              disabled={busy || revisionConflict || saveState === "saved"}
+              onClick={() => void flushTheme()}
+              type="button"
+            >
+              <Save size={15} /> Uložiť
+            </button>
+          </div>
         )}
       />
       {saveState === "error" && (
@@ -137,7 +170,7 @@ export function AppearanceEditor({ initialRevision, initialTheme, siteId }: Appe
           {revisionConflict ? (
             <button onClick={reloadForConflict} type="button">Obnoviť stránku</button>
           ) : (
-            <button onClick={() => { setSaveState("saving"); void flushTheme(); }} type="button">Skúsiť znova</button>
+            <button onClick={() => void flushTheme()} type="button">Skúsiť znova</button>
           )}
         </div>
       )}
@@ -209,7 +242,7 @@ export function AppearanceEditor({ initialRevision, initialTheme, siteId }: Appe
                 aria-invalid={colorTouched && !colorIsValid}
                 id="campaign-color"
                 maxLength={7}
-                onBlur={() => { setColorTouched(true); if (colorIsValid) { if (timerRef.current) clearTimeout(timerRef.current); timerRef.current = setTimeout(() => void flushTheme(), 0); } }}
+                onBlur={() => setColorTouched(true)}
                 onChange={(event) => changeCustomColor(event.target.value)}
                 spellCheck={false}
                 value={color}
@@ -221,7 +254,17 @@ export function AppearanceEditor({ initialRevision, initialTheme, siteId }: Appe
           </label>
 
           <div className="appearance-note"><Check size={16} /><span><strong>Bez príplatku</strong> Všetky tri šablóny sú dostupné v balíkoch Basic aj Plus.</span></div>
-          <button className="button button--ghost appearance-reset" disabled={isDefaultTheme} onClick={resetTheme} type="button"><RotateCcw size={16} /> Obnoviť pôvodný vzhľad</button>
+          <div className="appearance-actions">
+            <button className="button button--ghost appearance-reset" disabled={isDefaultTheme} onClick={resetTheme} type="button"><RotateCcw size={16} /> Obnoviť pôvodný vzhľad</button>
+            <button
+              className="button button--primary"
+              disabled={busy || revisionConflict || saveState === "saved"}
+              onClick={() => void flushTheme()}
+              type="button"
+            >
+              <Save size={16} /> Uložiť vzhľad
+            </button>
+          </div>
         </section>
 
         <aside aria-label="Živý náhľad vybranej šablóny" className="preview-panel">

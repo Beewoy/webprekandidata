@@ -360,26 +360,38 @@ export function PublishingEditor({
 
           <fieldset className="checkout-customer-type">
             <legend>Nakupujem ako</legend>
-            <label className="checkout-terms">
-              <input
-                checked={customerType === "b2c"}
-                name="customerType"
-                onChange={() => setCustomerType("b2c")}
-                type="radio"
-                value="b2c"
-              />
-              <span>Spotrebiteľ</span>
-            </label>
-            <label className="checkout-terms">
-              <input
-                checked={customerType === "b2b"}
-                name="customerType"
-                onChange={() => setCustomerType("b2b")}
-                type="radio"
-                value="b2b"
-              />
-              <span>Podnikateľ / právnická osoba</span>
-            </label>
+            <div className="checkout-customer-type__options">
+              <label className={cn("checkout-radio-option", customerType === "b2c" && "checkout-radio-option--active")}>
+                <input
+                  checked={customerType === "b2c"}
+                  className="sr-only"
+                  name="customerType"
+                  onChange={() => setCustomerType("b2c")}
+                  type="radio"
+                  value="b2c"
+                />
+                <span className="checkout-radio-option__control" aria-hidden="true" />
+                <span className="checkout-radio-option__copy">
+                  <strong>Spotrebiteľ</strong>
+                  <small>Súkromná osoba mimo podnikania</small>
+                </span>
+              </label>
+              <label className={cn("checkout-radio-option", customerType === "b2b" && "checkout-radio-option--active")}>
+                <input
+                  checked={customerType === "b2b"}
+                  className="sr-only"
+                  name="customerType"
+                  onChange={() => setCustomerType("b2b")}
+                  type="radio"
+                  value="b2b"
+                />
+                <span className="checkout-radio-option__control" aria-hidden="true" />
+                <span className="checkout-radio-option__copy">
+                  <strong>Podnikateľ / právnická osoba</strong>
+                  <small>Nákup v súvislosti s podnikaním alebo za firmu</small>
+                </span>
+              </label>
+            </div>
           </fieldset>
 
           <div className="checkout-form__fields">

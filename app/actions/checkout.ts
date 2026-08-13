@@ -161,6 +161,9 @@ export async function createCheckoutSessionAction(input: unknown): Promise<Creat
     .single();
 
   if (orderError || !order) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[checkout] order insert failed", orderError);
+    }
     return { ok: false, message: "Objednávku sa nepodarilo vytvoriť." };
   }
 

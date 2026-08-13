@@ -40,7 +40,7 @@ describe("site validation", () => {
     }).success).toBe(true);
   });
 
-  it("nepovolí neznámu sekciu autosave", () => {
+  it("nepovolí neznámu sekciu pri uložení", () => {
     expect(saveSectionSchema.safeParse({
       siteId: "demo",
       sectionSlug: "tajna-sekcia",

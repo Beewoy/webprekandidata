@@ -20,7 +20,7 @@ Je aktívny, keď chýba Supabase konfigurácia alebo `DEMO_MODE` nie je nastave
 - projekt má ID `demo`,
 - prihlasovacie formuláre zobrazia informáciu, že Supabase ešte nie je pripojený,
 - vytvorenie projektu presmeruje na demo projekt,
-- autosave prebehne cez rovnakú serverovú akciu, ale bez zápisu do databázy,
+- uloženie konceptu prebehne cez rovnakú serverovú akciu, ale bez zápisu do databázy,
 - UI a používateľské toky sa dajú kompletne testovať lokálne.
 
 Zdroj: `lib/env.ts`.
@@ -32,7 +32,7 @@ Vyžaduje Supabase premenné a `DEMO_MODE=false`.
 - `/app` vyžaduje autentifikovaného používateľa,
 - projekty sa načítajú zo Supabase,
 - RLS filtruje údaje podľa `auth.uid()`,
-- vytvorenie projektu a autosave používajú databázové RPC funkcie.
+- vytvorenie projektu a uloženie konceptu používajú databázové RPC funkcie.
 
 ## 2.1 Prostredia a databáza
 
@@ -133,7 +133,7 @@ Client Components sa používajú iba tam, kde je potrebný stav alebo interakci
 
 - auth formuláre,
 - mobilný drawer,
-- autosave formulára,
+- manuálne uloženie formulára,
 - výber vzhľadu, domény a balíka,
 - publikovanie, pozastavenie a obnovenie webu,
 - dvojkrokový uvítací dialóg a kontrola AI návrhu,
@@ -204,12 +204,14 @@ Vytvorenie projektu používa RPC `create_candidate_site`, ktorá v jednej trans
 
 Tým sa predíde napoly vytvorenému projektu. Kontaktný e-mail zostáva neskôr voľne editovateľný v sekcii Kontakt.
 
-## 7. Autosave a revízie
+## 7. Manuálne uloženie a revízie
 
-Editor po zmene poľa počká približne 700 ms (autosave). Uloženie sa nespúšťa pri opustení poľa — iba po debounce zmene, okamžitých akciách (pridať/zmazať/presunúť položku) alebo pri téme po výbere.
+Editor obsahových sekcií a vzhľadu ukladá zmeny až po explicitnom stlačení **Uložiť** (alebo Cmd/Ctrl+S). Lokálny stav môže byť `dirty`, `saving`, `saved` alebo `error`. Sidebar linky majú `prefetch={false}` a pri neuložených zmenách navigáciu zachytí dialóg „Máte neuložené zmeny“; pri zatvorení tabu platí `beforeunload`.
 
 ```text
 zmena poľa
+  → lokálny dirty stav + registrácia do UnsavedChangesProvider
+  → Uložiť / Cmd+S
   → klient zozbiera FormData
   → saveSectionAction
   → Zod validácia vstupu
@@ -220,14 +222,16 @@ zmena poľa
   → nová revízia sa vráti klientovi
 ```
 
-Ak revízia nesedí, RPC vráti `{ ok: false, conflict: true, revision }` a zapíše DB cooldown (transakcia sa commitne — výnimka by cooldown rollbackla). Server action konflikt zaznamená, nastaví krátky in-process cooldown pre `(userId, siteId)` (zdieľaný pre ukladanie sekcie aj témy), vráti `conflict` + `currentRevision` a UI vypne autosave až do obnovenia stránky. UI nesmie konflikt potichu prepísať.
+Ak revízia nesedí, RPC vráti `{ ok: false, conflict: true, revision }` a zapíše DB cooldown (transakcia sa commitne — výnimka by cooldown rollbackla). Server action konflikt zaznamená, nastaví krátky in-process cooldown pre `(userId, siteId)` (zdieľaný pre ukladanie sekcie aj témy), vráti `conflict` + `currentRevision` a UI vypne ďalšie ukladanie až do obnovenia stránky. UI nesmie konflikt potichu prepísať.
 
 Incidentová analýza (2026-08-12): `docs/incidents/revision-conflict-burst-2026-08-12.md` — Service Health ukázal ~3,3 M Postgres ERROR logov/h pri ~231 API Gateway requestoch; chart počíta `postgres_logs`, nie HTTP. Migrácia `0020` dopĺňala DETAIL; `0021` cooldown + RAISE bola neúčinná (rollback); `0022` vracia JSON bez RAISE, aby cooldown prežil a ERROR spam ustal.
 
 Hlavné súbory:
 
+- `components/editor/unsaved-changes.tsx`,
 - `components/editor/section-form.tsx`,
 - `components/editor/appearance-editor.tsx`,
+- `components/app-shell/app-shell.tsx`,
 - `app/actions/sites.ts`,
 - `lib/draft-save-guard.ts`,
 - `supabase/migrations/0002_site_functions.sql`,
@@ -235,7 +239,7 @@ Hlavné súbory:
 - `supabase/migrations/0021_draft_revision_cooldown.sql`,
 - `supabase/migrations/0022_revision_conflict_json_result.sql`.
 
-Opakované položky používajú v klientskom stave stabilné ID, podporujú pridanie, odstránenie a zmenu poradia úchytom, dotykom aj šípkami na klávesnici. Autosave serializuje autoritatívny klientsky stav, nie ešte neaktualizované DOM prvky: posiela aktuálny počet v `items_count` a položky ako ploché kľúče `item_{index}_title`, `item_{index}_text`, `item_{index}_icon` a pri programe aj `item_{index}_detail`. Načítanie konceptu zachová všetky reťazcové kľúče sekcie vrátane dynamických položiek. Databázová RPC vždy nahradí celý payload sekcie, takže odstránené položky nezostávajú v koncepte. Pri budúcom rozšírení o samostatné entity alebo zdieľané odkazy sa má úložisko migrovať na položky s perzistentným ID.
+Opakované položky používajú v klientskom stave stabilné ID, podporujú pridanie, odstránenie a zmenu poradia úchytom, dotykom aj šípkami na klávesnici. Uloženie serializuje autoritatívny klientsky stav, nie ešte neaktualizované DOM prvky: posiela aktuálny počet v `items_count` a položky ako ploché kľúče `item_{index}_title`, `item_{index}_text`, `item_{index}_icon` a pri programe aj `item_{index}_detail`. Načítanie konceptu zachová všetky reťazcové kľúče sekcie vrátane dynamických položiek. Databázová RPC vždy nahradí celý payload sekcie, takže odstránené položky nezostávajú v koncepte. Pri budúcom rozšírení o samostatné entity alebo zdieľané odkazy sa má úložisko migrovať na položky s perzistentným ID.
 
 ## 8. Dátový model
 
@@ -337,7 +341,7 @@ Náhľad webu sa neskladá z ukážkového JSX. Serverová funkcia `getSitePrevi
 
 Prehľad projektu načítava rovnaký `SitePreviewData` a jeho kompaktná karta z neho preberá adresu, kandidáta, hero texty, zvolenú šablónu, farbu, znak kampane a portrét. Karta preto nesmie obsahovať samostatné natvrdo zapísané ukážkové dáta, ktoré by sa mohli rozísť s úplným náhľadom.
 
-Editor vzhľadu načítava `theme` a spoločnú `revision` z `site_drafts`. Serverová akcia ukladá normalizovaný objekt `{ layout, primaryColor }` priamym vlastnícky chráneným update-om s podmienkou na očakávanú revíziu. Zmena šablóny alebo platnej HEX farby sa ukladá automaticky; pri súbežnej úprave sa update nevykoná a klient zobrazí konflikt. Po úspechu sa revaliduje layout projektu aj úplný náhľad.
+Editor vzhľadu načítava `theme` a spoločnú `revision` z `site_drafts`. Serverová akcia ukladá normalizovaný objekt `{ layout, primaryColor }` priamym vlastnícky chráneným update-om s podmienkou na očakávanú revíziu. Zmena šablóny alebo platnej HEX farby sa uloží až po stlačení Uložiť; pri súbežnej úprave sa update nevykoná a klient zobrazí konflikt. Po úspechu sa revaliduje layout projektu aj úplný náhľad.
 
 Sekcie editorov:
 
@@ -358,7 +362,7 @@ Sekcie editorov:
 
 Nie všetky špeciálne editory už zapisujú do databázy. Presný stav je v `docs/IMPLEMENTATION_STATUS.md`.
 
-Sidebar a prehľad nepracujú s ukážkovými stavmi. `getSiteSectionStatuses()` načíta vlastnený koncept a dostupné projektové záznamy, potom čistá funkcia v `lib/site-section-status.ts` odvodí stav `empty`, `started` alebo `complete`. Obsahová sekcia je dokončená až po vyplnení jej minimálneho zmysluplného obsahu; pri dôvodoch a programe je potrebná aj aspoň jedna úplná zoznamová položka. Po úspešnom autosave serverová akcia revaliduje layout projektu, takže sidebar aj prehľad dostanú nový stav v tom istom serverovom roundtripe.
+Sidebar a prehľad nepracujú s ukážkovými stavmi. `getSiteSectionStatuses()` načíta vlastnený koncept a dostupné projektové záznamy, potom čistá funkcia v `lib/site-section-status.ts` odvodí stav `empty`, `started` alebo `complete`. Obsahová sekcia je dokončená až po vyplnení jej minimálneho zmysluplného obsahu; pri dôvodoch a programe je potrebná aj aspoň jedna úplná zoznamová položka. Po úspešnom uložení serverová akcia revaliduje layout projektu, takže sidebar aj prehľad dostanú nový stav pri ďalšej navigácii alebo obnovení.
 
 ## 10. Aktuality a Plus AI návrhy
 
@@ -437,7 +441,7 @@ Migrácia: `supabase/migrations/0010_candidate_publications.sql`. Hlavné súbor
 
 Oddelený strom `/admin` nie je kandidátsky dashboard. Layout vyžaduje produkčný režim a `requirePlatformAdmin()` (`profiles.role = 'admin'`). V demo režime sa namiesto panelu zobrazí informácia o nedostupnosti. Kandidát bez admin role je presmerovaný na `/app`.
 
-Čítanie v `/admin` ide cez user-scoped Supabase klienta a existujúce RLS politiky s `is_platform_admin()`. Mutácie idú cez server actions a RPC, nie cez service-role UI. Kandidátsky `/app` filtruje projekty na `owner_user_id = auth.uid()`, takže admin účet v editore nevidí cudzie weby (aj keď RLS na `sites` mu ich SELECT povoľuje). Úpravy cudzích draftov cez `/app` nie sú podporované — autosave RPC (`update_site_section` a ďalšie) vyžadujú `owns_site()`.
+Čítanie v `/admin` ide cez user-scoped Supabase klienta a existujúce RLS politiky s `is_platform_admin()`. Mutácie idú cez server actions a RPC, nie cez service-role UI. Kandidátsky `/app` filtruje projekty na `owner_user_id = auth.uid()`, takže admin účet v editore nevidí cudzie weby (aj keď RLS na `sites` mu ich SELECT povoľuje). Úpravy cudzích draftov cez `/app` nie sú podporované — save RPC (`update_site_section` a ďalšie) vyžadujú `owns_site()`.
 
 `sites.admin_hold` oddeľuje administrátorské pozastavenie od dobrovoľného pozastavenia kandidáta. RPC `set_candidate_site_visibility` odmietne obnovenie, kým je hold aktívny. RPC `admin_set_site_hold` vyžaduje dôvod, kategóriu, rozsah, trvanie (pri hold) a náhľad správy pre kandidáta; všetko ide do `audit_logs`. Transakčný e-mail sa v MVP ešte neodosiela.
 

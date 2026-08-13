@@ -1,7 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, CalendarDays, CheckCircle2, CirclePlus, Globe2, LogOut, MailCheck, MapPin, RefreshCw } from "lucide-react";
-import { logoutAction, resendVerificationEmailAction } from "@/app/actions/auth";
+import { Suspense } from "react";
+import { ArrowRight, CalendarDays, CirclePlus, Globe2, LogOut, MapPin } from "lucide-react";
+import { logoutAction } from "@/app/actions/auth";
+import { EmailVerificationBanner } from "@/components/account/email-verification-banner";
 import type { EmailVerificationStatus } from "@/lib/data/account";
 import type { SiteSummary } from "@/lib/data/sites";
 import { WelcomeDialog } from "@/components/projects/welcome-dialog";
@@ -32,29 +34,13 @@ export function ProjectsOverview({ sites, verification, emailNotice, showWelcome
         <form action={logoutAction}><button className="button button--secondary button--small" type="submit"><LogOut size={16} /> Odhlásiť sa</button></form>
       </header>
       <div className="projects-container">
-        {emailNotice === "overeny" && (
-          <div className="email-verification-notice email-verification-notice--success" role="status">
-            <CheckCircle2 size={20} />
-            <span><strong>E-mail je overený.</strong> Ďakujeme, vaša adresa bola úspešne potvrdená.</span>
-          </div>
-        )}
-
-        {!verification.verified && (
-          <section className="email-verification-banner" aria-labelledby="verify-email-heading">
-            <span className="email-verification-banner__icon"><MailCheck size={22} /></span>
-            <div>
-              <h2 id="verify-email-heading">Overte svoj e-mail</h2>
-              <p>
-                Účet je aktívny a môžete pokračovať. Overovací odkaz sme poslali na <strong>{verification.email}</strong>.
-                {emailNotice === "neodoslany" && " Správu sa nepodarilo odoslať; skúste ju poslať znova."}
-                {emailNotice === "skoro" && " Ďalší odkaz môžete poslať po jednej minúte."}
-              </p>
-            </div>
-            <form action={resendVerificationEmailAction}>
-              <button className="button button--secondary button--small" type="submit"><RefreshCw size={15} /> Poslať znova</button>
-            </form>
-          </section>
-        )}
+        <Suspense fallback={null}>
+          <EmailVerificationBanner
+            email={verification.email}
+            notice={emailNotice}
+            verified={verification.verified}
+          />
+        </Suspense>
 
         <div className="projects-title">
           <div><p className="eyebrow">Vaše projekty</p><h1>Weby kandidátov</h1><p>Vyberte projekt, v ktorom chcete pokračovať, alebo vytvorte nový web.</p></div>

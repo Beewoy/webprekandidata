@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import dynamic from "next/dynamic";
-import { AlertCircle, Check, ChevronDown, CirclePlus, GripVertical, Save, Sparkles, Trash2 } from "lucide-react";
+import { AlertCircle, Check, ChevronDown, CirclePlus, GripVertical, Save, Trash2 } from "lucide-react";
 import { saveSectionAction } from "@/app/actions/sites";
+import { useRegisterDirty } from "@/components/editor/unsaved-changes";
 import { PageHeading } from "@/components/ui/page-heading";
 import { editorFields, getSection } from "@/lib/site-sections";
 import { buildRepeatableItems, moveRepeatableItem, serializeRepeatableItems, type RepeatableItem } from "@/lib/repeatable-items";
@@ -22,12 +23,14 @@ type SectionFormProps = {
   initialRevision: number;
 };
 
+type SaveState = "saved" | "dirty" | "saving" | "error";
+
 export function SectionForm({ siteId, sectionSlug, initialValues, initialRevision }: SectionFormProps) {
   const section = getSection(sectionSlug);
   if (!section) throw new Error(`Neznáma sekcia: ${sectionSlug}`);
 
   const fields = editorFields[section.slug] ?? [];
-  const [saveState, setSaveState] = useState<"saved" | "saving" | "error">("saved");
+  const [saveState, setSaveState] = useState<SaveState>("saved");
   const [saveMessage, setSaveMessage] = useState("");
   const [revisionConflict, setRevisionConflict] = useState(false);
   const repeatable = repeatableContent[section.slug];
@@ -39,15 +42,16 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [openIconPickerId, setOpenIconPickerId] = useState<string | null>(null);
   const [reorderMessage, setReorderMessage] = useState("");
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const revisionRef = useRef(initialRevision);
   const revisionConflictRef = useRef(false);
-  const dirtyVersionRef = useRef(0);
   const savingRef = useRef(false);
   const activeDragIdRef = useRef<string | null>(null);
   const pendingFocusIdRef = useRef<string | null>(null);
   const newItemSequenceRef = useRef(0);
+  const dirtySourceId = `section:${sectionSlug}`;
+
+  useRegisterDirty(dirtySourceId, saveState === "dirty" || saveState === "error");
 
   useEffect(() => {
     itemsRef.current = items;
@@ -60,10 +64,17 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
     pendingFocusIdRef.current = null;
   }, [items]);
 
+  function markDirty() {
+    if (revisionConflictRef.current) return;
+    setSaveState("dirty");
+    setSaveMessage("");
+  }
+
   async function flushChanges() {
     if (revisionConflictRef.current || savingRef.current || !formRef.current) return;
     savingRef.current = true;
-    const capturedVersion = dirtyVersionRef.current;
+    setSaveState("saving");
+    setSaveMessage("");
     const values = Object.fromEntries(
       Array.from(new FormData(formRef.current).entries()).map(([key, value]) => [key, String(value)]),
     );
@@ -80,7 +91,6 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
       if (result.conflict) {
         revisionConflictRef.current = true;
         setRevisionConflict(true);
-        if (timer.current) clearTimeout(timer.current);
         if (result.currentRevision) revisionRef.current = result.currentRevision;
       }
       setSaveState("error");
@@ -89,24 +99,27 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
     }
 
     revisionRef.current = result.revision;
-    if (dirtyVersionRef.current > capturedVersion) {
-      setSaveState("saving");
-      void flushChanges();
-      return;
-    }
-
     setSaveMessage("");
     setSaveState("saved");
   }
 
-  function scheduleSave(delay = 700) {
-    if (revisionConflictRef.current) return;
-    dirtyVersionRef.current += 1;
-    setSaveState("saving");
-    setSaveMessage("");
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => void flushChanges(), delay);
-  }
+  const saveStateRef = useRef(saveState);
+  const flushChangesRef = useRef(flushChanges);
+
+  useEffect(() => {
+    saveStateRef.current = saveState;
+    flushChangesRef.current = flushChanges;
+  });
+
+  useEffect(() => {
+    function onKeyDown(event: globalThis.KeyboardEvent) {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "s") return;
+      event.preventDefault();
+      if (saveStateRef.current === "dirty" && !revisionConflictRef.current) void flushChangesRef.current();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   function reloadForConflict() {
     window.location.reload();
@@ -128,7 +141,7 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
     if (item && next !== current) announceMove(item, targetIndex);
     replaceItems(next);
     pendingFocusIdRef.current = itemId;
-    scheduleSave(0);
+    markDirty();
   }
 
   function addItem() {
@@ -138,7 +151,7 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
     replaceItems([...current, { id, icon: repeatable?.defaultIcon ?? "governance", title: "", text: "", ...(repeatable?.supportsDetails ? { detail: "" } : {}) }]);
     pendingFocusIdRef.current = id;
     setReorderMessage(`Pridaná nová položka na pozíciu ${current.length + 1}.`);
-    scheduleSave(0);
+    markDirty();
   }
 
   function removeItem(itemId: string) {
@@ -155,22 +168,23 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
     setOpenIconPickerId((openId) => openId === itemId ? null : openId);
     pendingFocusIdRef.current = nextFocus;
     setReorderMessage(`${item?.title || "Položka"} bola odstránená.`);
-    scheduleSave(0);
+    markDirty();
   }
 
   function updateItem(itemId: string, field: "detail" | "title" | "text", value: string) {
     replaceItems(itemsRef.current.map((item) => item.id === itemId ? { ...item, [field]: value } : item));
+    markDirty();
   }
 
   function chooseItemIcon(itemId: string, icon: CivicIconName) {
     replaceItems(itemsRef.current.map((item) => item.id === itemId ? { ...item, icon } : item));
     setOpenIconPickerId(null);
-    scheduleSave(0);
+    markDirty();
   }
 
   function updateItemDetail(itemId: string, value: string) {
     setItems((current) => current.map((item) => item.id === itemId ? { ...item, detail: value } : item));
-    scheduleSave();
+    markDirty();
   }
 
   function toggleItemDetail(itemId: string) {
@@ -219,17 +233,30 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
     const item = itemsRef.current[targetIndex];
     if (item && targetIndex >= 0) announceMove(item, targetIndex);
     pendingFocusIdRef.current = itemId;
-    scheduleSave(0);
+    markDirty();
   }
+
+  const busy = saveState === "saving";
 
   return (
     <div className="page-container">
       <PageHeading eyebrow="Obsah webu" title={section.label} description={section.description} action={
-        <span className="save-state" aria-live="polite">
-          {saveState === "saved" && <><Check size={15} /> Všetky zmeny uložené</>}
-          {saveState === "saving" && <><Save size={15} /> Ukladám…</>}
-          {saveState === "error" && <><AlertCircle size={15} /> Nepodarilo sa uložiť</>}
-        </span>
+        <div className="section-form-actions">
+          <span className="save-state" aria-live="polite">
+            {saveState === "saved" && <><Check size={15} /> Všetky zmeny uložené</>}
+            {saveState === "dirty" && <>Máte neuložené zmeny</>}
+            {saveState === "saving" && <><Save size={15} /> Ukladám…</>}
+            {saveState === "error" && <><AlertCircle size={15} /> Nepodarilo sa uložiť</>}
+          </span>
+          <button
+            className="button button--primary button--small"
+            disabled={busy || revisionConflict || saveState === "saved"}
+            onClick={() => void flushChanges()}
+            type="button"
+          >
+            <Save size={15} /> Uložiť
+          </button>
+        </div>
       } />
 
       {saveState === "error" && (
@@ -239,12 +266,12 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
           {revisionConflict ? (
             <button type="button" onClick={reloadForConflict}>Obnoviť stránku</button>
           ) : (
-            <button type="button" onClick={() => { setSaveState("saving"); void flushChanges(); }}>Skúsiť znova</button>
+            <button type="button" onClick={() => void flushChanges()}>Skúsiť znova</button>
           )}
         </div>
       )}
 
-      <form ref={formRef} className="editor-card" onChange={() => scheduleSave()} onSubmit={(event) => event.preventDefault()}>
+      <form ref={formRef} className="editor-card" onChange={markDirty} onSubmit={(event) => { event.preventDefault(); void flushChanges(); }}>
         <div className="editor-card__intro">
           <span className="section-symbol"><section.icon size={21} /></span>
           <div><h2>{section.label}</h2><p>Text môžete kedykoľvek upraviť. Na verejný web sa prenesie až po jeho zverejnení.</p></div>
@@ -271,7 +298,7 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
               return (
                 <div className="field" key={field.name}>
                   <span id={labelId}>{field.label}</span>
-                  <RichTextEditor initialValue={value} labelledBy={labelId} name={field.name} onChange={() => scheduleSave()} />
+                  <RichTextEditor initialValue={value} labelledBy={labelId} name={field.name} onChange={markDirty} />
                   {field.hint && <small>{field.hint}</small>}
                 </div>
               );
@@ -386,8 +413,14 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
         )}
 
         <div className="editor-card__footer">
-          <span><Sparkles size={16} /> Potrebujete pomôcť s textom? AI asistent doplníme po pripojení vášho účtu.</span>
-          <span className="save-state save-state--footer">{saveState === "error" ? <><AlertCircle size={15} /> Uloženie zlyhalo</> : <><Check size={15} /> Uložené automaticky</>}</span>
+          <span>Zmeny sa neukladajú samy — pred odchodom ich uložte.</span>
+          <button
+            className="button button--primary button--small"
+            disabled={busy || revisionConflict || saveState === "saved"}
+            type="submit"
+          >
+            <Save size={15} /> Uložiť
+          </button>
         </div>
       </form>
     </div>

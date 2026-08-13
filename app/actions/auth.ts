@@ -15,6 +15,7 @@ import {
   resetPasswordSchema,
   updatePasswordSchema,
   type AuthActionState,
+  type ResendVerificationState,
 } from "@/lib/validation/auth";
 
 function unavailableState(): AuthActionState {
@@ -84,13 +85,27 @@ export async function registerAction(_previousState: AuthActionState, formData: 
   redirect(`/app?email=${emailNotice}&welcome=1`);
 }
 
-export async function resendVerificationEmailAction() {
-  if (!isSupabaseConfigured()) redirect("/app");
+export async function resendVerificationEmailAction(
+  previousState: ResendVerificationState,
+  formData: FormData,
+): Promise<ResendVerificationState> {
+  void previousState;
+  void formData;
+
+  if (!isSupabaseConfigured()) {
+    return {
+      status: "error",
+      message: "Overovací e-mail sa teraz nepodarilo odoslať. Skúste to znova o chvíľu.",
+    };
+  }
 
   const status = await getEmailVerificationStatus();
-  if (status.verified) redirect("/app?email=uz-overeny");
-
-  let destination = "/app?email=odoslany";
+  if (status.verified) {
+    return {
+      status: "already_verified",
+      message: "E-mail je už overený. Ďalší odkaz nie je potrebný.",
+    };
+  }
 
   try {
     await issueAndSendVerificationEmail({
@@ -98,13 +113,22 @@ export async function resendVerificationEmailAction() {
       email: status.email,
       fullName: status.fullName,
     });
+    return {
+      status: "success",
+      message: `Overovací odkaz sme odoslali na ${status.email}.`,
+    };
   } catch (error) {
-    destination = error instanceof VerificationDeliveryError && error.reason === "rate_limit"
-      ? "/app?email=skoro"
-      : "/app?email=neodoslany";
+    if (error instanceof VerificationDeliveryError && error.reason === "rate_limit") {
+      return {
+        status: "rate_limit",
+        message: "Ďalší overovací odkaz môžete poslať po jednej minúte.",
+      };
+    }
+    return {
+      status: "error",
+      message: "Overovací e-mail sa nepodarilo odoslať. Skúste to znova.",
+    };
   }
-
-  redirect(destination);
 }
 
 export async function resetPasswordAction(_previousState: AuthActionState, formData: FormData): Promise<AuthActionState> {
