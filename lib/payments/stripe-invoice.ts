@@ -15,6 +15,8 @@ type BuyerSnapshot = {
 type SellerSnapshot = {
   dic: string;
   ico: string;
+  vatPayer?: boolean;
+  icDph?: string | null;
 };
 
 type CheckoutMetadata = {
@@ -46,10 +48,13 @@ export function buildStripeCustomerParams(
 }
 
 function buildInvoiceFooter(seller: SellerSnapshot) {
+  const vatLine = seller.vatPayer && seller.icDph
+    ? `Platiteľ DPH, IČ DPH: ${seller.icDph}`
+    : "Nie sme platiteľom DPH";
   return [
     `IČO dodávateľa: ${seller.ico}`,
     `DIČ dodávateľa: ${seller.dic}`,
-    "Nie sme platiteľom DPH",
+    vatLine,
   ].join("\n");
 }
 

@@ -1,8 +1,22 @@
 "use server";
 
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { requireVerifiedUser } from "@/lib/data/email-verification-gate";
 import { getAppUrl, isDemoMode } from "@/lib/env";
+import {
+  buildTermsAckStatement,
+  CUSTOMER_TYPE_STATEMENT_VERSION,
+  CUSTOMER_TYPE_STATEMENTS,
+  EARLY_PERFORMANCE_STATEMENT,
+  EARLY_PERFORMANCE_STATEMENT_VERSION,
+  TERMS_ACK_STATEMENT_VERSION,
+  WORKING_TERMS_VERSION_LABEL,
+} from "@/lib/legal/checkout-statements";
+import { evaluateLegalLaunchGate } from "@/lib/legal/launch-gate";
+import {
+  computePublicActivationAt,
+  getServiceEndsAtIso,
+} from "@/lib/legal/service-duration";
 import { getPlanTotalCents } from "@/lib/payments/plans";
 import {
   getSellerSnapshot,
@@ -28,11 +42,17 @@ function createIntegrationIdentifier() {
   return `webprekandidata_${suffix}`;
 }
 
+function hashIp(value: string | null) {
+  if (!value) return null;
+  return createHash("sha256").update(value).digest("hex").slice(0, 32);
+}
+
 export async function createCheckoutSessionAction(input: unknown): Promise<CreateCheckoutResult> {
   if (isDemoMode()) {
     return { ok: false, message: "Platba nie je dostupná v demo režime." };
   }
-  if (!isStripeConfigured()) {
+  const legalGate = evaluateLegalLaunchGate({ requireDocumentsApproved: true });
+  if (!legalGate.ok || !isStripeConfigured()) {
     return { ok: false, message: "Platobná brána ešte nie je nakonfigurovaná." };
   }
 
@@ -46,7 +66,16 @@ export async function createCheckoutSessionAction(input: unknown): Promise<Creat
     return { ok: false, message: "Skontrolujte fakturačné údaje.", fieldErrors };
   }
 
-  const { siteId, planCode, billing } = parsed.data;
+  const {
+    siteId,
+    planCode,
+    customerType,
+    earlyPerformanceRequested: earlyRaw,
+    billing,
+  } = parsed.data;
+  const earlyPerformanceRequested = customerType === "b2c" && earlyRaw === true;
+  const activationDeferred = customerType === "b2c" && !earlyPerformanceRequested;
+
   const supabase = await createClient();
   const { data: authData, error: authError } = await supabase.auth.getUser();
   if (authError || !authData.user) {
@@ -71,10 +100,35 @@ export async function createCheckoutSessionAction(input: unknown): Promise<Creat
     return { ok: false, message: "Tento web už má aktívny balík." };
   }
 
-  const buyerSnapshot = toBuyerSnapshot(billing);
+  const buyerSnapshot = toBuyerSnapshot(billing, customerType);
   const sellerSnapshot = getSellerSnapshot();
   const totalCents = getPlanTotalCents(planCode);
   const admin = createAdminClient();
+  const serviceEndsAt = getServiceEndsAtIso();
+  const publicActivationAt = activationDeferred
+    ? computePublicActivationAt({
+      paidAt: new Date(),
+      customerType,
+      earlyPerformanceRequested,
+    }).toISOString()
+    : null;
+
+  const { data: planVersion } = await admin
+    .from("plan_versions" as never)
+    .select("id")
+    .eq("plan_code", planCode)
+    .is("effective_to", null)
+    .order("effective_from", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const planVersionId =
+    planVersion && typeof planVersion === "object" && "id" in planVersion
+      ? String((planVersion as { id: string }).id)
+      : null;
+
+  const customerTypeStatement = CUSTOMER_TYPE_STATEMENTS[customerType];
+  const termsStatement = buildTermsAckStatement(WORKING_TERMS_VERSION_LABEL);
 
   const { data: order, error: orderError } = await admin
     .from("orders")
@@ -85,16 +139,83 @@ export async function createCheckoutSessionAction(input: unknown): Promise<Creat
       currency: "EUR",
       total_cents: totalCents,
       plan_code: planCode,
-      valid_until: null,
+      valid_until: serviceEndsAt,
       buyer_snapshot: buyerSnapshot,
       seller_snapshot: sellerSnapshot,
-    })
+      plan_version_id: planVersionId,
+      customer_type: customerType,
+      customer_type_statement: customerTypeStatement,
+      customer_type_statement_version: CUSTOMER_TYPE_STATEMENT_VERSION,
+      early_performance_requested: earlyPerformanceRequested,
+      early_performance_statement_version: earlyPerformanceRequested
+        ? EARLY_PERFORMANCE_STATEMENT_VERSION
+        : null,
+      early_performance_statement_text: earlyPerformanceRequested
+        ? EARLY_PERFORMANCE_STATEMENT
+        : null,
+      service_ends_at: serviceEndsAt,
+      public_activation_at: publicActivationAt,
+      activation_deferred: activationDeferred,
+    } as never)
     .select("id, order_number")
     .single();
 
   if (orderError || !order) {
     return { ok: false, message: "Objednávku sa nepodarilo vytvoriť." };
   }
+
+  const acceptances = [
+    {
+      order_id: order.id,
+      acceptance_kind: "customer_type_declaration",
+      statement_text: customerTypeStatement,
+      statement_version: CUSTOMER_TYPE_STATEMENT_VERSION,
+      accepted: true,
+      actor_user_id: authData.user.id,
+      ip_hash: hashIp(null),
+      user_agent: null,
+    },
+    {
+      order_id: order.id,
+      acceptance_kind: "terms_ack",
+      statement_text: termsStatement,
+      statement_version: TERMS_ACK_STATEMENT_VERSION,
+      accepted: true,
+      actor_user_id: authData.user.id,
+      ip_hash: hashIp(null),
+      user_agent: null,
+    },
+  ];
+
+  if (earlyPerformanceRequested) {
+    acceptances.push({
+      order_id: order.id,
+      acceptance_kind: "early_performance",
+      statement_text: EARLY_PERFORMANCE_STATEMENT,
+      statement_version: EARLY_PERFORMANCE_STATEMENT_VERSION,
+      accepted: true,
+      actor_user_id: authData.user.id,
+      ip_hash: hashIp(null),
+      user_agent: null,
+    });
+  }
+
+  await admin.from("order_legal_acceptances" as never).insert(acceptances as never);
+
+  await admin.from("legal_audit_events" as never).insert({
+    actor_user_id: authData.user.id,
+    actor_service: "checkout",
+    action: "order.created",
+    entity_type: "order",
+    entity_id: order.id,
+    result: "ok",
+    metadata: {
+      plan_code: planCode,
+      customer_type: customerType,
+      early_performance_requested: earlyPerformanceRequested,
+      activation_deferred: activationDeferred,
+    },
+  } as never);
 
   const appUrl = getAppUrl().replace(/\/$/, "");
   const successUrl = `${appUrl}/app/web/${siteId}/publikovanie?checkout=success&session_id={CHECKOUT_SESSION_ID}`;

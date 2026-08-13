@@ -371,13 +371,25 @@ export type Database = {
           confirmation_email_sent_at: string | null
           created_at: string
           currency: string
+          customer_type: string | null
+          customer_type_statement: string | null
+          customer_type_statement_version: string | null
+          early_performance_requested: boolean
+          early_performance_statement_text: string | null
+          early_performance_statement_version: string | null
+          activation_deferred: boolean
           fulfilled_at: string | null
           id: string
           net_cents: number | null
           order_number: string
           paid_at: string | null
           plan_code: Database["public"]["Enums"]["plan_code"]
+          plan_version_id: string | null
+          privacy_version_id: string | null
+          public_activation_at: string | null
           seller_snapshot: Json
+          service_ends_at: string | null
+          service_starts_at: string | null
           site_id: string
           status: Database["public"]["Enums"]["order_status"]
           stripe_checkout_session_id: string | null
@@ -386,22 +398,36 @@ export type Database = {
           stripe_invoice_id: string | null
           stripe_invoice_pdf_url: string | null
           tax_cents: number | null
+          terms_version_id: string | null
           total_cents: number
           user_id: string
           valid_until: string | null
+          withdrawal_notice_version_id: string | null
         }
         Insert: {
           buyer_snapshot: Json
           confirmation_email_sent_at?: string | null
           created_at?: string
           currency?: string
+          customer_type?: string | null
+          customer_type_statement?: string | null
+          customer_type_statement_version?: string | null
+          early_performance_requested?: boolean
+          early_performance_statement_text?: string | null
+          early_performance_statement_version?: string | null
+          activation_deferred?: boolean
           fulfilled_at?: string | null
           id?: string
           net_cents?: number | null
           order_number?: string
           paid_at?: string | null
           plan_code: Database["public"]["Enums"]["plan_code"]
+          plan_version_id?: string | null
+          privacy_version_id?: string | null
+          public_activation_at?: string | null
           seller_snapshot: Json
+          service_ends_at?: string | null
+          service_starts_at?: string | null
           site_id: string
           status?: Database["public"]["Enums"]["order_status"]
           stripe_checkout_session_id?: string | null
@@ -410,22 +436,36 @@ export type Database = {
           stripe_invoice_id?: string | null
           stripe_invoice_pdf_url?: string | null
           tax_cents?: number | null
+          terms_version_id?: string | null
           total_cents: number
           user_id: string
           valid_until?: string | null
+          withdrawal_notice_version_id?: string | null
         }
         Update: {
           buyer_snapshot?: Json
           confirmation_email_sent_at?: string | null
           created_at?: string
           currency?: string
+          customer_type?: string | null
+          customer_type_statement?: string | null
+          customer_type_statement_version?: string | null
+          early_performance_requested?: boolean
+          early_performance_statement_text?: string | null
+          early_performance_statement_version?: string | null
+          activation_deferred?: boolean
           fulfilled_at?: string | null
           id?: string
           net_cents?: number | null
           order_number?: string
           paid_at?: string | null
           plan_code?: Database["public"]["Enums"]["plan_code"]
+          plan_version_id?: string | null
+          privacy_version_id?: string | null
+          public_activation_at?: string | null
           seller_snapshot?: Json
+          service_ends_at?: string | null
+          service_starts_at?: string | null
           site_id?: string
           status?: Database["public"]["Enums"]["order_status"]
           stripe_checkout_session_id?: string | null
@@ -434,9 +474,11 @@ export type Database = {
           stripe_invoice_id?: string | null
           stripe_invoice_pdf_url?: string | null
           tax_cents?: number | null
+          terms_version_id?: string | null
           total_cents?: number
           user_id?: string
           valid_until?: string | null
+          withdrawal_notice_version_id?: string | null
         }
         Relationships: [
           {
@@ -881,6 +923,10 @@ export type Database = {
           p_provider_event_id: string
           p_session_id: string
         }
+        Returns: Json
+      }
+      activate_deferred_orders: {
+        Args: { p_limit?: number }
         Returns: Json
       }
       has_plus_entitlement: { Args: { p_site_id: string }; Returns: boolean }

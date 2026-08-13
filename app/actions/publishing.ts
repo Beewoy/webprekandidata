@@ -7,6 +7,7 @@ import { requireVerifiedUser } from "@/lib/data/email-verification-gate";
 import { loadPublicationSource } from "@/lib/data/publishing";
 import { getCurrentUser } from "@/lib/data/sites";
 import { isDemoMode } from "@/lib/env";
+import { evaluateLegalLaunchGate, formatLegalLaunchGateMessage } from "@/lib/legal/launch-gate";
 import { getPublishReadiness, type PublicationMediaItem } from "@/lib/publishing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -45,6 +46,15 @@ export async function publishSiteAction(input: unknown): Promise<PublishSiteResu
   const readiness = getPublishReadiness({ content: source.content, mediaKinds: source.assets.map((asset) => asset.kind), seo: source.seo });
   if (!readiness.ready) return { ok: false, message: `Pred zverejnením dokončite: ${readiness.blockers.map((issue) => issue.label).join(", ")}.` };
   if (!source.entitled) return { ok: false, message: "Publikovanie vyžaduje platný balík Basic alebo Plus." };
+
+  const legalGate = evaluateLegalLaunchGate({ requireDocumentsApproved: true });
+  if (!legalGate.ok) {
+    return {
+      ok: false,
+      message: formatLegalLaunchGateMessage(legalGate)
+        ?? "Publikovanie je dočasne zablokované právnou konfiguráciou.",
+    };
+  }
 
   if (source.currentPublication?.sourceFingerprint === source.fingerprint && source.site.status === "published") {
     return {

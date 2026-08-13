@@ -198,11 +198,11 @@ Zoznam projektov načítava `getSites()` z `lib/data/sites.ts`.
 Vytvorenie projektu používa RPC `create_candidate_site`, ktorá v jednej transakcii:
 
 1. vytvorí záznam v `sites`,
-2. vytvorí počiatočný `site_drafts`,
+2. vytvorí počiatočný `site_drafts` (vrátane predvyplneného `kontakt.email` z e-mailu účtu, ak existuje),
 3. rezervuje subdoménu v `domains`,
 4. vráti ID projektu.
 
-Tým sa predíde napoly vytvorenému projektu.
+Tým sa predíde napoly vytvorenému projektu. Kontaktný e-mail zostáva neskôr voľne editovateľný v sekcii Kontakt.
 
 ## 7. Autosave a revízie
 
@@ -280,7 +280,9 @@ Post-purchase Invoice preberá meno/názov a billing adresu z Customer objektu. 
 
 `invoice.paid` môže prísť pred alebo po checkout fulfillment evente. Obe vetvy používajú spoločnú tabuľku `payment_events`, ale samostatné RPC a nezávislé side effects: Checkout fulfillment aktivuje plán, Invoice RPC iba uloží dokladové referencie. Opakovaný event s rovnakým Stripe event ID sa vráti ako idempotentne spracovaný.
 
-Hlavné súbory: `lib/payments/*`, `lib/validation/checkout.ts`, `app/actions/checkout.ts`, `app/api/webhooks/stripe/route.ts`, `lib/data/orders.ts`, migrácie `0012_stripe_fulfillment.sql`, `0017_stripe_invoices.sql` a `0024_order_numbers_and_confirmation.sql`.
+Hlavné súbory: `lib/payments/*`, `lib/legal/*`, `lib/validation/checkout.ts`, `app/actions/checkout.ts`, `app/actions/withdrawal.ts`, `app/api/webhooks/stripe/route.ts`, `lib/data/orders.ts`, migrácie `0012_stripe_fulfillment.sql`, `0017_stripe_invoices.sql`, `0024_order_numbers_and_confirmation.sql`, `0025_legal_foundation_and_consumer_checkout.sql` a `0026_withdrawal_and_complaints.sql`.
+
+Checkout vyžaduje B2C/B2B vyhlásenie, potvrdenie VOP a voliteľné skoré plnenie (iba B2C). Pri B2C bez skorého plnenia `fulfill_stripe_checkout` neodovzdá `sites.plan_code` hneď — aktiváciu dokončí `activate_deferred_orders` (volané z retention cronu) po `public_activation_at`. Identita predávajúceho je v `lib/legal/seller.ts`; launch gate v `lib/legal/launch-gate.ts` blokuje checkout aj publikovanie bez `LEGAL_DOCUMENTS_APPROVED`.
 
 ## 8.2 Domény, DNS a SSL
 
@@ -435,7 +437,7 @@ Migrácia: `supabase/migrations/0010_candidate_publications.sql`. Hlavné súbor
 
 Oddelený strom `/admin` nie je kandidátsky dashboard. Layout vyžaduje produkčný režim a `requirePlatformAdmin()` (`profiles.role = 'admin'`). V demo režime sa namiesto panelu zobrazí informácia o nedostupnosti. Kandidát bez admin role je presmerovaný na `/app`.
 
-Čítanie ide cez user-scoped Supabase klienta a existujúce RLS politiky s `is_platform_admin()`. Mutácie idú cez server actions a RPC, nie cez service-role UI.
+Čítanie v `/admin` ide cez user-scoped Supabase klienta a existujúce RLS politiky s `is_platform_admin()`. Mutácie idú cez server actions a RPC, nie cez service-role UI. Kandidátsky `/app` filtruje projekty na `owner_user_id = auth.uid()`, takže admin účet v editore nevidí cudzie weby (aj keď RLS na `sites` mu ich SELECT povoľuje). Úpravy cudzích draftov cez `/app` nie sú podporované — autosave RPC (`update_site_section` a ďalšie) vyžadujú `owns_site()`.
 
 `sites.admin_hold` oddeľuje administrátorské pozastavenie od dobrovoľného pozastavenia kandidáta. RPC `set_candidate_site_visibility` odmietne obnovenie, kým je hold aktívny. RPC `admin_set_site_hold` vyžaduje dôvod, kategóriu, rozsah, trvanie (pri hold) a náhľad správy pre kandidáta; všetko ide do `audit_logs`. Transakčný e-mail sa v MVP ešte neodosiela.
 
@@ -445,7 +447,7 @@ RPC `admin_grant_site_plan` udeľuje Basic alebo Plus konkrétnemu webu: vytvor�
 
 Routy: `/admin`, `/admin/pouzivatelia`, `/admin/weby`, `/admin/weby/[siteId]`, `/admin/objednavky`, `/admin/domeny`, `/admin/ai-pouzitie`, `/admin/audit`. AI stránka zobrazuje iba metadata bez promptov a výstupov.
 
-Migrácie: `supabase/migrations/0011_platform_admin.sql`, `supabase/migrations/0013_admin_grant_site_plan.sql`. Hlavné súbory: `lib/data/admin.ts`, `app/actions/admin.ts`, `components/admin/*`, `app/admin/**`.
+Migrácie: `supabase/migrations/0011_platform_admin.sql`, `supabase/migrations/0013_admin_grant_site_plan.sql`, `supabase/migrations/0024_order_numbers_and_confirmation.sql`, `supabase/migrations/0027_fix_admin_grant_order_number_ambiguity.sql`. Hlavné súbory: `lib/data/admin.ts`, `app/actions/admin.ts`, `components/admin/*`, `app/admin/**`.
 
 Prvý admin účet sa nastaví mimo UI:
 

@@ -931,6 +931,34 @@ svg { flex: 0 0 auto; }
 .checkout-terms { align-items: flex-start; display: flex; gap: 10px; font-size: 12px; line-height: 1.5; }
 .checkout-terms input { flex: 0 0 auto; height: 18px; margin-top: 2px; width: 18px; }
 .checkout-terms a, .auth-legal a { color: var(--teal-700); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.checkout-customer-type {
+  border: 0;
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+.checkout-customer-type legend {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.checkout-precontract {
+  background: color-mix(in srgb, var(--navy-900) 4%, white);
+  border-radius: 12px;
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 12px 14px;
+}
+.checkout-precontract a {
+  color: var(--teal-700);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 .checkout-disabled-note { background: var(--amber-50); border: 1px solid var(--amber-100); border-radius: 10px; color: var(--amber-800); font-size: 11px; line-height: 1.5; margin: 0; padding: 12px 14px; }
 .order-history { background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-lg); margin-top: 18px; padding: 22px 24px; }
 .order-history__heading h2 { font-size: 16px; margin: 0; }

@@ -28,7 +28,20 @@ export async function GET(request: NextRequest) {
     const supabase = createAdminClient();
     const { data, error } = await supabase.rpc("purge_expired_operational_data");
     if (error) throw error;
-    return NextResponse.json({ ok: true, result: data });
+
+    const { data: activationData, error: activationError } = await supabase.rpc(
+      "activate_deferred_orders",
+      { p_limit: 50 },
+    );
+    if (activationError) {
+      Sentry.captureException(activationError, { tags: { job: "deferred-activation" } });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      result: data,
+      deferredActivation: activationData ?? null,
+    });
   } catch (error) {
     Sentry.captureException(error, { tags: { job: "retention-purge" } });
     return NextResponse.json({ ok: false }, { status: 500 });

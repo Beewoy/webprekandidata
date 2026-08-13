@@ -6,6 +6,7 @@ import { GrantPlanDialog } from "@/components/admin/grant-plan-dialog";
 import { SiteHoldDialog } from "@/components/admin/site-hold-dialog";
 import { formatDateTime } from "@/components/admin/admin-ui";
 import { getAdminSiteDetail } from "@/lib/data/admin";
+import { getPlatformSiteLabel } from "@/lib/domains/platform";
 import {
   adminHoldCategoryLabels,
   adminHoldScopeLabels,
@@ -40,7 +41,7 @@ export default async function AdminSiteDetailPage({
       <PageHeading
         eyebrow="Detail webu"
         title={site.candidateName || site.internalName}
-        description={`${site.locality || "Bez lokality"} · ${site.slug}.webprekandidata.sk`}
+        description={`${site.locality || "Bez lokality"} · ${getPlatformSiteLabel(site.slug)}`}
         action={(
           <div className="admin-heading-actions">
             <GrantPlanDialog

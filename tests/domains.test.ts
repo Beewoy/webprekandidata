@@ -8,6 +8,7 @@ import {
 import {
   getCanonicalPlatformHostname,
   getCanonicalPublicUrl,
+  getPlatformSiteLabel,
   isPlatformHostname,
   isPlatformWwwHostname,
 } from "../lib/domains/platform";
@@ -34,6 +35,11 @@ describe("domain hostname helpers", () => {
     expect(getCanonicalPlatformHostname("www.webprekandidata.sk")).toBe("webprekandidata.sk");
     expect(isPlatformWwwHostname("www.webprekandidata.sk", "webprekandidata.sk")).toBe(true);
     expect(isPlatformWwwHostname("webprekandidata.sk", "webprekandidata.sk")).toBe(false);
+  });
+
+  it("zobrazí verejnú adresu ako platformovú cestu, nie subdoménu", () => {
+    expect(getPlatformSiteLabel("tibor-antal")).toMatch(/\/tibor-antal$/);
+    expect(getPlatformSiteLabel("tibor-antal")).not.toMatch(/tibor-antal\./);
   });
 
   it("preferuje aktívnu custom doménu pre canonical", () => {

@@ -53,10 +53,16 @@ export default function TermsPage() {
           </li>
         </ul>
         <p>
-          Ide o jednorazovú platbu bez automatického obnovenia. Presná doba poskytovania služby a
-          prípadné podmienky predĺženia sa zákazníkovi zobrazia pred záväzným odoslaním objednávky a
-          budú súčasťou jej potvrdenia. Cena Plus nezahŕňa registráciu, obnovu ani poplatky registrátora
+          Objednaný balík zahŕňa vytvorenie kampaňového webu, jeho hosting, HTTPS certifikát a
+          prístup k správe obsahu do 31.&nbsp;12.&nbsp;2026, bez automatického predĺženia. Konkrétny
+          rozsah funkcií závisí od zvoleného balíka (Basic alebo Plus) podľa popisu na platforme a v
+          týchto podmienkach. Cena Plus nezahŕňa registráciu, obnovu ani poplatky registrátora
           vlastnej domény.
+        </p>
+        <p>
+          Ide o jednorazovú platbu. Prípadné podmienky predĺženia služby po 31.&nbsp;12.&nbsp;2026 sa
+          zákazníkovi zobrazia pred záväzným odoslaním takej objednávky a budú súčasťou jej
+          potvrdenia.
         </p>
         <p>
           Platba sa uskutočňuje kartou cez platobnú bránu Stripe. Balík sa aktivuje až po bezpečnom

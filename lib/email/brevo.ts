@@ -222,6 +222,13 @@ export async function sendOrderConfirmationEmail({
   siteLabel,
 }: OrderConfirmationEmail) {
   const transporter = createTransporter();
+  const appUrl = getAppUrl().replace(/\/$/, "");
+  const termsUrl = `${appUrl}/obchodne-podmienky`;
+  const privacyUrl = `${appUrl}/ochrana-sukromia`;
+  const complaintsUrl = `${appUrl}/reklamacny-poriadok`;
+  const scopeText =
+    "Objednaný balík zahŕňa vytvorenie kampaňového webu, jeho hosting, HTTPS certifikát a prístup k správe obsahu do 31. 12. 2026, bez automatického predĺženia. Konkrétny rozsah funkcií závisí od zvoleného balíka (Basic / Plus) podľa popisu na platforme a v obchodných podmienkach.";
+
   const safeName = recipientName ? escapeHtml(recipientName) : "";
   const safeOrderNumber = escapeHtml(orderNumber);
   const safePlan = escapeHtml(planLabel);
@@ -229,6 +236,10 @@ export async function sendOrderConfirmationEmail({
   const safeSite = escapeHtml(siteLabel);
   const safePublishingUrl = escapeHtml(publishingUrl);
   const safeInvoiceUrl = invoiceUrl ? escapeHtml(invoiceUrl) : null;
+  const safeTermsUrl = escapeHtml(termsUrl);
+  const safePrivacyUrl = escapeHtml(privacyUrl);
+  const safeComplaintsUrl = escapeHtml(complaintsUrl);
+  const safeScopeText = escapeHtml(scopeText);
 
   await transporter.sendMail({
     from: { name: "Web pre kandidáta", address: "noreply@webprekandidata.sk" },
@@ -244,8 +255,15 @@ export async function sendOrderConfirmationEmail({
       `Suma: ${priceLabel}`,
       `Web: ${siteLabel}`,
       "",
+      scopeText,
+      "",
       `Správa webu: ${publishingUrl}`,
       invoiceUrl ? `Doklad: ${invoiceUrl}` : "Doklad (ak je k dispozícii) nájdete v sekcii Publikovanie.",
+      "",
+      "Právne dokumenty:",
+      `Obchodné podmienky: ${termsUrl}`,
+      `Ochrana súkromia: ${privacyUrl}`,
+      `Reklamačný poriadok: ${complaintsUrl}`,
       "",
       "Web pre kandidáta",
     ].join("\n"),
@@ -262,11 +280,108 @@ export async function sendOrderConfirmationEmail({
             <p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>Suma:</strong> ${safePrice}</p>
             <p style="font-size:14px;line-height:1.6;margin:0"><strong>Web:</strong> ${safeSite}</p>
           </div>
+          <p style="font-size:13px;line-height:1.65;color:#465468;margin:0 0 22px">${safeScopeText}</p>
           <a href="${safePublishingUrl}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;font-size:14px;font-weight:700;padding:13px 20px;border-radius:10px">Otvoriť Publikovanie</a>
           ${safeInvoiceUrl
             ? `<p style="font-size:13px;line-height:1.55;margin:18px 0 0"><a href="${safeInvoiceUrl}" style="color:#0f766e;font-weight:600">Otvoriť doklad</a></p>`
             : `<p style="font-size:12px;line-height:1.55;color:#7c8ba1;margin:18px 0 0">Doklad (ak je k dispozícii) nájdete v sekcii Publikovanie.</p>`}
+          <p style="font-size:12px;line-height:1.55;color:#7c8ba1;margin:24px 0 0">
+            <a href="${safeTermsUrl}" style="color:#0f766e;text-decoration:none">Obchodné podmienky</a>
+            &nbsp;·&nbsp;
+            <a href="${safePrivacyUrl}" style="color:#0f766e;text-decoration:none">Ochrana súkromia</a>
+            &nbsp;·&nbsp;
+            <a href="${safeComplaintsUrl}" style="color:#0f766e;text-decoration:none">Reklamačný poriadok</a>
+          </p>
         </div>
+      </div>
+    `,
+  });
+}
+
+export async function sendWithdrawalMagicLinkEmail(input: {
+  link: string;
+  orderNumber: string;
+  recipientEmail: string;
+}) {
+  const transporter = createTransporter();
+  const safeLink = escapeHtml(input.link);
+  const safeOrder = escapeHtml(input.orderNumber);
+
+  await transporter.sendMail({
+    from: { name: "Web pre kandidáta", address: "noreply@webprekandidata.sk" },
+    to: input.recipientEmail,
+    subject: `Odstúpenie od zmluvy – objednávka ${input.orderNumber}`,
+    text: [
+      "Dobrý deň,",
+      "",
+      `pre objednávku ${input.orderNumber} môžete dokončiť odstúpenie cez tento odkaz (platí 24 hodín):`,
+      input.link,
+      "",
+      "Ak ste o odkaz nežiadali, tento e-mail ignorujte.",
+      "",
+      "Web pre kandidáta",
+    ].join("\n"),
+    html: `
+      <div style="font-family:Inter,Arial,sans-serif;color:#17212d;line-height:1.6">
+        <p>Dobrý deň,</p>
+        <p>pre objednávku <strong>${safeOrder}</strong> dokončite odstúpenie cez bezpečný odkaz (platí 24 hodín):</p>
+        <p><a href="${safeLink}" style="color:#0f766e;font-weight:700">Odstúpiť od zmluvy tu</a></p>
+        <p style="color:#7c8ba1;font-size:13px">Ak ste o odkaz nežiadali, tento e-mail ignorujte.</p>
+      </div>
+    `,
+  });
+}
+
+export async function sendWithdrawalConfirmationEmail(input: {
+  confirmedAtIso: string;
+  orderNumber: string;
+  recipientEmail: string;
+  recipientName?: string | null;
+  refundAmountLabel: string;
+  withdrawalId: string;
+}) {
+  const transporter = createTransporter();
+  const confirmedLocal = new Intl.DateTimeFormat("sk-SK", {
+    dateStyle: "long",
+    timeStyle: "medium",
+    timeZone: "Europe/Bratislava",
+  }).format(new Date(input.confirmedAtIso));
+
+  const safeName = input.recipientName ? escapeHtml(input.recipientName) : "";
+  const safeOrder = escapeHtml(input.orderNumber);
+  const safeId = escapeHtml(input.withdrawalId);
+  const safeAmount = escapeHtml(input.refundAmountLabel);
+  const safeWhen = escapeHtml(confirmedLocal);
+
+  await transporter.sendMail({
+    from: { name: "Web pre kandidáta", address: "noreply@webprekandidata.sk" },
+    to: input.recipientEmail,
+    subject: `Potvrdenie odstúpenia – ${input.orderNumber}`,
+    text: [
+      `Dobrý deň${input.recipientName ? `, ${input.recipientName}` : ""},`,
+      "",
+      "prijali sme vaše odstúpenie od zmluvy.",
+      "",
+      `Identifikátor žiadosti: ${input.withdrawalId}`,
+      `Objednávka: ${input.orderNumber}`,
+      `Dátum a čas potvrdenia (Europe/Bratislava): ${confirmedLocal}`,
+      `Výška vrátenia: ${input.refundAmountLabel}`,
+      "",
+      "Vrátenie platby vykonáme najneskôr do 14 dní rovnakým platobným prostriedkom.",
+      "",
+      "Web pre kandidáta",
+    ].join("\n"),
+    html: `
+      <div style="font-family:Inter,Arial,sans-serif;color:#17212d;line-height:1.6">
+        <p>Dobrý deň${safeName ? `, ${safeName}` : ""},</p>
+        <p>prijali sme vaše odstúpenie od zmluvy.</p>
+        <ul>
+          <li>Identifikátor žiadosti: <strong>${safeId}</strong></li>
+          <li>Objednávka: <strong>${safeOrder}</strong></li>
+          <li>Dátum a čas: <strong>${safeWhen}</strong></li>
+          <li>Výška vrátenia: <strong>${safeAmount}</strong></li>
+        </ul>
+        <p>Vrátenie platby vykonáme najneskôr do 14 dní rovnakým platobným prostriedkom.</p>
       </div>
     `,
   });

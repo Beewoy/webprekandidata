@@ -12,21 +12,54 @@ export const checkoutBillingSchema = z.object({
   country: z.literal("SK"),
   companyName: z.string().trim().max(160).optional().or(z.literal("")),
   ico: z.string().trim().regex(/^(|\d{8})$/, "IČO musí mať 8 číslic.").optional().or(z.literal("")),
+  icDph: z.string().trim().max(20).optional().or(z.literal("")),
   acceptTerms: z.boolean().refine((value) => value === true, {
-    message: "Pred platbou musíte súhlasiť s podmienkami.",
+    message: "Pred platbou musíte potvrdiť oboznámenie s VOP.",
   }),
 });
 
-export const createCheckoutSchema = z.object({
-  siteId: z.string().uuid(),
-  planCode: z.enum(PAID_PLAN_CODES),
-  billing: checkoutBillingSchema,
-});
+export const createCheckoutSchema = z
+  .object({
+    siteId: z.string().uuid(),
+    planCode: z.enum(PAID_PLAN_CODES),
+    customerType: z.enum(["b2c", "b2b"]),
+    earlyPerformanceRequested: z.boolean().default(false),
+    billing: checkoutBillingSchema,
+  })
+  .superRefine((value, ctx) => {
+    if (value.customerType === "b2b") {
+      if (!value.billing.companyName?.trim()) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["billing", "companyName"],
+          message: "Pri nákupe ako podnikateľ uveďte obchodné meno.",
+        });
+      }
+      if (!value.billing.ico?.trim()) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["billing", "ico"],
+          message: "Pri nákupe ako podnikateľ uveďte IČO.",
+        });
+      }
+    }
+    if (value.customerType === "b2b" && value.earlyPerformanceRequested) {
+      // Early performance is a consumer-only control; ignore/forbid for B2B clarity.
+      ctx.addIssue({
+        code: "custom",
+        path: ["earlyPerformanceRequested"],
+        message: "Skoré plnenie sa týka iba spotrebiteľských objednávok.",
+      });
+    }
+  });
 
 export type CheckoutBillingInput = z.infer<typeof checkoutBillingSchema>;
 export type CreateCheckoutInput = z.infer<typeof createCheckoutSchema>;
 
-export function toBuyerSnapshot(billing: CheckoutBillingInput) {
+export function toBuyerSnapshot(
+  billing: CheckoutBillingInput,
+  customerType: "b2c" | "b2b",
+) {
   return {
     fullName: billing.fullName,
     email: billing.email,
@@ -36,5 +69,7 @@ export function toBuyerSnapshot(billing: CheckoutBillingInput) {
     country: billing.country,
     companyName: billing.companyName?.trim() || "",
     ico: billing.ico?.trim() || "",
+    icDph: billing.icDph?.trim() || "",
+    customerType,
   };
 }

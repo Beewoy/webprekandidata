@@ -1,10 +1,20 @@
 # Stav implementácie
 
-Aktualizované: 12. august 2026
+Aktualizované: 13. august 2026
 
 Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Produktový plán môže obsahovať aj budúci rozsah.
 
 ## Hotové
+
+### Právny základ (LB-01 / LB-02 čiastočne, LB-09 skelet)
+
+- kompletná identita prevádzkovateľa (meno, adresa, IČO, DIČ, telefón, živnostenský register `110-253321`, neplatiteľ DPH, SOI) v `lib/legal/seller.ts` a na právnych stránkach,
+- trvanie Basic/Plus do **31. 12. 2026** (`lib/legal/service-duration.ts`), ukladané do objednávky,
+- centrálny `evaluateLegalLaunchGate` pre checkout aj publikovanie,
+- migrácia `0025_legal_foundation_and_consumer_checkout.sql`: `legal_document_versions`, `plan_versions`, `legal_audit_events`, `order_legal_acceptances`, polia skorého plnenia/odloženej aktivácie, úprava `fulfill_stripe_checkout`, RPC `activate_deferred_orders`,
+- spotrebiteľský checkout: B2C/B2B vyhlásenie, predzmluvný súhrn, tlačidlo „Objednávka s povinnosťou platby“, voliteľné skoré plnenie, odloženie `plan_code` pri B2C bez skorého plnenia,
+- denný retention cron zároveň skúša aktivovať odložené objednávky,
+- online odstúpenie: `/odstupenie` + magic link `/odstupenie/[token]`, dvojkrokové potvrdenie, Stripe refund (plná suma), odkaz v histórii objednávok, migrácia `0026_withdrawal_and_complaints.sql` (aj tabuľka `complaints` pripravená).
 
 ### Základ projektu
 
@@ -83,6 +93,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - formulár nového projektu,
 - serverová kontrola používateľa a vlastníctva,
 - atómové vytvorenie projektu cez PostgreSQL RPC,
+- pri vytvorení projektu sa do konceptu Kontakt predvyplní e-mail z registrácie (`0028`); kandidát ho môže kedykoľvek zmeniť,
 - načítanie konceptu sekcie,
 - serverové autosave s optimistic concurrency cez číslo revízie,
 - po `revision_conflict` server vráti aktuálnu revíziu bez RAISE (`0022` JSON), DB cooldown sa commitne a UI vypne autosave do obnovenia stránky; blur-save zrušený (`0020`–`0022`, `lib/draft-save-guard.ts`),
@@ -129,6 +140,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - kandidát nemôže sám obnoviť web pod aktívnym admin hold,
 - migrácia `0011_platform_admin.sql` (GRANT na `audit_logs`, RPC `admin_set_site_hold`, `admin_search_users`, `admin_dashboard_metrics`),
 - migrácia `0013_admin_grant_site_plan.sql` (RPC `admin_grant_site_plan`),
+- migrácia `0027_fix_admin_grant_order_number_ambiguity.sql` (oprava nejednoznačného `order_number` v RPC, ktoré blokovalo manuálne udelenie balíka),
 - bez moderátorskej fronty, bez reprocess webhookov a bez manuálneho prepisu paid stavu Stripe objednávok.
 
 ### Domény a DNS

@@ -6,6 +6,7 @@ import type { EmailVerificationStatus } from "@/lib/data/account";
 import type { SiteSummary } from "@/lib/data/sites";
 import { WelcomeDialog } from "@/components/projects/welcome-dialog";
 import { PlanBadge } from "@/components/ui/plan-badge";
+import { getPlatformSiteLabel } from "@/lib/domains/platform";
 
 const statusLabels: Record<SiteSummary["status"], string> = {
   draft: "Koncept",
@@ -66,7 +67,7 @@ export function ProjectsOverview({ sites, verification, emailNotice, showWelcome
               <div className="project-card__visual"><PlanBadge plan={site.planCode} /><span className="project-card__initials">{site.candidateName.split(" ").map((part) => part[0]).join("").slice(0, 2)}</span><i>{statusLabels[site.status]}</i></div>
               <div className="project-card__body">
                 <p>{site.internalName}</p><h2>{site.candidateName}</h2>
-                <div className="project-meta"><span><MapPin size={14} />{site.locality}</span><span><Globe2 size={14} />{site.slug}.webprekandidata.sk</span></div>
+                <div className="project-meta"><span><MapPin size={14} />{site.locality}</span><span><Globe2 size={14} />{getPlatformSiteLabel(site.slug)}</span></div>
                 <div className="project-card__footer"><span><CalendarDays size={14} /> Upravené nedávno</span><strong>Otvoriť editor <ArrowRight size={16} /></strong></div>
               </div>
             </Link>

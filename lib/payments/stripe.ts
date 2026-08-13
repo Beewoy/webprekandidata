@@ -1,30 +1,30 @@
 import "server-only";
 
 import Stripe from "stripe";
-import type { PaidPlanCode } from "@/lib/payments/plans";
+import { evaluateLegalLaunchGate } from "../legal/launch-gate";
+import {
+  getSellerSnapshot as getLegalSellerSnapshot,
+  isSellerIdentityComplete,
+} from "../legal/seller";
+import type { PaidPlanCode } from "./plans";
 
-export { assertCheckoutAmountMatchesPlan } from "@/lib/payments/plans";
+export { assertCheckoutAmountMatchesPlan } from "./plans";
 
 let stripeClient: Stripe | null = null;
 
 export function isSellerConfigured() {
-  return Boolean(
-    process.env.SELLER_NAME?.trim()
-    && process.env.SELLER_ADDRESS?.trim()
-    && process.env.SELLER_ICO?.trim()
-    && process.env.SELLER_DIC?.trim()
-    && process.env.SELLER_EMAIL?.trim(),
-  );
+  return isSellerIdentityComplete();
 }
 
 export function isStripeConfigured() {
+  const legalGate = evaluateLegalLaunchGate({ requireDocumentsApproved: true });
   return Boolean(
     process.env.STRIPE_SECRET_KEY
     && process.env.STRIPE_WEBHOOK_SECRET
     && process.env.STRIPE_PRICE_BASIC
     && process.env.STRIPE_PRICE_PLUS
     && isSellerConfigured()
-    && process.env.LEGAL_DOCUMENTS_APPROVED === "true",
+    && legalGate.ok,
   );
 }
 
@@ -53,11 +53,5 @@ export function getStripePriceId(planCode: PaidPlanCode): string {
 }
 
 export function getSellerSnapshot() {
-  return {
-    name: process.env.SELLER_NAME?.trim() || "Ing. Tibor Antal",
-    address: process.env.SELLER_ADDRESS?.trim() || "",
-    ico: process.env.SELLER_ICO?.trim() || "",
-    dic: process.env.SELLER_DIC?.trim() || "",
-    email: process.env.SELLER_EMAIL?.trim() || "",
-  };
+  return getLegalSellerSnapshot();
 }

@@ -53,11 +53,12 @@ export async function requireCurrentUser() {
 
 export async function getSites(): Promise<SiteSummary[]> {
   if (isDemoMode()) return [demoSite];
-  await requireCurrentUser();
+  const user = await requireCurrentUser();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("sites")
     .select("id, internal_name, candidate_name, locality, slug, status, plan_code, admin_hold, current_publication_id, updated_at")
+    .eq("owner_user_id", user.id)
     .is("deleted_at", null)
     .order("updated_at", { ascending: false });
 
@@ -79,12 +80,13 @@ export async function getSites(): Promise<SiteSummary[]> {
 export const getSite = cache(async (siteId: string): Promise<SiteSummary | null> => {
   if (siteId === "demo" && isDemoMode()) return demoSite;
   if (isDemoMode()) return null;
-  await requireCurrentUser();
+  const user = await requireCurrentUser();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("sites")
     .select("id, internal_name, candidate_name, locality, slug, status, plan_code, admin_hold, current_publication_id, updated_at")
     .eq("id", siteId)
+    .eq("owner_user_id", user.id)
     .is("deleted_at", null)
     .maybeSingle();
 

@@ -1,4 +1,5 @@
 import type { CivicIconName } from "./civic-icons";
+import { getPlatformSiteLabel } from "./domains/platform";
 import { buildRepeatableItems } from "./repeatable-items";
 import { repeatableContent } from "./repeatable-content";
 import { sanitizeRichText } from "./rich-text";
@@ -167,7 +168,7 @@ export function buildSitePreviewData(
       signature: typeof storedAbout.signature === "string" ? storedAbout.signature : `— ${candidateName.split(/\s+/)[0]}`,
       values: previewItems("o-mne", about),
     },
-    address: `webprekandidata.sk/${site.slug}`,
+    address: getPlatformSiteLabel(site.slug),
     candidate: {
       city,
       initials: initials(candidateName),

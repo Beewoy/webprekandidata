@@ -1,5 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import {
+  formatVatStatusLabel,
+  getSellerIdentity,
+} from "@/lib/legal/seller";
 
 export function LegalPage({
   title,
@@ -20,16 +24,17 @@ export function LegalPage({
           <Link href="/ochrana-sukromia">Ochrana súkromia</Link>
           <Link href="/obchodne-podmienky">Obchodné podmienky</Link>
           <Link href="/reklamacny-poriadok">Reklamačný poriadok</Link>
+          <Link href="/odstupenie">Odstúpenie</Link>
         </div>
       </nav>
       <article className="legal-document">
         {!approved && (
           <p className="legal-draft" role="status">
-            Pracovné znenie. Pred spustením platených služieb musí dokument skontrolovať právny odborník
-            a prevádzkovateľ musí nastaviť <code>LEGAL_DOCUMENTS_APPROVED=true</code>.
+            Pracovné znenie. Pred spustením platených služieb musí prevádzkovateľ skontrolovať
+            dokumenty a nastaviť <code>LEGAL_DOCUMENTS_APPROVED=true</code>.
           </p>
         )}
-        <p className="eyebrow">Platné znenie od 11. augusta 2026</p>
+        <p className="eyebrow">Platné znenie od 13. augusta 2026 · verzia 2026.1</p>
         <h1>{title}</h1>
         <p className="legal-intro">{intro}</p>
         {children}
@@ -39,18 +44,28 @@ export function LegalPage({
 }
 
 export function SellerIdentity() {
+  const seller = getSellerIdentity();
+
   return (
     <address>
-      <strong>{process.env.SELLER_NAME || "Ing. Tibor Antal"}</strong>
+      <strong>{seller.name}</strong>
+      <span>{seller.address}</span>
+      <span>IČO: {seller.ico}</span>
+      <span>DIČ: {seller.dic}</span>
+      <span>{formatVatStatusLabel(seller)}</span>
       <span>
-        {process.env.SELLER_ADDRESS ||
-          "Jána Stanislava 3085/37, 841 05 Bratislava – Karlova Ves, Slovensko"}
+        {seller.registerName}, {seller.registrationAuthority}, č. zápisu{" "}
+        {seller.registrationNumber}
       </span>
-      <span>IČO: {process.env.SELLER_ICO || "50640259"}</span>
-      <span>DIČ: {process.env.SELLER_DIC || "1075966881"}</span>
-      <a href={`mailto:${process.env.SELLER_EMAIL || "tibor.antal2@gmail.com"}`}>
-        {process.env.SELLER_EMAIL || "tibor.antal2@gmail.com"}
-      </a>
+      <a href={`tel:${seller.phone.replace(/\s+/g, "")}`}>{seller.phone}</a>
+      <a href={`mailto:${seller.email}`}>{seller.email}</a>
+      <span>
+        Orgán dohľadu: {seller.supervisoryAuthorityName},{" "}
+        {seller.supervisoryAuthorityAddress},{" "}
+        <a href={`mailto:${seller.supervisoryAuthorityEmail}`}>
+          {seller.supervisoryAuthorityEmail}
+        </a>
+      </span>
     </address>
   );
 }

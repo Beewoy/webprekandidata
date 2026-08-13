@@ -156,6 +156,9 @@ export async function createWelcomeSiteAction(input: unknown): Promise<{ ok: fal
       intro: suggestion.motivation,
     },
     program: programValues,
+    ...(user.email?.trim()
+      ? { kontakt: { email: user.email.trim() } }
+      : {}),
   };
 
   const { error: draftError } = await supabase

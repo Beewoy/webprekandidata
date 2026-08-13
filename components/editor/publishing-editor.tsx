@@ -15,15 +15,21 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
+import { startAuthenticatedWithdrawalAction } from "@/app/actions/withdrawal";
 import { createCheckoutSessionAction } from "@/app/actions/checkout";
 import { publishSiteAction, setSiteVisibilityAction, type PublishSiteResult } from "@/app/actions/publishing";
 import { cn } from "@/lib/cn";
 import type { SiteOrderRow } from "@/lib/data/orders";
+import { EARLY_PERFORMANCE_STATEMENT } from "@/lib/legal/checkout-statements";
+import { formatServiceDurationLabel } from "@/lib/legal/service-duration";
+import { formatVatStatusLabel, getSellerIdentity } from "@/lib/legal/seller";
 import type { CheckoutReturnNotice } from "@/lib/payments/checkout-return";
 import { PLAN_LABELS, PLAN_PRICE_LABELS, type PaidPlanCode } from "@/lib/payments/plans";
 import type { PublishingState } from "@/lib/publishing";
 import { PageHeading } from "@/components/ui/page-heading";
 import { PlanBadge } from "@/components/ui/plan-badge";
+
+const serviceDurationLabel = formatServiceDurationLabel();
 
 const plans = [
   {
@@ -31,14 +37,26 @@ const plans = [
     name: PLAN_LABELS.basic,
     price: PLAN_PRICE_LABELS.basic,
     note: "Jednoduchý volebný web",
-    features: ["Web na našej doméne", "Všetky sekcie editora", "Aktuality a kontaktný formulár", "Základná AI pomoc s obsahom"],
+    features: [
+      "Web na našej doméne",
+      "Všetky sekcie editora",
+      "Aktuality a kontaktný formulár",
+      `Trvanie služby ${serviceDurationLabel}`,
+      "Jednorazová platba bez automatického obnovenia",
+    ],
   },
   {
     id: "plus" as const,
     name: PLAN_LABELS.plus,
     price: PLAN_PRICE_LABELS.plus,
     note: "Vlastná značka a viac AI",
-    features: ["Všetko z balíka Basic", "Vlastná doména", "AI generovanie článkov", "Prioritná podpora"],
+    features: [
+      "Všetko z balíka Basic",
+      "Vlastná doména (registrácia a poplatky registrátora nie sú zahrnuté)",
+      "AI návrhy textov s ľudskou kontrolou",
+      `Trvanie služby ${serviceDurationLabel}`,
+      "Prioritná podpora",
+    ],
   },
 ];
 
@@ -70,6 +88,9 @@ function formatOrderDate(value: string) {
 }
 
 function OrderHistory({ orders }: { orders: SiteOrderRow[] }) {
+  const [withdrawalMessage, setWithdrawalMessage] = useState<string | null>(null);
+  const [withdrawalPending, startWithdrawal] = useTransition();
+
   if (orders.length === 0) return null;
   return (
     <section aria-labelledby="order-history-title" className="order-history">
@@ -92,10 +113,30 @@ function OrderHistory({ orders }: { orders: SiteOrderRow[] }) {
                   Doklad
                 </a>
               ) : null}
+              {order.status === "paid" && (
+                <button
+                  className="button button--ghost"
+                  disabled={withdrawalPending}
+                  onClick={() => {
+                    setWithdrawalMessage(null);
+                    startWithdrawal(async () => {
+                      const result = await startAuthenticatedWithdrawalAction({ orderId: order.id });
+                      setWithdrawalMessage(result.message);
+                    });
+                  }}
+                  type="button"
+                >
+                  Odstúpiť od zmluvy tu
+                </button>
+              )}
             </div>
           </div>
         ))}
       </div>
+      {withdrawalMessage && <p role="status">{withdrawalMessage}</p>}
+      <p className="secure-note">
+        Odstúpenie bez prihlásenia: <Link href="/odstupenie">Odstúpiť od zmluvy tu</Link>
+      </p>
     </section>
   );
 }
@@ -111,6 +152,7 @@ export function PublishingEditor({
   siteId,
 }: PublishingEditorProps) {
   const [plan, setPlan] = useState<PaidPlanCode>("basic");
+  const [customerType, setCustomerType] = useState<"b2c" | "b2b">("b2c");
   const [result, setResult] = useState<PublishSiteResult | null>(null);
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -118,6 +160,7 @@ export function PublishingEditor({
   const [checkoutPending, startCheckout] = useTransition();
   const router = useRouter();
   const selected = plans.find((item) => item.id === plan)!;
+  const seller = getSellerIdentity();
   const currentPlan = publishingState.planCode ? plans.find((item) => item.id === publishingState.planCode)! : null;
 
   useEffect(() => {
@@ -142,6 +185,8 @@ export function PublishingEditor({
       const payload = {
         siteId,
         planCode: plan,
+        customerType,
+        earlyPerformanceRequested: customerType === "b2c" && formData.get("earlyPerformance") === "on",
         billing: {
           fullName: String(formData.get("fullName") ?? ""),
           email: String(formData.get("email") ?? ""),
@@ -151,6 +196,7 @@ export function PublishingEditor({
           country: "SK" as const,
           companyName: String(formData.get("companyName") ?? ""),
           ico: String(formData.get("ico") ?? ""),
+          icDph: String(formData.get("icDph") ?? ""),
           acceptTerms: formData.get("acceptTerms") === "on",
         },
       };
@@ -305,9 +351,36 @@ export function PublishingEditor({
           <div>
             <p className="eyebrow">Vybraný balík</p>
             <h2 id="billing-title">{selected.name}</h2>
-            <p>{selected.note}. Jednorazová platba za jedno volebné obdobie.</p>
+            <p>
+              {selected.note}. Jednorazová konečná cena {selected.price}, trvanie služby {serviceDurationLabel},
+              bez automatického obnovenia.
+            </p>
           </div>
-          <div className="order-total"><small>Celkom</small><strong>{selected.price}</strong></div>
+          <div className="order-total"><small>Celkom vrátane všetkých daní a poplatkov</small><strong>{selected.price}</strong></div>
+
+          <fieldset className="checkout-customer-type">
+            <legend>Nakupujem ako</legend>
+            <label className="checkout-terms">
+              <input
+                checked={customerType === "b2c"}
+                name="customerType"
+                onChange={() => setCustomerType("b2c")}
+                type="radio"
+                value="b2c"
+              />
+              <span>Spotrebiteľ</span>
+            </label>
+            <label className="checkout-terms">
+              <input
+                checked={customerType === "b2b"}
+                name="customerType"
+                onChange={() => setCustomerType("b2b")}
+                type="radio"
+                value="b2b"
+              />
+              <span>Podnikateľ / právnická osoba</span>
+            </label>
+          </fieldset>
 
           <div className="checkout-form__fields">
             <label className="field">
@@ -338,29 +411,62 @@ export function PublishingEditor({
               </label>
             </div>
             <label className="field">
-              <span>Firma <small>(voliteľné)</small></span>
-              <input autoComplete="organization" name="companyName" type="text" />
+              <span>Obchodné meno {customerType === "b2b" ? "" : <small>(voliteľné)</small>}</span>
+              <input autoComplete="organization" name="companyName" required={customerType === "b2b"} type="text" />
+              {fieldErrors["billing.companyName"] && <span className="field-error" role="alert">{fieldErrors["billing.companyName"][0]}</span>}
             </label>
             <label className="field">
-              <span>IČO <small>(voliteľné)</small></span>
-              <input inputMode="numeric" name="ico" type="text" />
+              <span>IČO {customerType === "b2b" ? "" : <small>(voliteľné)</small>}</span>
+              <input inputMode="numeric" name="ico" required={customerType === "b2b"} type="text" />
               {fieldErrors["billing.ico"] && <span className="field-error" role="alert">{fieldErrors["billing.ico"][0]}</span>}
             </label>
+            {customerType === "b2b" && (
+              <label className="field">
+                <span>IČ DPH <small>(ak máte)</small></span>
+                <input name="icDph" type="text" />
+              </label>
+            )}
+
+            <div className="checkout-precontract" role="region" aria-label="Predzmluvný súhrn">
+              <p><strong>Pred objednávkou:</strong> balík {selected.name}, konečná cena {selected.price}, trvanie {serviceDurationLabel}, aktivácia po potvrdení platby{customerType === "b2c" ? " (alebo po lehote odstúpenia, ak nepožiadate o skoršie plnenie)" : ""}.</p>
+              <p>
+                Predávajúci: {seller.name}, {seller.address}, IČO {seller.ico}, {formatVatStatusLabel(seller)}. Platba kartou cez Stripe.
+                {" "}
+                <a href="/obchodne-podmienky" target="_blank" rel="noreferrer">VOP</a>
+                {" · "}
+                <a href="/ochrana-sukromia" target="_blank" rel="noreferrer">Ochrana súkromia</a>
+                {" · "}
+                <a href="/reklamacny-poriadok" target="_blank" rel="noreferrer">Reklamácie</a>
+              </p>
+            </div>
+
             <label className="checkout-terms">
               <input name="acceptTerms" type="checkbox" />
               <span>
-                Súhlasím s <a href="/obchodne-podmienky" target="_blank" rel="noreferrer">obchodnými podmienkami</a>{" "}
-                a beriem na vedomie, že balík sa aktivuje až po potvrdení platby.
+                Oboznámil(a) som sa s <a href="/obchodne-podmienky" target="_blank" rel="noreferrer">VOP vo verzii 2026.1</a>
+                {" "}a beriem na vedomie informácie o <a href="/ochrana-sukromia" target="_blank" rel="noreferrer">ochrane súkromia</a>.
               </span>
             </label>
             {fieldErrors["billing.acceptTerms"] && <span className="field-error" role="alert">{fieldErrors["billing.acceptTerms"][0]}</span>}
+
+            {customerType === "b2c" && (
+              <>
+                <label className="checkout-terms">
+                  <input name="earlyPerformance" type="checkbox" />
+                  <span>{EARLY_PERFORMANCE_STATEMENT}</span>
+                </label>
+                {fieldErrors.earlyPerformanceRequested && (
+                  <span className="field-error" role="alert">{fieldErrors.earlyPerformanceRequested[0]}</span>
+                )}
+              </>
+            )}
           </div>
 
           <button className="button button--primary button--large" disabled={!canCheckout || checkoutPending} type="submit">
             {checkoutPending ? <LoaderCircle className="spin" size={18} /> : <Rocket size={18} />}
-            {checkoutPending ? "Presmerúvam na platbu…" : "Pokračovať k platbe"}
+            {checkoutPending ? "Presmerúvam na platbu…" : "Objednávka s povinnosťou platby"}
           </button>
-          <span className="secure-note"><LockKeyhole size={14} /> Bezpečnú platbu spracúva Stripe. Aktivácia balíka prebehne až po potvrdení webhookom.</span>
+          <span className="secure-note"><LockKeyhole size={14} /> Bezpečnú platbu spracúva Stripe. Zmluva vzniká až po potvrdení podpísaným webhookom.</span>
           {isDemo && <p className="checkout-disabled-note" role="status">V demo režime platba nie je dostupná.</p>}
           {!isDemo && !checkoutEnabled && <p className="checkout-disabled-note" role="status">Platobná brána ešte nie je nakonfigurovaná.</p>}
           {checkoutMessage && <p className="publication-result publication-result--error" role="alert">{checkoutMessage}</p>}

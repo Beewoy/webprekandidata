@@ -27,6 +27,7 @@ describe("checkout billing validation", () => {
     country: "SK" as const,
     companyName: "",
     ico: "",
+    icDph: "",
     acceptTerms: true,
   };
 
@@ -42,19 +43,50 @@ describe("checkout billing validation", () => {
     expect(checkoutBillingSchema.safeParse({ ...validBilling, postalCode: "1234" }).success).toBe(false);
   });
 
-  it("vytvorí buyer snapshot bez prázdnych voliteľných polí ako undefined", () => {
-    const snapshot = toBuyerSnapshot(validBilling);
+  it("vytvorí buyer snapshot s customerType", () => {
+    const snapshot = toBuyerSnapshot(validBilling, "b2c");
     expect(snapshot.country).toBe("SK");
     expect(snapshot.postalCode).toBe("917 01");
     expect(snapshot.ico).toBe("");
+    expect(snapshot.customerType).toBe("b2c");
   });
 
-  it("validuje celý checkout payload", () => {
+  it("validuje celý checkout payload pre B2C", () => {
     expect(createCheckoutSchema.safeParse({
       siteId: "11111111-1111-4111-8111-111111111111",
       planCode: "plus",
+      customerType: "b2c",
+      earlyPerformanceRequested: false,
       billing: validBilling,
     }).success).toBe(true);
+  });
+
+  it("vyžaduje IČO a obchodné meno pre B2B", () => {
+    expect(createCheckoutSchema.safeParse({
+      siteId: "11111111-1111-4111-8111-111111111111",
+      planCode: "basic",
+      customerType: "b2b",
+      earlyPerformanceRequested: false,
+      billing: validBilling,
+    }).success).toBe(false);
+
+    expect(createCheckoutSchema.safeParse({
+      siteId: "11111111-1111-4111-8111-111111111111",
+      planCode: "basic",
+      customerType: "b2b",
+      earlyPerformanceRequested: false,
+      billing: { ...validBilling, companyName: "Firma s.r.o.", ico: "12345678" },
+    }).success).toBe(true);
+  });
+
+  it("odmietne skoré plnenie pri B2B", () => {
+    expect(createCheckoutSchema.safeParse({
+      siteId: "11111111-1111-4111-8111-111111111111",
+      planCode: "basic",
+      customerType: "b2b",
+      earlyPerformanceRequested: true,
+      billing: { ...validBilling, companyName: "Firma s.r.o.", ico: "12345678" },
+    }).success).toBe(false);
   });
 });
 

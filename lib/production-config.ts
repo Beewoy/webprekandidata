@@ -1,13 +1,8 @@
+import { isSellerIdentityComplete } from "./legal/seller";
 import { isProductionRuntime, isSupabaseConfigured } from "./env";
 
 function isSellerConfigured() {
-  return Boolean(
-    process.env.SELLER_NAME?.trim()
-    && process.env.SELLER_ADDRESS?.trim()
-    && process.env.SELLER_ICO?.trim()
-    && process.env.SELLER_DIC?.trim()
-    && process.env.SELLER_EMAIL?.trim(),
-  );
+  return isSellerIdentityComplete();
 }
 
 /**

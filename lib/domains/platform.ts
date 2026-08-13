@@ -32,6 +32,11 @@ export function getPlatformSiteUrl(slug: string) {
   return `${getPlatformPublicOrigin().replace(/\/$/, "")}/${slug}`;
 }
 
+/** Display label for the canonical path URL (e.g. webprekandidata.sk/tibor-antal). */
+export function getPlatformSiteLabel(slug: string) {
+  return `${getCanonicalPlatformHostname()}/${slug}`;
+}
+
 export function getPlatformHostnames() {
   const root = getRootDomain();
   const host = hostWithoutPort(root).toLowerCase();
