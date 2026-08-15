@@ -8,6 +8,7 @@ describe("campaign template identifiers", () => {
       { id: "modern", name: "Horizont" },
       { id: "bold", name: "Impulz" },
       { id: "classic", name: "Dôvera" },
+      { id: "vision", name: "Vízia" },
     ]);
   });
 
@@ -18,6 +19,7 @@ describe("campaign template identifiers", () => {
 
   it("rejects presentation labels and unknown snapshot values", () => {
     expect(isCampaignTemplateId("modern")).toBe(true);
+    expect(isCampaignTemplateId("vision")).toBe(true);
     expect(isCampaignTemplateId("Horizont")).toBe(false);
     expect(isCampaignTemplateId("editorial")).toBe(false);
   });

@@ -17,6 +17,12 @@ export const campaignTemplates = [
     description: "Reprezentatívna redakčná šablóna so serifovou typografiou a pokojnejším rytmom.",
     bestFor: "Pre vecnú a reprezentatívnu kampaň",
   },
+  {
+    id: "vision",
+    name: "Vízia",
+    description: "Svieža moderná šablóna s dominantným portrétom, jemným farebným tónom a jasným posolstvom.",
+    bestFor: "Pre osobnú a optimistickú kampaň",
+  },
 ] as const;
 
 export type CampaignTemplateId = (typeof campaignTemplates)[number]["id"];

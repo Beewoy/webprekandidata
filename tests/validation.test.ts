@@ -55,6 +55,11 @@ describe("site validation", () => {
       revision: 3,
       theme: { color: "#A51C48", template: "classic" },
     }).success).toBe(true);
+    expect(saveThemeSchema.safeParse({
+      siteId: "demo",
+      revision: 4,
+      theme: { color: "#0F766E", template: "vision" },
+    }).success).toBe(true);
   });
 
   it("odmietne neznámu šablónu alebo neplatnú farbu", () => {

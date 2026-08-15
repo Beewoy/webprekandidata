@@ -11,6 +11,7 @@ import {
   getCampaignMetadata,
   serializeStructuredData,
 } from "../lib/marketing/campaign-pages";
+import { PLATFORM_OPEN_GRAPH_IMAGE } from "../lib/marketing/metadata";
 import {
   PLAN_DESCRIPTIONS,
   PLAN_FEATURES,
@@ -18,6 +19,17 @@ import {
 } from "../lib/payments/plans";
 
 describe("campaign marketing routes", () => {
+  it("používa existujúci spoločný OG obrázok s deklarovanými rozmermi", () => {
+    const image = readFileSync(
+      join(process.cwd(), "public/images/webprekandidata-og.png"),
+    );
+
+    expect(image.subarray(1, 4).toString("ascii")).toBe("PNG");
+    expect(image.readUInt32BE(16)).toBe(PLATFORM_OPEN_GRAPH_IMAGE.width);
+    expect(image.readUInt32BE(20)).toBe(PLATFORM_OPEN_GRAPH_IMAGE.height);
+    expect(PLATFORM_OPEN_GRAPH_IMAGE.url).toBe("/images/webprekandidata-og.png");
+  });
+
   it("obsahuje päť unikátnych indexovateľných stránok", () => {
     expect(MARKETING_ROUTES).toHaveLength(5);
     expect(new Set(MARKETING_ROUTES).size).toBe(MARKETING_ROUTES.length);
@@ -30,7 +42,9 @@ describe("campaign marketing routes", () => {
       expect(page.title.length).toBeGreaterThan(20);
       expect(page.faqs.length).toBeGreaterThanOrEqual(5);
       expect(metadata.alternates?.canonical).toBe(`https://webprekandidata.sk${route}`);
+      expect(metadata.openGraph?.images).toEqual([PLATFORM_OPEN_GRAPH_IMAGE]);
       expect(metadata.robots).toEqual({ index: true, follow: true });
+      expect(metadata.twitter?.images).toEqual([PLATFORM_OPEN_GRAPH_IMAGE]);
     }
   });
 

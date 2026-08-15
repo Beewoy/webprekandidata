@@ -1,6 +1,6 @@
 # Stav implementácie
 
-Aktualizované: 13. august 2026
+Aktualizované: 14. august 2026
 
 Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Produktový plán môže obsahovať aj budúci rozsah.
 
@@ -33,9 +33,10 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - JSON-LD pre organizáciu, webovú aplikáciu, ponuky Basic/Plus a viditeľné FAQ,
 - hlavné výzvy smerujú priamo na registráciu a presne oddeľujú bezplatný súkromný náhľad od platenej publikácie,
 - samostatný SEO audit s odporúčaniami pre obsah, meranie a ostré nasadenie,
-- landing je integrovaný do Next.js rootu `/`, má generovaný Open Graph obrázok 1200 × 630 px, favicon, `robots.txt`, sitemapu a funkčné odkazy na právne routy,
+- landing je integrovaný do Next.js rootu `/`, používa spoločný statický Open Graph obrázok 1536 × 1024 px, favicon, `robots.txt`, sitemapu a funkčné odkazy na právne routy,
 - hero na root landing page zobrazuje kompaktný odpočet celých kalendárnych dní do volieb 24. októbra 2026, obnovovaný cez hodinové ISR; v deň volieb použije neutrálny text a po termíne sa skryje,
 - root landing page obsahuje responzívnu inline MP4 ukážku administrácie s posterom, natívnymi ovládacími prvkami, prístupným zväčšením vo focus-trap modálnom dialógu a priamym CTA na hotový ukážkový web cez verejnú cestu `/ukazka`,
+- landing page kompaktne predstavuje všetky štyri dostupné šablóny cez responzívne vizuálne náhľady a odkaz na bezplatný editor,
 - päť samostatných indexovateľných kampanových stránok pre starostu, primátora, poslanca, komunálne voľby 2026 a spoločnú kandidatúru na predsedu kraja alebo poslanca VÚC; stránky zdieľajú responzívny marketingový komponent, ceny, interné prepojenia, metadata a JSON-LD,
 - sezónne stránky uvádzajú oficiálny termín komunálnych a krajských volieb 24. októbra 2026 a prístupný živý odpočet s bezpečným stavom po volebnom dni,
 - právne routy sú implementované ako pracovné znenie; obchodné podmienky pokrývajú reálny bezplatný náhľad, balíky, Stripe platbu, publikovanie, vlastnú doménu, AI a spotrebiteľské práva, samostatný reklamačný poriadok upravuje oznámenie vady, lehoty, spôsoby vybavenia a ARS, pričom dokumenty zostávajú `noindex`, kým právnik nepotvrdí obsah a produkcia nenastaví `LEGAL_DOCUMENTS_APPROVED=true`.
@@ -52,7 +53,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - plnohodnotný zoznam aktualít a editor článku pre Basic aj Plus: koncept, zverejnenie, skrytie, mazanie, krátky popis, TipTap obsah a titulný obrázok,
 - verejný model aktualít bez samostatných URL: karty v náhľade otvárajú detail v modálnej vrstve bez zmeny adresy,
 - Plus AI návrh článku z podkladov kandidáta s kvótou 20 návrhov na projekt; návrh sa iba vloží do editora a nikdy sa automaticky neuloží ani nezverejní,
-- výber z troch responzívnych celostránkových šablón s prístupnými stavmi a živým náhľadom: občiansko-editoriálny Horizont, dynamický Impulz a reprezentatívna Dôvera,
+- výber zo štyroch responzívnych celostránkových šablón s prístupnými stavmi a živým náhľadom: občiansko-editoriálny Horizont, dynamický Impulz, reprezentatívna Dôvera a portrétovo orientovaná Vízia,
 - samostatná ukážková cesta `/app/web/demo` a jej verejný alias `/ukazka` prezentujú vyplnený kandidátsky web v šablóne Horizont vrátane hlavného portrétu kandidáta, profilového loga, fotografie v sekcii O mne, aktualít, trojfotkovej galérie a e-mailového mailto kontaktu (hosted formulár dočasne vypnutý),
 - verejné šablóny používajú spoločný 1200 px obsahový kontajner, verejnú typografickú mierku, responzívne menu a lokálne načítanú serifovú display typografiu pre Dôveru,
 - načítanie a manuálne ukladanie vybranej šablóny aj farby do `site_drafts.theme` s ochranou revízie a varovaním pred odchodom pri neuložených zmenách,
@@ -128,7 +129,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - zlyhané publikovanie odstráni skopírované objekty a ponechá predchádzajúcu verejnú verziu bez zmeny,
 - opätovné publikovanie vytvorí novú verziu; zmeny konceptu sa na verejnom webe neprejavia automaticky,
 - pozastavenie skryje verejnú cestu bez odstránenia snapshotu a obnovenie znova sprístupní poslednú verziu,
-- verejná stránka poskytuje vlastné SEO metadata, canonical adresu, Open Graph obrázok a povolené indexovanie iba pri stave `published`,
+- verejná stránka poskytuje vlastné SEO metadata, canonical adresu, Open Graph aj Twitter obrázok a povolené indexovanie iba pri stave `published`; vlastný publikovaný sociálny obrázok má prednosť, inak sa použije spoločný značkový vizuál platformy,
 - audit log zaznamenáva publikovanie, pozastavenie a obnovenie.
 
 ### Vlastný web kandidáta a politická reklama
@@ -223,7 +224,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - úspešný produkčný build,
 - cloudový REST smoke test potvrdil dostupnosť API a anonymnú izoláciu tabuľky `sites`,
 - verejné Auth nastavenia potvrdili zapnutú registráciu a okamžité vytvorenie relácie,
-- všetky tri verejné šablóny vizuálne overené pri šírkach 375, 768, 1024 a 1440 px,
+- všetky štyri verejné šablóny vizuálne overené pri šírkach 375, 768, 1024 a 1440 px,
 - pri každej šablóne a overenej šírke potvrdené nulové horizontálne pretečenie.
 - nové kampanové stránky vizuálne overené v Chromium pri šírkach 375, 768, 1024 a 1440 px bez viditeľného horizontálneho pretečenia.
 

@@ -113,7 +113,7 @@ supabase/migrations/      verzovaná databázová schéma a RPC
 tests/                    jednotkové testy
 ```
 
-Root `/` sa staticky generuje zo zdrojového dokumentu `landing-page/index.html`, ale metadata, Open Graph obrázok, robots a sitemap používa Next.js Metadata API. Produktové placeholdery cenníka sa pri generovaní napĺňajú z `lib/payments/plans.ts`; rovnaký katalóg používajú kampanové stránky a klientský editor Objednávok, takže cena, opis a funkcie balíka sa nemenia oddelene. `/app` a `/admin` zostávajú samostatné chránené stromy. Platformové `www` sa v `proxy.ts` presmeruje 308 na apex; custom hostname sa naďalej prepisuje iba na publikovaný snapshot.
+Root `/` sa staticky generuje zo zdrojového dokumentu `landing-page/index.html`, ale metadata, robots a sitemap používa Next.js Metadata API. Spoločný statický Open Graph a Twitter vizuál v `public/images/webprekandidata-og.png` sa dedí na platformových routach a slúži ako fallback publikovaných kandidátskych webov; vlastný sociálny obrázok z nemenného publikačného snapshotu má prednosť. Produktové placeholdery cenníka sa pri generovaní napĺňajú z `lib/payments/plans.ts`; rovnaký katalóg používajú kampanové stránky a klientský editor Objednávok, takže cena, opis a funkcie balíka sa nemenia oddelene. `/app` a `/admin` zostávajú samostatné chránené stromy. Platformové `www` sa v `proxy.ts` presmeruje 308 na apex; custom hostname sa naďalej prepisuje iba na publikovaný snapshot.
 
 Výnimkou z autentifikácie stromu `/app` je verejná ukážka `/app/web/demo`. `proxy.ts` ju na platformovom hoste interne prepisuje na noindex cestu `/ukazka`, takže odkaz z prihlasovacej stránky funguje bez účtu a nedotýka sa produkčných konceptov ani publikovaných snapshotov.
 
@@ -341,7 +341,7 @@ Náhľad webu sa neskladá z ukážkového JSX. Serverová funkcia `getSitePrevi
 
 Prehľad projektu načítava rovnaký `SitePreviewData` a jeho kompaktná karta z neho preberá adresu, kandidáta, hero texty, zvolenú šablónu, farbu, znak kampane a portrét. Karta preto nesmie obsahovať samostatné natvrdo zapísané ukážkové dáta, ktoré by sa mohli rozísť s úplným náhľadom.
 
-Editor vzhľadu načítava `theme` a spoločnú `revision` z `site_drafts`. Serverová akcia ukladá normalizovaný objekt `{ layout, primaryColor }` priamym vlastnícky chráneným update-om s podmienkou na očakávanú revíziu. Zmena šablóny alebo platnej HEX farby sa uloží až po stlačení Uložiť; pri súbežnej úprave sa update nevykoná a klient zobrazí konflikt. Po úspechu sa revaliduje layout projektu aj úplný náhľad.
+Editor vzhľadu načítava `theme` a spoločnú `revision` z `site_drafts`. Podporované stabilné identifikátory šablón sú `modern` (Horizont), `bold` (Impulz), `classic` (Dôvera) a `vision` (Vízia). Serverová akcia ukladá normalizovaný objekt `{ layout, primaryColor }` priamym vlastnícky chráneným update-om s podmienkou na očakávanú revíziu. Zmena šablóny alebo platnej HEX farby sa uloží až po stlačení Uložiť; pri súbežnej úprave sa update nevykoná a klient zobrazí konflikt. Po úspechu sa revaliduje layout projektu aj úplný náhľad.
 
 Sekcie editorov:
 

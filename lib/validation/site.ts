@@ -19,7 +19,7 @@ export const saveThemeSchema = z.object({
   revision: z.number().int().positive(),
   theme: z.object({
     color: z.string().regex(/^#[0-9a-f]{6}$/i),
-    template: z.enum(["modern", "bold", "classic"]),
+    template: z.enum(["modern", "bold", "classic", "vision"]),
   }),
 });
 

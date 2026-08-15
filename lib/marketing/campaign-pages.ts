@@ -4,6 +4,7 @@ import {
   PLAN_PRICE_LABELS,
   PLAN_PRICES_CENTS,
 } from "../payments/plans";
+import { PLATFORM_OPEN_GRAPH_IMAGE } from "./metadata";
 
 const SITE_ORIGIN = "https://webprekandidata.sk";
 export const ELECTION_DATE_ISO = "2026-10-24T07:00:00+02:00";
@@ -344,20 +345,13 @@ export function getCampaignMetadata(route: MarketingRoute): Metadata {
       siteName: "WebPreKandidata.sk",
       locale: "sk_SK",
       type: "website",
-      images: [
-        {
-          url: "/opengraph-image",
-          width: 1200,
-          height: 630,
-          alt: "WebPreKandidata.sk – profesionálny volebný web bez programátora",
-        },
-      ],
+      images: [PLATFORM_OPEN_GRAPH_IMAGE],
     },
     twitter: {
       card: "summary_large_image",
       title: page.seoTitle,
       description: page.seoDescription,
-      images: ["/opengraph-image"],
+      images: [PLATFORM_OPEN_GRAPH_IMAGE],
     },
   };
 }

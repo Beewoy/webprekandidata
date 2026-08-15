@@ -253,7 +253,7 @@ export function AppearanceEditor({ initialRevision, initialTheme, siteId }: Appe
             </small>
           </label>
 
-          <div className="appearance-note"><Check size={16} /><span><strong>Bez príplatku</strong> Všetky tri šablóny sú dostupné v balíkoch Basic aj Plus.</span></div>
+          <div className="appearance-note"><Check size={16} /><span><strong>Bez príplatku</strong> Všetky štyri šablóny sú dostupné v balíkoch Basic aj Plus.</span></div>
           <div className="appearance-actions">
             <button className="button button--ghost appearance-reset" disabled={isDefaultTheme} onClick={resetTheme} type="button"><RotateCcw size={16} /> Obnoviť pôvodný vzhľad</button>
             <button

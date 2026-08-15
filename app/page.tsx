@@ -8,8 +8,10 @@ import "../landing-page/assets/refined.css";
 import "../landing-page/assets/pricing.css";
 import "../landing-page/assets/mobile-navigation.css";
 import "../landing-page/assets/video-demo.css";
+import "../landing-page/assets/template-showcase.css";
 import { LandingVideoDialog } from "../components/marketing/landing-video-dialog";
 import { getDaysUntilElection } from "../lib/marketing/election-countdown";
+import { PLATFORM_OPEN_GRAPH_IMAGE } from "../lib/marketing/metadata";
 import {
   BASIC_UNAVAILABLE_FEATURES,
   PLAN_DESCRIPTIONS,
@@ -38,20 +40,13 @@ export const metadata: Metadata = {
     siteName: "WebPreKandidata.sk",
     locale: "sk_SK",
     type: "website",
-    images: [
-      {
-        url: "/opengraph-image",
-        width: 1200,
-        height: 630,
-        alt: "WebPreKandidata.sk – profesionálny volebný web bez programátora",
-      },
-    ],
+    images: [PLATFORM_OPEN_GRAPH_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
     title: "Web pre kandidáta na voľby 2026",
     description: "Profesionálny volebný web bez programátora. Náhľad zdarma, platba až pri zverejnení.",
-    images: ["/opengraph-image"],
+    images: [PLATFORM_OPEN_GRAPH_IMAGE],
   },
 };
 
