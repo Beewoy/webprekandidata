@@ -11,6 +11,7 @@ import {
   WITHDRAWAL_STATEMENT,
   WITHDRAWAL_STATEMENT_VERSION,
 } from "@/lib/legal/withdrawal";
+import { isAdminGrantedOrder } from "@/lib/payments/admin-grant";
 import { getStripeClient, isStripeConfigured } from "@/lib/payments/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -18,6 +19,9 @@ import { createClient } from "@/lib/supabase/server";
 export type WithdrawalActionResult =
   | { ok: true; message: string; withdrawalId?: string }
   | { ok: false; message: string };
+
+const ADMIN_GRANT_WITHDRAWAL_MESSAGE =
+  "Táto objednávka bola priradená administrátorom, odstúpenie nie je možné.";
 
 const requestLinkSchema = z.object({
   orderNumber: z.string().trim().min(3).max(40),
@@ -43,6 +47,10 @@ async function loadEligibleOrder(orderNumber: string, email: string) {
     .maybeSingle();
 
   if (!order?.paid_at) return { error: "Objednávku sa nepodarilo nájsť." as const };
+
+  if (isAdminGrantedOrder(order.buyer_snapshot)) {
+    return { error: ADMIN_GRANT_WITHDRAWAL_MESSAGE };
+  }
 
   const buyerEmail =
     order.buyer_snapshot && typeof order.buyer_snapshot === "object"
@@ -161,12 +169,15 @@ export async function confirmWithdrawalAction(input: unknown): Promise<Withdrawa
   const orderId = String((tokenRow as { order_id: string }).order_id);
   const { data: order } = await admin
     .from("orders")
-    .select("id, order_number, site_id, user_id, status, plan_code, total_cents, paid_at, customer_type, stripe_checkout_session_id")
+    .select("id, order_number, site_id, user_id, status, plan_code, total_cents, paid_at, customer_type, buyer_snapshot, stripe_checkout_session_id")
     .eq("id", orderId)
     .maybeSingle();
 
   if (!order?.paid_at || order.status !== "paid") {
     return { ok: false, message: "Objednávka nie je vhodná na odstúpenie." };
+  }
+  if (isAdminGrantedOrder(order.buyer_snapshot)) {
+    return { ok: false, message: ADMIN_GRANT_WITHDRAWAL_MESSAGE };
   }
   if (!isWithinWithdrawalWindow(order.paid_at)) {
     return { ok: false, message: "Lehota na odstúpenie už uplynula." };
@@ -318,6 +329,10 @@ export async function startAuthenticatedWithdrawalAction(
 
   if (!order?.paid_at || order.status !== "paid") {
     return { ok: false, message: "Objednávka nie je vhodná na odstúpenie." };
+  }
+
+  if (isAdminGrantedOrder(order.buyer_snapshot)) {
+    return { ok: false, message: ADMIN_GRANT_WITHDRAWAL_MESSAGE };
   }
 
   const email =

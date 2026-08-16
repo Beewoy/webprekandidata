@@ -10,6 +10,10 @@ import { cn } from "@/lib/cn";
 import type { SiteOrderRow } from "@/lib/data/orders";
 import { EARLY_PERFORMANCE_STATEMENT } from "@/lib/legal/checkout-statements";
 import { formatServiceDurationLabel } from "@/lib/legal/service-duration";
+import {
+  ADMIN_GRANT_NOTE,
+  ADMIN_GRANT_STATUS_LABEL,
+} from "@/lib/payments/admin-grant";
 import type { CheckoutReturnNotice } from "@/lib/payments/checkout-return";
 import {
   PAID_PLAN_CODES,
@@ -57,6 +61,13 @@ function formatOrderDate(value: string) {
   return new Intl.DateTimeFormat("sk-SK", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Bratislava" }).format(new Date(value));
 }
 
+function orderDisplayStatus(order: SiteOrderRow) {
+  if (order.isAdminGrant && order.status === "paid") {
+    return { className: "order-status--admin-grant", label: ADMIN_GRANT_STATUS_LABEL };
+  }
+  return { className: `order-status--${order.status}`, label: orderStatusLabels[order.status] };
+}
+
 function OrderHistory({ orders }: { orders: SiteOrderRow[] }) {
   const [withdrawalMessage, setWithdrawalMessage] = useState<string | null>(null);
   const [withdrawalPending, startWithdrawal] = useTransition();
@@ -68,32 +79,39 @@ function OrderHistory({ orders }: { orders: SiteOrderRow[] }) {
         <div className="order-history__empty"><ReceiptText aria-hidden="true" size={22} /><div><strong>Zatiaľ tu nie je žiadna objednávka</strong><p>Po vytvorení objednávky tu nájdete jej stav a dostupný doklad.</p></div></div>
       ) : (
         <div className="order-history__list" role="list">
-          {orders.map((order) => (
-            <div className="order-history__item" key={order.id} role="listitem">
-              <div><strong>{order.planLabel}</strong><small>{order.orderNumber} · {formatOrderDate(order.createdAt)}</small></div>
-              <div className="order-history__meta">
-                <span>{order.priceLabel}</span>
-                <span className={cn("order-status", `order-status--${order.status}`)}>{orderStatusLabels[order.status]}</span>
-                {order.invoiceUrl ? <a href={order.invoiceUrl} target="_blank" rel="noopener noreferrer">Doklad</a> : null}
-                {order.status === "paid" && (
-                  <button
-                    className="button button--ghost"
-                    disabled={withdrawalPending}
-                    onClick={() => {
-                      setWithdrawalMessage(null);
-                      startWithdrawal(async () => {
-                        const result = await startAuthenticatedWithdrawalAction({ orderId: order.id });
-                        setWithdrawalMessage(result.message);
-                      });
-                    }}
-                    type="button"
-                  >
-                    Odstúpiť od zmluvy tu
-                  </button>
-                )}
+          {orders.map((order) => {
+            const displayStatus = orderDisplayStatus(order);
+            return (
+              <div className="order-history__item" key={order.id} role="listitem">
+                <div>
+                  <strong>{order.planLabel}</strong>
+                  <small>{order.orderNumber} · {formatOrderDate(order.createdAt)}</small>
+                  {order.isAdminGrant ? <p className="order-history__grant-note">{ADMIN_GRANT_NOTE}</p> : null}
+                </div>
+                <div className="order-history__meta">
+                  <span>{order.priceLabel}</span>
+                  <span className={cn("order-status", displayStatus.className)}>{displayStatus.label}</span>
+                  {order.invoiceUrl ? <a href={order.invoiceUrl} target="_blank" rel="noopener noreferrer">Doklad</a> : null}
+                  {order.status === "paid" && !order.isAdminGrant && (
+                    <button
+                      className="button button--ghost"
+                      disabled={withdrawalPending}
+                      onClick={() => {
+                        setWithdrawalMessage(null);
+                        startWithdrawal(async () => {
+                          const result = await startAuthenticatedWithdrawalAction({ orderId: order.id });
+                          setWithdrawalMessage(result.message);
+                        });
+                      }}
+                      type="button"
+                    >
+                      Odstúpiť od zmluvy tu
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
       {withdrawalMessage && <p role="status">{withdrawalMessage}</p>}
@@ -121,6 +139,10 @@ export function OrdersEditor({
   const router = useRouter();
   const selected = plans.find((item) => item.id === plan)!;
   const currentPlan = publishingState.planCode ? plans.find((item) => item.id === publishingState.planCode)! : null;
+  const activePlanOrder = orders.find(
+    (order) => order.status === "paid" && order.planCode === publishingState.planCode,
+  );
+  const activePlanIsAdminGrant = Boolean(activePlanOrder?.isAdminGrant);
 
   useEffect(() => {
     if (checkoutNotice?.kind !== "success_pending" || publishingState.entitled) return;
@@ -168,7 +190,16 @@ export function OrdersEditor({
         {notice}
         <section className="current-order-plan panel" aria-labelledby="current-order-plan-title">
           <span aria-hidden="true"><Check size={20} /></span>
-          <div><p className="eyebrow">Aktívny balík</p><h2 id="current-order-plan-title">{currentPlan.name}</h2><p>{currentPlan.note} Cena {currentPlan.price} jednorazovo.</p></div>
+          <div>
+            <p className="eyebrow">Aktívny balík</p>
+            <h2 id="current-order-plan-title">{currentPlan.name}</h2>
+            <p>
+              {currentPlan.note}{" "}
+              {activePlanIsAdminGrant
+                ? ADMIN_GRANT_NOTE
+                : `Cena ${currentPlan.price} jednorazovo.`}
+            </p>
+          </div>
           <PlanBadge plan={publishingState.planCode} />
           <Link className="button button--secondary" href={`/app/web/${siteId}/publikovanie`}><Rocket size={17} /> Pokračovať k publikovaniu</Link>
         </section>

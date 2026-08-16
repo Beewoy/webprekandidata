@@ -1,6 +1,10 @@
 import "server-only";
 
 import { isDemoMode } from "@/lib/env";
+import {
+  ADMIN_GRANT_PRICE_LABEL,
+  isAdminGrantedOrder,
+} from "@/lib/payments/admin-grant";
 import { resolveOrderInvoiceUrl } from "@/lib/payments/order-invoice";
 import { PLAN_LABELS, PLAN_PRICE_LABELS, type PaidPlanCode } from "@/lib/payments/plans";
 import { createClient } from "@/lib/supabase/server";
@@ -10,6 +14,7 @@ export type SiteOrderRow = {
   fulfilledAt: string | null;
   id: string;
   invoiceUrl: string | null;
+  isAdminGrant: boolean;
   orderNumber: string;
   paidAt: string | null;
   planCode: PaidPlanCode;
@@ -26,24 +31,28 @@ export async function listSiteOrders(siteId: string): Promise<SiteOrderRow[]> {
   const { data, error } = await supabase
     .from("orders")
     .select(
-      "id, order_number, status, plan_code, total_cents, paid_at, fulfilled_at, created_at, stripe_hosted_invoice_url, stripe_invoice_pdf_url",
+      "id, order_number, status, plan_code, total_cents, paid_at, fulfilled_at, created_at, buyer_snapshot, stripe_hosted_invoice_url, stripe_invoice_pdf_url",
     )
     .eq("site_id", siteId)
     .order("created_at", { ascending: false });
 
   if (error) throw new Error("Objednávky sa nepodarilo načítať.");
 
-  return (data ?? []).map((row) => ({
-    createdAt: row.created_at,
-    fulfilledAt: row.fulfilled_at,
-    id: row.id,
-    invoiceUrl: resolveOrderInvoiceUrl(row.stripe_hosted_invoice_url, row.stripe_invoice_pdf_url),
-    orderNumber: row.order_number,
-    paidAt: row.paid_at,
-    planCode: row.plan_code,
-    planLabel: PLAN_LABELS[row.plan_code],
-    priceLabel: PLAN_PRICE_LABELS[row.plan_code],
-    status: row.status,
-    totalCents: row.total_cents,
-  }));
+  return (data ?? []).map((row) => {
+    const adminGrant = isAdminGrantedOrder(row.buyer_snapshot);
+    return {
+      createdAt: row.created_at,
+      fulfilledAt: row.fulfilled_at,
+      id: row.id,
+      invoiceUrl: resolveOrderInvoiceUrl(row.stripe_hosted_invoice_url, row.stripe_invoice_pdf_url),
+      isAdminGrant: adminGrant,
+      orderNumber: row.order_number,
+      paidAt: row.paid_at,
+      planCode: row.plan_code,
+      planLabel: PLAN_LABELS[row.plan_code],
+      priceLabel: adminGrant ? ADMIN_GRANT_PRICE_LABEL : PLAN_PRICE_LABELS[row.plan_code],
+      status: row.status,
+      totalCents: adminGrant ? 0 : row.total_cents,
+    };
+  });
 }

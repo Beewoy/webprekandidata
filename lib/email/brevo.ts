@@ -202,6 +202,7 @@ export async function sendSupportEmail({
 
 type OrderConfirmationEmail = {
   invoiceUrl?: string | null;
+  isAdminGrant?: boolean;
   orderNumber: string;
   planLabel: string;
   priceLabel: string;
@@ -213,6 +214,7 @@ type OrderConfirmationEmail = {
 
 export async function sendOrderConfirmationEmail({
   invoiceUrl,
+  isAdminGrant = false,
   orderNumber,
   planLabel,
   priceLabel,
@@ -226,8 +228,20 @@ export async function sendOrderConfirmationEmail({
   const termsUrl = `${appUrl}/obchodne-podmienky`;
   const privacyUrl = `${appUrl}/ochrana-sukromia`;
   const complaintsUrl = `${appUrl}/reklamacny-poriadok`;
-  const scopeText =
-    "Objednaný balík zahŕňa vytvorenie kampaňového webu, jeho hosting, HTTPS certifikát a prístup k správe obsahu do 31. 12. 2026, bez automatického predĺženia. Konkrétny rozsah funkcií závisí od zvoleného balíka (Basic / Plus) podľa popisu na platforme a v obchodných podmienkach.";
+  const scopeText = isAdminGrant
+    ? "Pridelený balík zahŕňa vytvorenie kampaňového webu, jeho hosting, HTTPS certifikát a prístup k správe obsahu do 31. 12. 2026, bez automatického predĺženia. Konkrétny rozsah funkcií závisí od balíka (Basic / Plus) podľa popisu na platforme."
+    : "Objednaný balík zahŕňa vytvorenie kampaňového webu, jeho hosting, HTTPS certifikát a prístup k správe obsahu do 31. 12. 2026, bez automatického predĺženia. Konkrétny rozsah funkcií závisí od zvoleného balíka (Basic / Plus) podľa popisu na platforme a v obchodných podmienkach.";
+  const greetingLead = isAdminGrant
+    ? "administrátor vám priradil balík. Platba neprebehla. Balík je aktívny."
+    : "ďakujeme za objednávku. Balík je aktívny.";
+  const greetingLeadHtml = isAdminGrant
+    ? "Administrátor vám priradil balík. Platba neprebehla. Balík je aktívny."
+    : "Ďakujeme za objednávku. Balík je aktívny.";
+  const title = isAdminGrant ? "Pridelenie balíka" : "Potvrdenie objednávky";
+  const subject = isAdminGrant
+    ? `Pridelenie balíka ${orderNumber} – Web pre kandidáta`
+    : `Potvrdenie objednávky ${orderNumber} – Web pre kandidáta`;
+  const orderNumberLabel = isAdminGrant ? "Evidenčné číslo" : "Číslo objednávky";
 
   const safeName = recipientName ? escapeHtml(recipientName) : "";
   const safeOrderNumber = escapeHtml(orderNumber);
@@ -235,22 +249,25 @@ export async function sendOrderConfirmationEmail({
   const safePrice = escapeHtml(priceLabel);
   const safeSite = escapeHtml(siteLabel);
   const safePublishingUrl = escapeHtml(publishingUrl);
-  const safeInvoiceUrl = invoiceUrl ? escapeHtml(invoiceUrl) : null;
+  const safeInvoiceUrl = !isAdminGrant && invoiceUrl ? escapeHtml(invoiceUrl) : null;
   const safeTermsUrl = escapeHtml(termsUrl);
   const safePrivacyUrl = escapeHtml(privacyUrl);
   const safeComplaintsUrl = escapeHtml(complaintsUrl);
   const safeScopeText = escapeHtml(scopeText);
+  const safeTitle = escapeHtml(title);
+  const safeGreetingLeadHtml = escapeHtml(greetingLeadHtml);
+  const safeOrderNumberLabel = escapeHtml(orderNumberLabel);
 
   await transporter.sendMail({
     from: { name: "Web pre kandidáta", address: "noreply@webprekandidata.sk" },
     to: recipientEmail,
-    subject: `Potvrdenie objednávky ${orderNumber} – Web pre kandidáta`,
+    subject,
     text: [
       `Dobrý deň${recipientName ? `, ${recipientName}` : ""},`,
       "",
-      "ďakujeme za objednávku. Balík je aktívny.",
+      greetingLead,
       "",
-      `Číslo objednávky: ${orderNumber}`,
+      `${orderNumberLabel}: ${orderNumber}`,
       `Balík: ${planLabel}`,
       `Suma: ${priceLabel}`,
       `Web: ${siteLabel}`,
@@ -258,7 +275,9 @@ export async function sendOrderConfirmationEmail({
       scopeText,
       "",
       `Pokračovať k zverejneniu: ${publishingUrl}`,
-      invoiceUrl ? `Doklad: ${invoiceUrl}` : "Doklad (ak je k dispozícii) nájdete v sekcii Publikovanie.",
+      ...(isAdminGrant
+        ? []
+        : [invoiceUrl ? `Doklad: ${invoiceUrl}` : "Doklad (ak je k dispozícii) nájdete v sekcii Publikovanie."]),
       "",
       "Právne dokumenty:",
       `Obchodné podmienky: ${termsUrl}`,
@@ -271,20 +290,22 @@ export async function sendOrderConfirmationEmail({
       <div style="background:#f7f9fb;padding:32px 16px;font-family:Inter,Arial,sans-serif;color:#17212d">
         <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e2e8ef;border-radius:16px;padding:32px">
           <div style="font-size:20px;font-weight:800;color:#163b65;margin-bottom:24px">WebPreKandidata.sk</div>
-          <h1 style="font-size:26px;line-height:1.2;margin:0 0 14px">Potvrdenie objednávky</h1>
+          <h1 style="font-size:26px;line-height:1.2;margin:0 0 14px">${safeTitle}</h1>
           <p style="font-size:15px;line-height:1.65;color:#465468;margin:0 0 12px">Dobrý deň${safeName ? `, ${safeName}` : ""},</p>
-          <p style="font-size:15px;line-height:1.65;color:#465468;margin:0 0 22px">Ďakujeme za objednávku. Balík je aktívny.</p>
+          <p style="font-size:15px;line-height:1.65;color:#465468;margin:0 0 22px">${safeGreetingLeadHtml}</p>
           <div style="background:#f7f9fb;border:1px solid #e2e8ef;border-radius:12px;padding:18px;margin-bottom:22px">
-            <p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>Číslo objednávky:</strong> ${safeOrderNumber}</p>
+            <p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>${safeOrderNumberLabel}:</strong> ${safeOrderNumber}</p>
             <p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>Balík:</strong> ${safePlan}</p>
             <p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>Suma:</strong> ${safePrice}</p>
             <p style="font-size:14px;line-height:1.6;margin:0"><strong>Web:</strong> ${safeSite}</p>
           </div>
           <p style="font-size:13px;line-height:1.65;color:#465468;margin:0 0 22px">${safeScopeText}</p>
           <a href="${safePublishingUrl}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;font-size:14px;font-weight:700;padding:13px 20px;border-radius:10px">Pokračovať k zverejneniu</a>
-          ${safeInvoiceUrl
-            ? `<p style="font-size:13px;line-height:1.55;margin:18px 0 0"><a href="${safeInvoiceUrl}" style="color:#0f766e;font-weight:600">Otvoriť doklad</a></p>`
-            : `<p style="font-size:12px;line-height:1.55;color:#7c8ba1;margin:18px 0 0">Doklad (ak je k dispozícii) nájdete v sekcii Publikovanie.</p>`}
+          ${isAdminGrant
+            ? ""
+            : safeInvoiceUrl
+              ? `<p style="font-size:13px;line-height:1.55;margin:18px 0 0"><a href="${safeInvoiceUrl}" style="color:#0f766e;font-weight:600">Otvoriť doklad</a></p>`
+              : `<p style="font-size:12px;line-height:1.55;color:#7c8ba1;margin:18px 0 0">Doklad (ak je k dispozícii) nájdete v sekcii Publikovanie.</p>`}
           <p style="font-size:12px;line-height:1.55;color:#7c8ba1;margin:24px 0 0">
             <a href="${safeTermsUrl}" style="color:#0f766e;text-decoration:none">Obchodné podmienky</a>
             &nbsp;·&nbsp;

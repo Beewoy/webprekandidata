@@ -451,13 +451,13 @@ Oddelený strom `/admin` nie je kandidátsky dashboard. Layout vyžaduje produk�
 
 `sites.admin_hold` oddeľuje administrátorské pozastavenie od dobrovoľného pozastavenia kandidáta. RPC `set_candidate_site_visibility` odmietne obnovenie, kým je hold aktívny. RPC `admin_set_site_hold` vyžaduje dôvod, kategóriu, rozsah, trvanie (pri hold) a náhľad správy pre kandidáta; všetko ide do `audit_logs`. Transakčný e-mail sa v MVP ešte neodosiela.
 
-RPC `admin_grant_site_plan` udeľuje Basic alebo Plus konkrétnemu webu: vytvorí zaplatenú objednávku (`valid_until` null), nastaví `sites.plan_code` a zapíše audit `admin_plan_granted`. Balík ostáva vlastnosťou projektu, nie globálneho účtu; zoznam používateľov odkazuje na weby cez filter `?owner=`.
+RPC `admin_grant_site_plan` udeľuje Basic alebo Plus konkrétnemu webu: vytvorí objednávku so stavom `paid` a `total_cents = 0` (`valid_until` null, `buyer_snapshot.source = admin_grant`), nastaví `sites.plan_code` a zapíše audit `admin_plan_granted`. Nie je to Stripe platba — v Objednávkach sa zobrazí ako pridelenie administrátorom (0 €) a odstúpenie od zmluvy nie je dostupné. Balík ostáva vlastnosťou projektu, nie globálneho účtu; zoznam používateľov odkazuje na weby cez filter `?owner=`.
 
 Ďalšie admin RPC: `admin_search_users` (join na `auth.users.email`) a `admin_dashboard_metrics`. `audit_logs` má `GRANT SELECT` pre `authenticated`; RLS stále obmedzuje čítanie na adminov.
 
 Routy: `/admin`, `/admin/pouzivatelia`, `/admin/weby`, `/admin/weby/[siteId]`, `/admin/objednavky`, `/admin/domeny`, `/admin/ai-pouzitie`, `/admin/audit`. AI stránka zobrazuje iba metadata bez promptov a výstupov.
 
-Migrácie: `supabase/migrations/0011_platform_admin.sql`, `supabase/migrations/0013_admin_grant_site_plan.sql`, `supabase/migrations/0024_order_numbers_and_confirmation.sql`, `supabase/migrations/0027_fix_admin_grant_order_number_ambiguity.sql`. Hlavné súbory: `lib/data/admin.ts`, `app/actions/admin.ts`, `components/admin/*`, `app/admin/**`.
+Migrácie: `supabase/migrations/0011_platform_admin.sql`, `supabase/migrations/0013_admin_grant_site_plan.sql`, `supabase/migrations/0024_order_numbers_and_confirmation.sql`, `supabase/migrations/0027_fix_admin_grant_order_number_ambiguity.sql`, `supabase/migrations/0029_admin_grant_zero_amount.sql`. Hlavné súbory: `lib/data/admin.ts`, `app/actions/admin.ts`, `components/admin/*`, `app/admin/**`.
 
 Prvý admin účet sa nastaví mimo UI:
 

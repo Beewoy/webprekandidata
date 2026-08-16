@@ -1121,8 +1121,10 @@ svg { flex: 0 0 auto; }
 .order-history__empty p { font-size: 10px; line-height: 1.5; margin: 3px 0 0; }
 .order-status { border-radius: 999px; font-size: 10px; font-weight: 750; padding: 4px 8px; }
 .order-status--paid { background: var(--teal-50); color: var(--teal-700); }
+.order-status--admin-grant { background: var(--blue-50); color: var(--navy-800); }
 .order-status--pending { background: var(--amber-50); color: var(--amber-800); }
 .order-status--failed, .order-status--cancelled, .order-status--refunded { background: var(--red-50); color: var(--red-700); }
+.order-history__grant-note { color: var(--slate-600); font-size: 0.8125rem; margin: 0.35rem 0 0; }
 .order-total { text-align: right; }
 .order-total small { color: var(--slate-500); display: block; font-size: 9px; margin-bottom: 3px; }
 .order-total strong { color: var(--navy-800); font-size: 24px; }

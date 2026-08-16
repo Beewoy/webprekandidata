@@ -1,6 +1,6 @@
 # Stav implementácie
 
-Aktualizované: 14. august 2026
+Aktualizované: 16. august 2026
 
 Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Produktový plán môže obsahovať aj budúci rozsah.
 
@@ -106,7 +106,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - výber a ukladanie tematických občianskych ikoniek pre hodnoty, dôvody a program vrátane zobrazenia v náhľade,
 - základná databázová schéma a RLS politiky,
 - lokálny Supabase stack (Docker) pre vývoj; produkčný cloud projekt `Webprekandidata` (`iozvohajbtzxviytpufp`) s credentials iba vo Vercel a GitHub Secrets,
-- migrácie `0001` až `0028` v repozitári; produkčné nasadenie migrácií cez GitHub Actions workflow `Supabase migrations` pri pushi do `main`,
+- migrácie `0001` až `0029` v repozitári; produkčné nasadenie migrácií cez GitHub Actions workflow `Supabase migrations` pri pushi do `main`,
 - `.env.local.example` a aktualizovaný `.env.example` pre lokálny vývoj na `127.0.0.1:54321`,
 - politika zero prod from Mac: na vývojárskom Macu sa nespúšťa `supabase link` ani `db push` proti produkcii,
 - reálna produkčná Supabase konfigurácia vo Vercel env; lokálny `.env.local` smeruje na Docker stack,
@@ -146,11 +146,12 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - prehľad metrík, používatelia, weby, objednávky, domény, AI použitie (bez promptov) a audit,
 - read-only detail webu s náhľadom konceptu,
 - administrátorské pozastavenie (`admin_hold`) s povinným dôvodom, kategóriou, rozsahom, trvaním a správou pre kandidáta; zásah je auditovaný,
-- manuálne udelenie balíka Basic alebo Plus cez `/admin/weby/[siteId]` (zaplatená objednávka bez expirácie, aktualizácia `plan_code`, audit `admin_plan_granted`),
+- manuálne udelenie balíka Basic alebo Plus cez `/admin/weby/[siteId]` (zaplatená objednávka bez platby / `total_cents = 0`, `buyer_snapshot.source = admin_grant`, aktualizácia `plan_code`, audit `admin_plan_granted`); v Objednávkach sa zobrazí ako „Pridelené administrátorom“ bez odstúpenia od zmluvy,
 - kandidát nemôže sám obnoviť web pod aktívnym admin hold,
 - migrácia `0011_platform_admin.sql` (GRANT na `audit_logs`, RPC `admin_set_site_hold`, `admin_search_users`, `admin_dashboard_metrics`),
 - migrácia `0013_admin_grant_site_plan.sql` (RPC `admin_grant_site_plan`),
 - migrácia `0027_fix_admin_grant_order_number_ambiguity.sql` (oprava nejednoznačného `order_number` v RPC, ktoré blokovalo manuálne udelenie balíka),
+- migrácia `0029_admin_grant_zero_amount.sql` (admin grant ukladá `total_cents = 0`),
 - bez moderátorskej fronty, bez reprocess webhookov a bez manuálneho prepisu paid stavu Stripe objednávok.
 
 ### Domény a DNS
@@ -200,7 +201,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - Basic má celý manuálny editor; AI je viazaná na reálne zaplatenú Plus objednávku,
 - databázová rezervácia kvóty odolná voči súbežným požiadavkám,
 - minimalizovaný AI audit bez uloženia promptu a odpovede, `store: false` a pseudonymizovaný bezpečnostný identifikátor.
-- ručný testovací / admin grant balíka sa eviduje ako zaplatená objednávka bez expirácie aj ako auditovaná operácia (`admin_grant_site_plan`); produkčné odomknutie prebieha cez Stripe fulfillment.
+- ručný testovací / admin grant balíka sa eviduje ako objednávka `paid` s `total_cents = 0` a `buyer_snapshot.source = admin_grant` (bez Stripe platby a bez odstúpenia) aj ako auditovaná operácia (`admin_grant_site_plan`); produkčné odomknutie prebieha cez Stripe fulfillment.
 
 ### Stripe Checkout a objednávky
 
@@ -209,7 +210,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - server vytvorí pending `orders` s ľudsky čitateľným číslom `WPK-YYYY-NNNNN` (`order_number`), reálneho Stripe Customer s fakturačnou adresou a Stripe Checkout Session,
 - jednorazový Checkout používa post-purchase invoice; po úspešnej platbe Stripe automaticky vytvorí paid Invoice s číslom objednávky, voliteľným zákazníckym IČO a dodávateľským footerom bez výpočtu DPH,
 - podpísaný webhook `/api/webhooks/stripe` idempotentne splní objednávku a nastaví `sites.plan_code`,
-- po prvom (neidempotentnom) fulfill pošle Brevo potvrdenie objednávky; `confirmation_email_sent_at` bráni duplicite; zlyhanie e-mailu nevracia Stripe webhook na retry,
+- po prvom (neidempotentnom) fulfill pošle Brevo potvrdenie objednávky; pri admin grante ide samostatný e-mail o pridelení balíka (0 €, bez dokladu); `confirmation_email_sent_at` bráni duplicite; zlyhanie e-mailu nevracia Stripe webhook na retry,
 - samostatný `invoice.paid` webhook idempotentne uloží Invoice ID, PDF URL a Hosted Invoice URL bez vplyvu na aktiváciu balíka,
 - návrat do aplikácie obnoví sekciu Objednávky; aktivácia balíka čaká na webhook,
 - história objednávok v sekcii Objednávky a v `/admin/objednavky` zobrazuje číslo a odkaz na doklad (vlastník cez RLS),

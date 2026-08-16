@@ -3,6 +3,10 @@ import "server-only";
 import * as Sentry from "@sentry/nextjs";
 import { isBrevoSmtpConfigured, sendOrderConfirmationEmail } from "@/lib/email/brevo";
 import { getAppUrl } from "@/lib/env";
+import {
+  ADMIN_GRANT_PRICE_LABEL,
+  isAdminGrantedOrder,
+} from "@/lib/payments/admin-grant";
 import { resolveOrderInvoiceUrl } from "@/lib/payments/order-invoice";
 import { PLAN_LABELS, PLAN_PRICE_LABELS, type PaidPlanCode } from "@/lib/payments/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -58,10 +62,10 @@ export async function maybeSendOrderConfirmation(orderId: string): Promise<void>
     if (!recipientEmail) return;
 
     const planCode = order.plan_code as PaidPlanCode;
-    const invoiceUrl = resolveOrderInvoiceUrl(
-      order.stripe_hosted_invoice_url,
-      order.stripe_invoice_pdf_url,
-    );
+    const adminGrant = isAdminGrantedOrder(order.buyer_snapshot);
+    const invoiceUrl = adminGrant
+      ? null
+      : resolveOrderInvoiceUrl(order.stripe_hosted_invoice_url, order.stripe_invoice_pdf_url);
     const appUrl = getAppUrl().replace(/\/$/, "");
     const publishingUrl = `${appUrl}/app/web/${order.site_id}/publikovanie`;
     const siteLabel = siteName || siteSlug || "Váš volebný web";
@@ -71,10 +75,11 @@ export async function maybeSendOrderConfirmation(orderId: string): Promise<void>
       recipientName: readBuyerName(order.buyer_snapshot),
       orderNumber: order.order_number,
       planLabel: PLAN_LABELS[planCode],
-      priceLabel: PLAN_PRICE_LABELS[planCode],
+      priceLabel: adminGrant ? ADMIN_GRANT_PRICE_LABEL : PLAN_PRICE_LABELS[planCode],
       siteLabel,
       publishingUrl,
       invoiceUrl,
+      isAdminGrant: adminGrant,
     });
 
     await admin

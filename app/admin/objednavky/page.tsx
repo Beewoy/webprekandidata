@@ -1,6 +1,9 @@
 import { PageHeading } from "@/components/ui/page-heading";
 import { formatCents, formatDateTime, SiteLink } from "@/components/admin/admin-ui";
 import { listAdminOrders } from "@/lib/data/admin";
+import {
+  ADMIN_GRANT_STATUS_LABEL_SHORT,
+} from "@/lib/payments/admin-grant";
 
 const statusLabels: Record<string, string> = {
   pending: "Pending",
@@ -45,17 +48,27 @@ export default async function AdminOrdersPage() {
                 <td>
                   <SiteLink siteId={order.siteId}>{order.siteName || order.siteSlug || order.siteId.slice(0, 8)}</SiteLink>
                 </td>
-                <td>{statusLabels[order.status] ?? order.status}</td>
+                <td>
+                  {order.isAdminGrant && order.status === "paid"
+                    ? ADMIN_GRANT_STATUS_LABEL_SHORT
+                    : (statusLabels[order.status] ?? order.status)}
+                </td>
                 <td>{order.planCode === "plus" ? "Plus" : "Basic"}</td>
                 <td>{formatCents(order.totalCents)}</td>
                 <td>
-                  <div className="admin-muted">{order.stripeCheckoutSessionId ?? "—"}</div>
-                  <div className="admin-muted">{order.stripeCustomerId ?? ""}</div>
-                  {order.invoiceUrl ? (
-                    <div>
-                      <a href={order.invoiceUrl} target="_blank" rel="noopener noreferrer">Doklad</a>
-                    </div>
-                  ) : null}
+                  {order.isAdminGrant ? (
+                    <div className="admin-muted">— / admin grant</div>
+                  ) : (
+                    <>
+                      <div className="admin-muted">{order.stripeCheckoutSessionId ?? "—"}</div>
+                      <div className="admin-muted">{order.stripeCustomerId ?? ""}</div>
+                      {order.invoiceUrl ? (
+                        <div>
+                          <a href={order.invoiceUrl} target="_blank" rel="noopener noreferrer">Doklad</a>
+                        </div>
+                      ) : null}
+                    </>
+                  )}
                 </td>
                 <td>
                   <div>{formatDateTime(order.paidAt)}</div>

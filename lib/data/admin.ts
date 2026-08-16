@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isDemoMode } from "@/lib/env";
 import { getCurrentUser } from "@/lib/data/sites";
+import { isAdminGrantedOrder } from "@/lib/payments/admin-grant";
 import { resolveOrderInvoiceUrl } from "@/lib/payments/order-invoice";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/database.types";
@@ -67,6 +68,7 @@ export type AdminOrderRow = {
   totalCents: number;
   orderNumber: string;
   invoiceUrl: string | null;
+  isAdminGrant: boolean;
   stripeCheckoutSessionId: string | null;
   stripeCustomerId: string | null;
   paidAt: string | null;
@@ -361,22 +363,24 @@ export async function listAdminOrders(): Promise<AdminOrderRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("orders")
-    .select("id, order_number, site_id, user_id, status, plan_code, total_cents, stripe_checkout_session_id, stripe_customer_id, stripe_hosted_invoice_url, stripe_invoice_pdf_url, paid_at, fulfilled_at, created_at, sites(slug, candidate_name)")
+    .select("id, order_number, site_id, user_id, status, plan_code, total_cents, buyer_snapshot, stripe_checkout_session_id, stripe_customer_id, stripe_hosted_invoice_url, stripe_invoice_pdf_url, paid_at, fulfilled_at, created_at, sites(slug, candidate_name)")
     .order("created_at", { ascending: false })
     .limit(100);
   if (error) throw new Error("Objednávky sa nepodarilo načítať.");
 
   return (data ?? []).map((row) => {
     const site = Array.isArray(row.sites) ? row.sites[0] : row.sites;
+    const adminGrant = isAdminGrantedOrder(row.buyer_snapshot);
     return {
       id: row.id,
       siteId: row.site_id,
       userId: row.user_id,
       status: row.status,
       planCode: row.plan_code,
-      totalCents: row.total_cents,
+      totalCents: adminGrant ? 0 : row.total_cents,
       orderNumber: row.order_number,
       invoiceUrl: resolveOrderInvoiceUrl(row.stripe_hosted_invoice_url, row.stripe_invoice_pdf_url),
+      isAdminGrant: adminGrant,
       stripeCheckoutSessionId: row.stripe_checkout_session_id,
       stripeCustomerId: row.stripe_customer_id,
       paidAt: row.paid_at,
