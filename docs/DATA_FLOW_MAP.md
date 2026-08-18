@@ -392,7 +392,7 @@ Právne dokumenty (`/obchodne-podmienky`, `/ochrana-sukromia`, …) sú pracovn�
 | Mutácie | `setAdminSiteHoldAction`, `grantAdminSitePlanAction` |
 | Demo | admin panel nedostupný |
 | Seed / test heslá v kóde | **žiadne** default admin heslá v repozitári |
-| Debug | `/api/health` (minimálny); demo cesta `/ukazka` (verejná ukážka šablóny) |
+| Debug | `/api/health` (minimálny); demo cesty `/ukazka` a `/ukazka/{slug}` (verejné ukážky šablón); prehľad `/sablony` |
 
 ---
 

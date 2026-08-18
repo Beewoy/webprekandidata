@@ -1,0 +1,102 @@
+.bar {
+  align-items: center;
+  background: #0b1f35;
+  color: #fff;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  justify-content: space-between;
+  min-height: 56px;
+  padding: 8px 20px;
+  position: relative;
+  z-index: 40;
+}
+
+.label {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 13px;
+  font-weight: 550;
+  margin: 0;
+}
+
+.label strong {
+  color: #fff;
+  font-weight: 700;
+}
+
+.nav {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.template,
+.templateCurrent,
+.all,
+.cta {
+  align-items: center;
+  border-radius: 8px;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 650;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  text-decoration: none;
+}
+
+.template,
+.all {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.templateCurrent {
+  background: rgba(15, 118, 110, 0.28);
+  color: #fff;
+}
+
+.cta {
+  background: #0f766e;
+  color: #fff;
+  font-weight: 700;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.template:hover,
+.all:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.cta:hover {
+  background: #0b625c;
+}
+
+.template:focus-visible,
+.templateCurrent:focus-visible,
+.all:focus-visible,
+.cta:focus-visible {
+  outline: 3px solid rgba(15, 118, 110, 0.55);
+  outline-offset: 2px;
+}
+
+@media (max-width: 820px) {
+  .bar {
+    padding: 10px 16px 12px;
+  }
+
+  .cta {
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .template,
+  .templateCurrent,
+  .all,
+  .cta {
+    transition: none;
+  }
+}

@@ -87,12 +87,13 @@ app/
   kampanovy-web-pre-*/    statické SEO stránky podľa typu komunálnej kandidatúry
   komunalne-volby-2026/   sezónna komunálna SEO stránka
   volby-do-vuc-2026/      spoločná SEO stránka pre predsedu kraja a poslanca VÚC
+  sablony/                indexovateľný prehľad štyroch verejných šablón
+  ukazka/                 verejné ukážky šablón (Horizont na /ukazka, ostatné na /ukazka/{slug})
   [slug]/                 verejný web z aktuálneho publikovaného snapshotu
   (auth)/                 prihlasovacie a obnovovacie obrazovky
   actions/                serverové mutácie a autorizácia
   admin/                  interný admin prevádzkovateľa (role=admin)
   app/                    chránená aplikácia kandidáta
-  ukazka/                 interný cieľ verejnej ukážky šablóny Horizont
   auth/callback/          výmena Supabase auth kódu za reláciu
 components/
   marketing/              zdieľaný kampanový web, odpočet a izolované štýly
@@ -106,6 +107,7 @@ components/
 lib/
   ai/                     serverové AI volanie, fallback a podpísané potvrdenie výsledku
   data/                   serverové čítanie dát vrátane admin loaderov
+  demo/                   vyplnený ukážkový web a mapovanie verejných slugov šablón
   marketing/              obsah, metadata, JSON-LD a zoznam verejných SEO ciest
   supabase/               typované browser/server Supabase klienty a generované DB typy
   validation/             Zod schémy a typy stavov formulárov
@@ -115,9 +117,9 @@ tests/                    jednotkové testy
 
 Root `/` sa staticky generuje zo zdrojového dokumentu `landing-page/index.html`, ale metadata, robots a sitemap používa Next.js Metadata API. Spoločný statický Open Graph a Twitter vizuál v `public/images/webprekandidata-og.png` sa dedí na platformových routach a slúži ako fallback publikovaných kandidátskych webov; vlastný sociálny obrázok z nemenného publikačného snapshotu má prednosť. Produktové placeholdery cenníka sa pri generovaní napĺňajú z `lib/payments/plans.ts`; rovnaký katalóg používajú kampanové stránky a klientský editor Objednávok, takže cena, opis a funkcie balíka sa nemenia oddelene. `/app` a `/admin` zostávajú samostatné chránené stromy. Platformové `www` sa v `proxy.ts` presmeruje 308 na apex; custom hostname sa naďalej prepisuje iba na publikovaný snapshot.
 
-Výnimkou z autentifikácie stromu `/app` je verejná ukážka `/app/web/demo`. `proxy.ts` ju na platformovom hoste interne prepisuje na noindex cestu `/ukazka`, takže odkaz z prihlasovacej stránky funguje bez účtu a nedotýka sa produkčných konceptov ani publikovaných snapshotov.
+Výnimkou z autentifikácie stromu `/app` je verejná ukážka `/app/web/demo` a `/app/web/demo/{slug}`. `proxy.ts` ich na platformovom hoste interne prepisuje na noindex cesty `/ukazka` a `/ukazka/{slug}`, takže odkaz z prihlasovacej stránky funguje bez účtu a nedotýka sa produkčných konceptov ani publikovaných snapshotov. `/ukazka` ostáva šablóna Horizont; `/ukazka/horizont`, `/ukazka/impulz`, `/ukazka/dovera` a `/ukazka/vizia` zobrazia ten istý vyplnený demo obsah v príslušnej šablóne. Indexovateľný prehľad `/sablony` nie je súčasťou `MARKETING_ROUTES`, ale je v sitemap a robots.
 
-Päť kampanových SEO ciest je implementovaných ako explicitné statické segmenty, ktoré zdieľajú serverový komponent a dátovú konfiguráciu v `lib/marketing/campaign-pages.ts`. Každá cesta má vlastný obsah, canonical, Open Graph metadata a JSON-LD zhodné s viditeľným FAQ. Explicitné segmenty majú pred dynamickým `[slug]` prednosť, preto migrácia `0016_reserve_marketing_slugs.sql` pridáva všetky marketingové a chýbajúce systémové cesty do rezervovaného zoznamu `create_candidate_site`. Sitemap, robots a interné odkazy používajú spoločný zoznam `MARKETING_ROUTES`.
+Päť kampanových SEO ciest je implementovaných ako explicitné statické segmenty, ktoré zdieľajú serverový komponent a dátovú konfiguráciu v `lib/marketing/campaign-pages.ts`. Každá cesta má vlastný obsah, canonical, Open Graph metadata a JSON-LD zhodné s viditeľným FAQ. Explicitné segmenty majú pred dynamickým `[slug]` prednosť, preto migrácie `0016_reserve_marketing_slugs.sql` a `0030_reserve_template_preview_slugs.sql` pridávajú marketingové, ukážkové a ostatné systémové cesty do rezervovaného zoznamu `create_candidate_site`. Sitemap, robots a interné odkazy kampanových stránok používajú spoločný zoznam `MARKETING_ROUTES`; `/sablony` je doplnená samostatne.
 
 ## 4. Serverové a klientské hranice
 

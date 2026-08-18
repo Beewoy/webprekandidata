@@ -10,6 +10,7 @@ import "../landing-page/assets/mobile-navigation.css";
 import "../landing-page/assets/video-demo.css";
 import "../landing-page/assets/template-showcase.css";
 import { LandingVideoDialog } from "../components/marketing/landing-video-dialog";
+import { LandingTemplateShowcase } from "../components/marketing/template-showcase-cards";
 import { getDaysUntilElection } from "../lib/marketing/election-countdown";
 import { PLATFORM_OPEN_GRAPH_IMAGE } from "../lib/marketing/metadata";
 import {
@@ -51,6 +52,7 @@ export const metadata: Metadata = {
 };
 
 const electionCountdownPlaceholder = "<!-- ELECTION_COUNTDOWN -->";
+const templateShowcasePlaceholder = "<!-- TEMPLATE_SHOWCASE_SECTION -->";
 
 function escapeHtml(value: string) {
   return value
@@ -154,6 +156,14 @@ function readLandingDocument() {
 
 export default function Home() {
   const { body, structuredData } = readLandingDocument();
+  const showcaseIndex = body.indexOf(templateShowcasePlaceholder);
+
+  if (showcaseIndex === -1) {
+    throw new Error("Landing page source is missing the template showcase placeholder.");
+  }
+
+  const bodyBeforeShowcase = body.slice(0, showcaseIndex);
+  const bodyAfterShowcase = body.slice(showcaseIndex + templateShowcasePlaceholder.length);
 
   return (
     <>
@@ -161,7 +171,9 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: structuredData }}
       />
-      <div dangerouslySetInnerHTML={{ __html: body }} />
+      <div dangerouslySetInnerHTML={{ __html: bodyBeforeShowcase }} />
+      <LandingTemplateShowcase />
+      <div dangerouslySetInnerHTML={{ __html: bodyAfterShowcase }} />
       <LandingVideoDialog />
     </>
   );

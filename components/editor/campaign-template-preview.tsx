@@ -23,6 +23,7 @@ export type CampaignTemplatePreviewContent = {
 };
 
 type CampaignTemplatePreviewProps = {
+  catalog?: boolean;
   color: string;
   compact?: boolean;
   content?: CampaignTemplatePreviewContent;
@@ -42,13 +43,19 @@ const exampleContent: CampaignTemplatePreviewContent = {
   subheadline: "Mesto, ktoré počúva ľudí a premieňa dobré nápady na výsledky.",
 };
 
-export function CampaignTemplatePreview({ color, compact = false, content = exampleContent, dashboard = false, template }: CampaignTemplatePreviewProps) {
-  const isDecorative = compact || dashboard;
+export function CampaignTemplatePreview({ catalog = false, color, compact = false, content = exampleContent, dashboard = false, template }: CampaignTemplatePreviewProps) {
+  const isDecorative = catalog || compact || dashboard;
 
   return (
     <div
       aria-hidden={isDecorative || undefined}
-      className={cn("template-preview", `template-preview--${template}`, compact && "template-preview--compact", dashboard && "template-preview--dashboard")}
+      className={cn(
+        "template-preview",
+        `template-preview--${template}`,
+        compact && "template-preview--compact",
+        dashboard && "template-preview--dashboard",
+        catalog && "template-preview--catalog",
+      )}
       style={{ "--campaign-color": color, "--campaign-on-color": getReadableCampaignTextColor(color) } as CSSProperties}
     >
       <header className="template-preview__nav">
@@ -75,7 +82,16 @@ export function CampaignTemplatePreview({ color, compact = false, content = exam
         </div>
         <div className={cn("template-preview__portrait", content.heroImage && "template-preview__portrait--image")}>
           {content.heroImage
-            ? <Image alt={isDecorative ? "" : content.heroImage.altText} fill sizes={dashboard ? "96px" : "235px"} src={content.heroImage.url} unoptimized />
+            ? (
+                <Image
+                  alt={isDecorative ? "" : content.heroImage.altText}
+                  fill
+                  sizes={catalog ? "420px" : dashboard ? "96px" : "235px"}
+                  src={content.heroImage.url}
+                  style={template === "vision" ? { objectPosition: "center top" } : undefined}
+                  unoptimized
+                />
+              )
             : <span>{content.initials}</span>}
         </div>
       </div>

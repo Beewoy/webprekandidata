@@ -1,0 +1,55 @@
+.intro {
+  margin: 0 auto;
+  max-width: 760px;
+  padding: 72px 32px 28px;
+  text-align: center;
+}
+
+.intro h1 {
+  color: var(--campaign-navy-dark, #0b2745);
+  font-size: clamp(36px, 4.6vw, 58px);
+  letter-spacing: -0.05em;
+  line-height: 1.04;
+  margin-bottom: 18px;
+  text-wrap: balance;
+}
+
+.intro p:last-child {
+  color: var(--campaign-copy, #526178);
+  font-size: 18px;
+  line-height: 1.68;
+  margin: 0 auto;
+  max-width: 640px;
+}
+
+.showcase {
+  padding: 24px 32px 72px;
+}
+
+@media (max-width: 800px) {
+  .intro,
+  .showcase {
+    padding-left: 22px;
+    padding-right: 22px;
+  }
+
+  .intro {
+    padding-top: 48px;
+  }
+}
+
+@media (max-width: 560px) {
+  .intro,
+  .showcase {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .intro h1 {
+    font-size: 32px;
+  }
+
+  .intro p:last-child {
+    font-size: 16px;
+  }
+}

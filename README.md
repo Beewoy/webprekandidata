@@ -17,6 +17,8 @@ npm run dev
 Lokálna aplikácia je dostupná na:
 
 - `http://localhost:3000/`
+- `http://localhost:3000/sablony`
+- `http://localhost:3000/ukazka`
 - `http://localhost:3000/app/web/demo`
 - prihlásenie: `http://localhost:3000/prihlasenie`
 - zoznam projektov: `http://localhost:3000/app`
@@ -37,7 +39,7 @@ Požiadavky: [Docker Desktop](https://www.docker.com/products/docker-desktop/) b
 cp .env.local.example .env.local
 npm run supabase:start
 npm run supabase:env          # skopírujte anon a service_role kľúče do .env.local
-npm run supabase:reset        # aplikuje migrácie 0001–0028
+npm run supabase:reset        # aplikuje migrácie 0001–0030
 npm run supabase:types
 npm run dev
 ```

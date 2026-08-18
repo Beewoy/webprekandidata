@@ -19,9 +19,18 @@
   border: 1px solid #dbe5e8;
   border-radius: 14px;
   box-shadow: 0 12px 32px rgba(7, 32, 50, 0.06);
+  color: inherit;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   overflow: hidden;
+  text-decoration: none;
   transition: border-color 200ms ease-out, box-shadow 200ms ease-out, transform 200ms ease-out;
+}
+
+.template-showcase__card:focus-visible {
+  outline: 3px solid rgba(15, 118, 110, 0.28);
+  outline-offset: 3px;
 }
 
 .template-showcase__card--new {
@@ -30,11 +39,11 @@
 }
 
 .template-showcase__copy {
-  min-height: 132px;
-  padding: 19px 20px 22px;
+  padding: 14px 18px 16px;
   position: relative;
 }
 
+.template-showcase__copy h2,
 .template-showcase__copy h3 {
   color: #0c1b2a;
   font-size: 18px;
@@ -62,7 +71,7 @@
   position: absolute;
   right: 16px;
   text-transform: uppercase;
-  top: 17px;
+  top: 14px;
 }
 
 .template-showcase__cta {
@@ -90,6 +99,31 @@
 .template-showcase__cta:focus-visible {
   outline: 3px solid rgba(15, 118, 110, 0.28);
   outline-offset: 3px;
+}
+
+.template-showcase__preview {
+  background: #fff;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.template-showcase__sizer {
+  padding-bottom: 57.142857%;
+}
+
+.template-showcase__stage {
+  height: 480px;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  transform-origin: top left;
+  width: 840px;
+}
+
+.template-showcase__stage .template-preview {
+  height: 480px;
 }
 
 .template-mini {
@@ -295,40 +329,28 @@
   }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 720px) {
   .template-showcase__heading {
     margin-bottom: 36px;
   }
 
   .template-showcase__grid {
-    gap: 14px;
+    gap: 16px;
     grid-template-columns: 1fr;
   }
 
-  .template-showcase__card {
-    display: grid;
-    grid-template-columns: minmax(138px, 0.92fr) minmax(0, 1.08fr);
-  }
-
-  .template-mini {
-    aspect-ratio: auto;
-    border-bottom: 0;
-    border-right: 1px solid #e3eaec;
-    min-height: 142px;
-  }
-
   .template-showcase__copy {
-    align-self: center;
-    min-height: 0;
-    padding: 17px 15px;
+    padding: 16px 18px 18px;
   }
 
+  .template-showcase__copy h2,
   .template-showcase__copy h3 {
-    font-size: 16px;
+    font-size: 17px;
   }
 
   .template-showcase__copy p {
-    font-size: 12px;
+    font-size: 14px;
+    line-height: 1.5;
   }
 
   .template-showcase__badge {
@@ -344,18 +366,8 @@
 
   .template-showcase__cta {
     margin-top: 24px;
+    min-height: 48px;
     width: 100%;
-  }
-}
-
-@media (max-width: 390px) {
-  .template-showcase__card {
-    grid-template-columns: minmax(125px, 0.9fr) minmax(0, 1.1fr);
-  }
-
-  .template-showcase__copy {
-    padding-left: 13px;
-    padding-right: 13px;
   }
 }
 

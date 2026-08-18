@@ -7,12 +7,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     process.env.LEGAL_DOCUMENTS_APPROVED === "true"
       ? ["/ochrana-sukromia", "/obchodne-podmienky", "/reklamacny-poriadok"]
       : [];
-  const pages = ["", ...MARKETING_ROUTES, ...legalPages];
+  const pages = ["", ...MARKETING_ROUTES, "/sablony", ...legalPages];
 
   return pages.map((path, index) => ({
     url: `https://webprekandidata.sk${path}`,
     lastModified,
-    changeFrequency: index <= MARKETING_ROUTES.length ? "weekly" : "monthly",
-    priority: index === 0 ? 1 : index <= MARKETING_ROUTES.length ? 0.8 : 0.4,
+    changeFrequency: index <= MARKETING_ROUTES.length + 1 ? "weekly" : "monthly",
+    priority: index === 0 ? 1 : index <= MARKETING_ROUTES.length + 1 ? 0.8 : 0.4,
   }));
 }

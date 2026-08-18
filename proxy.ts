@@ -100,8 +100,8 @@ export async function proxy(request: NextRequest) {
     return NextResponse.rewrite(new URL("/not-found-domain", request.url));
   }
 
-  if (pathname === "/app/web/demo") {
-    return NextResponse.rewrite(new URL("/ukazka", request.url));
+  if (pathname === "/app/web/demo" || pathname.startsWith("/app/web/demo/")) {
+    return NextResponse.rewrite(new URL(`/ukazka${pathname.slice("/app/web/demo".length)}`, request.url));
   }
 
   return refreshAuthSession(request);

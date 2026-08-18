@@ -358,8 +358,9 @@ svg { flex: 0 0 auto; }
 .template-preview--vision .template-preview__copy > small,
 .template-preview--vision .template-preview__copy h3 em { color: color-mix(in srgb, var(--campaign-color), #073f3c 36%); }
 .template-preview--vision .template-preview__copy h3 { color: var(--navy-950); font-size: 29px; line-height: 1.04; }
-.template-preview--vision .template-preview__portrait { align-self: stretch; aspect-ratio: auto; border-radius: 0; clip-path: polygon(20% 0, 100% 0, 100% 100%, 0 100%); font-size: 42px; justify-self: stretch; max-width: none; }
+.template-preview--vision .template-preview__portrait { align-self: stretch; aspect-ratio: auto; border-radius: 0; clip-path: polygon(20% 0, 100% 0, 100% 100%, 0 100%); font-size: 42px; justify-self: stretch; max-width: none; overflow: hidden; }
 .template-preview--vision .template-preview__portrait::before { display: none; }
+.template-preview--vision .template-preview__portrait img { object-position: center top; }
 .template-preview--vision .template-preview__section { background: #f8fbfa; }
 .template-preview--vision .template-preview__section span { background: var(--white); border: 1px solid color-mix(in srgb, var(--campaign-color), white 82%); }
 
@@ -418,6 +419,11 @@ svg { flex: 0 0 auto; }
 .template-preview--dashboard.template-preview--vision .template-preview__hero { grid-template-columns: minmax(0, .9fr) minmax(96px, 1.1fr); padding: 16px 0 14px 16px; }
 .template-preview--dashboard.template-preview--vision .template-preview__copy h3 { font-size: 18px; line-height: 1.04; }
 .template-preview--dashboard.template-preview--vision .template-preview__portrait { max-width: none; }
+
+.template-preview--catalog { display: flex; flex-direction: column; }
+.template-preview--catalog .template-preview__hero { flex: 1; min-height: 0; }
+.template-preview--catalog.template-preview--vision .template-preview__hero { padding: 0 0 0 24px; }
+.template-preview--catalog .template-preview__section { display: none; }
 .campaign-logo { align-items: center; background: var(--white); border-radius: 50%; color: var(--navy-800); display: inline-flex; font-size: 9px; font-weight: 800; height: 28px; justify-content: center; width: 28px; }
 
 .upload-list { display: grid; padding: 4px 26px 26px; }
@@ -883,6 +889,7 @@ svg { flex: 0 0 auto; }
 .candidate-preview--vision .candidate-preview__lead { color: var(--slate-700); max-width: 560px; }
 .candidate-preview--vision .candidate-preview__hero-actions a + a { border-color: color-mix(in srgb, var(--campaign-color), white 50%); color: var(--navy-950); }
 .candidate-preview--vision .candidate-preview__portrait { align-self: stretch; aspect-ratio: auto; background: color-mix(in srgb, var(--campaign-color), white 86%); border: 0; border-radius: 0 28px 28px 0; box-shadow: 0 30px 70px rgba(9,30,54,.17); clip-path: polygon(17% 0, 100% 0, 100% 100%, 0 100%); justify-self: stretch; max-width: none; min-height: 510px; }
+.candidate-preview--vision .candidate-preview__portrait img { object-position: center top; }
 .candidate-preview--vision .candidate-preview__about-photo { border-radius: 30px 6px 30px 6px; }
 .candidate-preview--vision .candidate-preview__section--tinted,
 .candidate-preview--vision .candidate-preview__news,

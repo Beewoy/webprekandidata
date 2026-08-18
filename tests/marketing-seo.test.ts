@@ -91,6 +91,7 @@ describe("marketing route discovery", () => {
     for (const route of MARKETING_ROUTES) {
       expect(urls).toContain(`https://webprekandidata.sk${route}`);
     }
+    expect(urls).toContain("https://webprekandidata.sk/sablony");
   });
 
   it("povoľuje všetky marketingové stránky v robots", () => {
@@ -101,6 +102,7 @@ describe("marketing route discovery", () => {
     for (const route of MARKETING_ROUTES) {
       expect(allowed).toContain(route);
     }
+    expect(allowed).toContain("/sablony");
   });
 
   it("rezervuje marketingové aj ostatné statické slugs v append-only migrácii", () => {

@@ -8,15 +8,14 @@ import {
   Headphones,
   LayoutTemplate,
   LockKeyhole,
-  Mail,
   Map,
   Search,
   ShieldCheck,
   Users,
 } from "lucide-react";
-import logoImage from "@/landing-page/assets/favicon.svg";
 import dashboardImage from "@/landing-page/assets/martin-kandidat.png";
 import mobilePreviewImage from "@/landing-page/assets/martin-kandidat-mobil.png";
+import { MarketingFooter, MarketingHeader } from "@/components/marketing/marketing-chrome";
 import {
   CAMPAIGN_PAGES,
   MARKETING_PLAN_PRICES,
@@ -37,17 +36,6 @@ const benefitIcons = {
   map: Map,
   users: Users,
 } satisfies Record<BenefitIcon, typeof Search>;
-
-function Brand({ inverse = false }: { inverse?: boolean }) {
-  return (
-    <span className={inverse ? styles.brandInverse : styles.brand}>
-      <Image className={styles.brandMark} src={logoImage} alt="" aria-hidden="true" />
-      <span>
-        WebPreKandidata<span className={styles.brandDomain}>.sk</span>
-      </span>
-    </span>
-  );
-}
 
 function BenefitCard({ icon, title, text }: CampaignPageData["benefits"][number]) {
   const Icon = benefitIcons[icon];
@@ -122,21 +110,15 @@ export function CampaignPage({ page }: { page: CampaignPageData }) {
         Preskočiť na hlavný obsah
       </a>
 
-      <header className={styles.header}>
-        <Link href="/" aria-label="WebPreKandidata.sk – domov">
-          <Brand />
-        </Link>
-        <nav className={styles.desktopNav} aria-label="Hlavná navigácia">
-          <a href="#preco-web">Prečo web</a>
-          <a href="#cennik">Cenník</a>
-          <a href="#otazky">Otázky</a>
-          <Link href="/prihlasenie">Prihlásiť sa</Link>
-        </nav>
-        <Link className={styles.headerCta} href="/registracia">
-          Vytvoriť web zdarma
-          <ArrowRight size={17} aria-hidden="true" />
-        </Link>
-      </header>
+      <MarketingHeader
+        nav={
+          <>
+            <a href="#preco-web">Prečo web</a>
+            <a href="#cennik">Cenník</a>
+            <a href="#otazky">Otázky</a>
+          </>
+        }
+      />
 
       <main id="hlavny-obsah">
         <section className={styles.hero}>
@@ -310,35 +292,7 @@ export function CampaignPage({ page }: { page: CampaignPageData }) {
         </section>
       </main>
 
-      <footer className={styles.footer}>
-        <div className={styles.footerTop}>
-          <div>
-            <Link href="/" aria-label="WebPreKandidata.sk – domov"><Brand inverse /></Link>
-            <p>Profesionálne volebné weby pre komunálne a krajské voľby 2026.</p>
-          </div>
-          <div className={styles.footerLinks}>
-            <h2>Pre koho</h2>
-            {Object.values(CAMPAIGN_PAGES).map((item) => (
-              <Link href={item.route} key={item.route}>{item.eyebrow.split(" · ")[0]}</Link>
-            ))}
-          </div>
-          <div className={styles.footerLinks}>
-            <h2>Kontakt</h2>
-            <a href="mailto:ahoj@beewoy.sk"><Mail size={17} aria-hidden="true" />ahoj@beewoy.sk</a>
-            <Link href="/prihlasenie">Prihlásiť sa</Link>
-            <Link href="/registracia">Vytvoriť web zdarma</Link>
-          </div>
-        </div>
-        <div className={styles.footerBottom}>
-          <span>© 2026 WebPreKandidata.sk</span>
-          <nav aria-label="Právne dokumenty">
-            <Link href="/ochrana-sukromia">Ochrana súkromia</Link>
-            <Link href="/obchodne-podmienky">Obchodné podmienky</Link>
-            <Link href="/reklamacny-poriadok">Reklamačný poriadok</Link>
-            <button data-cookie-settings type="button">Nastavenia cookies</button>
-          </nav>
-        </div>
-      </footer>
+      <MarketingFooter />
     </div>
   );
 }

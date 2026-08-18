@@ -9,6 +9,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: [
           "/",
           ...MARKETING_ROUTES,
+          "/sablony",
           "/ochrana-sukromia",
           "/obchodne-podmienky",
           "/reklamacny-poriadok",
