@@ -154,6 +154,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - migrácia `0027_fix_admin_grant_order_number_ambiguity.sql` (oprava nejednoznačného `order_number` v RPC, ktoré blokovalo manuálne udelenie balíka),
 - migrácia `0029_admin_grant_zero_amount.sql` (admin grant ukladá `total_cents = 0`),
 - migrácia `0030_reserve_template_preview_slugs.sql` rezervuje platformové cesty `ukazka` a `sablony`,
+- migrácia `0031_admin_grant_total_cents_zero_check.sql` (CHECK na `orders.total_cents` povoľuje aj `0` pre admin grant),
 - bez moderátorskej fronty, bez reprocess webhookov a bez manuálneho prepisu paid stavu Stripe objednávok.
 
 ### Domény a DNS
