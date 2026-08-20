@@ -58,7 +58,18 @@ export function MarketingFooter() {
         </div>
       </div>
       <div className={styles.footerBottom}>
-        <span>© 2026 WebPreKandidata.sk</span>
+        <p className={styles.footerCredit}>
+          <span>© 2026 WebPreKandidata.sk</span>
+          <span aria-hidden="true">·</span>
+          <a
+            className={styles.footerAttribution}
+            href="https://beewoy.sk/"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Vytvorené v Beewoy <span aria-hidden="true">↗</span>
+          </a>
+        </p>
         <nav aria-label="Právne dokumenty">
           <Link href="/ochrana-sukromia">Ochrana súkromia</Link>
           <Link href="/obchodne-podmienky">Obchodné podmienky</Link>

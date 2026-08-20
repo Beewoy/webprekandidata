@@ -872,6 +872,14 @@
   padding-top: 26px;
 }
 
+.footerCredit {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin: 0;
+}
+
 .footerBottom nav {
   display: flex;
   flex-wrap: wrap;
@@ -892,6 +900,14 @@
 .footerBottom a:hover,
 .footerBottom button:hover {
   color: white;
+}
+
+.footerBottom a.footerAttribution {
+  color: #8299ac;
+}
+
+.footerBottom a.footerAttribution:hover {
+  color: #83ddd5;
 }
 
 @media (max-width: 1050px) {
