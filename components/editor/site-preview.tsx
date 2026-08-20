@@ -36,6 +36,8 @@ export function SitePreview({ contactFormPreview = false, data, publicMode = fal
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const isAppMobile = useSyncExternalStore(subscribeAppMobile, getAppMobileSnapshot, () => true);
   const previewDevice = publicMode ? "desktop" : isAppMobile ? "mobile" : device;
+  // Public sites use CSS @media (max-width: 820px) for the hamburger; editor preview uses the device toggle.
+  const usesMobileNav = publicMode ? isAppMobile : previewDevice === "mobile";
   const [activeGalleryIndex, setActiveGalleryIndex] = useState<number | null>(null);
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -48,7 +50,16 @@ export function SitePreview({ contactFormPreview = false, data, publicMode = fal
   } as CSSProperties;
   const activeGalleryItem = activeGalleryIndex === null ? null : data.gallery.items[activeGalleryIndex];
   const activePost = activePostId ? data.news.items.find((post) => post.id === activePostId) ?? null : null;
-  const showMobileMenu = previewDevice === "mobile" && mobileMenuOpen;
+  const showMobileMenu = usesMobileNav && mobileMenuOpen;
+
+  useEffect(() => {
+    if (!showMobileMenu) return;
+    function closeOnEscape(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [showMobileMenu]);
 
   useEffect(() => {
     if (activeGalleryIndex === null) return;
@@ -118,6 +129,7 @@ export function SitePreview({ contactFormPreview = false, data, publicMode = fal
                     <span><strong>{data.candidate.name}</strong><small>{data.candidate.position}{data.candidate.city ? ` · ${data.candidate.city}` : ""}</small></span>
                   </a>
                   <button
+                    aria-controls="candidate-preview-nav"
                     aria-expanded={showMobileMenu}
                     aria-label={showMobileMenu ? "Zavrieť navigáciu" : "Otvoriť navigáciu"}
                     className="candidate-preview__menu-button"
@@ -126,7 +138,7 @@ export function SitePreview({ contactFormPreview = false, data, publicMode = fal
                   >
                     {showMobileMenu ? <X aria-hidden="true" size={22} /> : <Menu aria-hidden="true" size={22} />}
                   </button>
-                  <nav aria-label={publicMode ? "Navigácia webu kandidáta" : "Navigácia náhľadu"} className={showMobileMenu ? "candidate-preview__nav candidate-preview__nav--open" : "candidate-preview__nav"}>
+                  <nav aria-label={publicMode ? "Navigácia webu kandidáta" : "Navigácia náhľadu"} className={showMobileMenu ? "candidate-preview__nav candidate-preview__nav--open" : "candidate-preview__nav"} id="candidate-preview-nav">
                     <a href="#o-mne" onClick={() => setMobileMenuOpen(false)}>O mne</a>
                     <a href="#preco" onClick={() => setMobileMenuOpen(false)}>Prečo kandidujem</a>
                     <a href="#program" onClick={() => setMobileMenuOpen(false)}>Program</a>
