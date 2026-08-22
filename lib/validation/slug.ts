@@ -36,18 +36,30 @@ export function slugifyCandidate(value: string) {
     .slice(0, 60);
 }
 
+/** Keeps trailing hyphens while the user is typing in the slug field. */
+export function sanitizeSlugDraftInput(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+/g, "")
+    .slice(0, 80);
+}
+
 export function normalizeSiteSlug(value: string) {
-  return value.trim().toLowerCase();
+  return value.trim().toLowerCase().replace(/^-+|-+$/g, "");
 }
 
 export function validateSiteSlug(slug: string): string | null {
-  const normalized = normalizeSiteSlug(slug);
-  if (normalized.length < 2) return "Adresa musí mať aspoň 2 znaky.";
-  if (normalized.length > 80) return "Adresa môže mať najviac 80 znakov.";
-  if (!SLUG_PATTERN.test(normalized)) {
+  const trimmed = slug.trim().toLowerCase();
+  if (trimmed.length < 2) return "Adresa musí mať aspoň 2 znaky.";
+  if (trimmed.length > 80) return "Adresa môže mať najviac 80 znakov.";
+  if (!SLUG_PATTERN.test(trimmed)) {
     return "Adresa môže obsahovať iba malé písmená, číslice a pomlčky.";
   }
-  if ((RESERVED_PLATFORM_SLUGS as readonly string[]).includes(normalized)) {
+  if ((RESERVED_PLATFORM_SLUGS as readonly string[]).includes(trimmed)) {
     return "Táto adresa je rezervovaná pre platformu.";
   }
   return null;

@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { readFileSync } from "node:fs";
 import {
   RESERVED_PLATFORM_SLUGS,
+  sanitizeSlugDraftInput,
   siteSlugSchema,
   slugifyCandidate,
   updateSiteSlugSchema,
@@ -13,6 +14,12 @@ describe("site slug validation", () => {
   it("slugifyCandidate odstráni diakritiku a medzery", () => {
     expect(slugifyCandidate("Martin Novák")).toBe("martin-novak");
     expect(slugifyCandidate("Žilina – poslanec")).toBe("zilina-poslanec");
+  });
+
+  it("sanitizeSlugDraftInput ponechá koncovú pomlčku pri písaní", () => {
+    expect(sanitizeSlugDraftInput("tibor-")).toBe("tibor-");
+    expect(sanitizeSlugDraftInput("tibor-antal")).toBe("tibor-antal");
+    expect(sanitizeSlugDraftInput("Tibor Antal")).toBe("tibor-antal");
   });
 
   it("prijme platný slug a odmietne rezervovaný", () => {

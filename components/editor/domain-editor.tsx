@@ -26,7 +26,7 @@ import { PageHeading } from "@/components/ui/page-heading";
 import { DomainDnsGuide } from "@/components/editor/domain-dns-guide";
 import { getPlatformPathHostname, getPlatformSiteDisplayUrl } from "@/lib/domains/platform";
 import type { SiteDomainRecord, SiteDomainState } from "@/lib/data/domains";
-import { slugifyCandidate } from "@/lib/validation/slug";
+import { sanitizeSlugDraftInput } from "@/lib/validation/slug";
 
 function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);
@@ -186,7 +186,7 @@ export function DomainEditor({ siteId, state }: { siteId: string; state: SiteDom
   }
 
   function normalizeSlugInput(value: string) {
-    return slugifyCandidate(value).slice(0, 80);
+    return sanitizeSlugDraftInput(value);
   }
 
   return (

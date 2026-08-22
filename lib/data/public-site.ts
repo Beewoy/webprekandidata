@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { z } from "zod";
 import { getCanonicalPublicUrl } from "@/lib/domains/platform";
+import { resolvePublicationSeo } from "@/lib/public-site-seo";
 import { parsePublicationMedia, parsePublicationPosts } from "@/lib/publishing";
 import { buildSitePreviewData, type SitePreviewData, type SitePreviewPost } from "@/lib/site-preview-model";
 import type { GalleryMediaAsset, SiteMediaAsset } from "@/lib/site-media";
@@ -30,14 +31,6 @@ export type PublicCandidateSite = {
   title: string;
   versionNumber: number;
 };
-
-function objectValue(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
-}
-
-function plainText(value: unknown, maximum: number) {
-  return typeof value === "string" ? value.replace(/\s+/g, " ").trim().slice(0, maximum) : "";
-}
 
 export const getPublicCandidateSite = cache(async (rawSlug: string): Promise<PublicCandidateSite | null> => {
   const parsedSlug = slugSchema.safeParse(rawSlug);
@@ -119,9 +112,7 @@ export const getPublicCandidateSite = cache(async (rawSlug: string): Promise<Pub
       title: post.title,
     };
   });
-  const seo = objectValue(publication.seo);
-  const title = plainText(seo.title, 70) || `${site.candidate_name} – kandidát`;
-  const description = plainText(seo.description, 180) || `Oficiálna stránka kandidáta ${site.candidate_name}.`;
+  const { description, title } = resolvePublicationSeo(publication.seo, site.candidate_name);
   const socialAsset = manifest.findLast((asset) => asset.kind === "social");
   const canonicalUrl = getCanonicalPublicUrl({
     platformSlug: site.slug,
