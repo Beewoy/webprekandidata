@@ -31,6 +31,7 @@ export type SiteDomainState = {
   planCode: "basic" | "plus" | null;
   records: SiteDomainRecord[];
   slug: string;
+  siteStatus: "draft" | "published" | "suspended";
 };
 
 function asObject(value: Json | null | undefined): Record<string, unknown> {
@@ -132,6 +133,7 @@ export async function getSiteDomainState(siteId: string): Promise<SiteDomainStat
         verifiedAt: new Date().toISOString(),
       }],
       slug: "martin-novak",
+      siteStatus: "draft",
     };
   }
   if (isDemoMode()) return null;
@@ -163,6 +165,11 @@ export async function getSiteDomainState(siteId: string): Promise<SiteDomainStat
 
   const present = records.filter((row): row is SiteDomainRecord => row !== null);
   const customDomain = present.find((row) => row.domainType === "custom") ?? null;
+  const siteStatus: SiteDomainState["siteStatus"] = site.status === "published"
+    ? "published"
+    : site.status === "suspended"
+      ? "suspended"
+      : "draft";
 
   return {
     canUseCustomDomain: entitlementResult.data === true,
@@ -171,5 +178,6 @@ export async function getSiteDomainState(siteId: string): Promise<SiteDomainStat
     planCode: site.planCode,
     records: present,
     slug: site.slug,
+    siteStatus,
   };
 }

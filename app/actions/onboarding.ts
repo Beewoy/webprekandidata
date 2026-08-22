@@ -10,20 +10,11 @@ import { isDemoMode } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { createWelcomeSiteSchema, welcomeSummarySchema, type WelcomeSuggestion } from "@/lib/validation/onboarding";
+import { slugifyCandidate } from "@/lib/validation/slug";
 
 type GenerateWelcomeResult =
   | { ok: true; suggestion: WelcomeSuggestion; aiGenerated: boolean; aiReceipt?: string; notice?: string }
   | { ok: false; message: string };
-
-function slugify(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 60);
-}
 
 async function recordAiRequest(userId: string, model: string) {
   const admin = createAdminClient();
@@ -106,7 +97,7 @@ export async function createWelcomeSiteAction(input: unknown): Promise<{ ok: fal
   const user = await requireCurrentUser();
   const supabase = await createClient();
   const suggestion = parsed.data.suggestion;
-  const baseSlug = slugify(suggestion.candidateName) || `kandidat-${Date.now()}`;
+  const baseSlug = slugifyCandidate(suggestion.candidateName) || `kandidat-${Date.now()}`;
   const { data: siteId, error: createError } = await supabase.rpc("create_candidate_site", {
     p_internal_name: suggestion.internalName,
     p_candidate_name: suggestion.candidateName,

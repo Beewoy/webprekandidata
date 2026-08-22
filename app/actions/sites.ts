@@ -24,17 +24,8 @@ import {
   isDraftSaveCoolingDown,
   markDraftRevisionConflict,
 } from "@/lib/draft-save-guard";
+import { slugifyCandidate } from "@/lib/validation/slug";
 import { z } from "zod";
-
-function slugify(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 60);
-}
 
 export async function createSiteAction(_previousState: SiteActionState, formData: FormData): Promise<SiteActionState> {
   const parsed = createSiteSchema.safeParse(Object.fromEntries(formData));
@@ -43,7 +34,7 @@ export async function createSiteAction(_previousState: SiteActionState, formData
 
   await requireCurrentUser();
   const supabase = await createClient();
-  const baseSlug = slugify(parsed.data.candidateName) || `kandidat-${Date.now()}`;
+  const baseSlug = slugifyCandidate(parsed.data.candidateName) || `kandidat-${Date.now()}`;
   const { data, error } = await supabase.rpc("create_candidate_site", {
     p_internal_name: parsed.data.internalName,
     p_candidate_name: parsed.data.candidateName,

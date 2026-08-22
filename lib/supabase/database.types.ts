@@ -1482,6 +1482,13 @@ export type Database = {
         }
         Returns: Json
       }
+      update_site_slug: {
+        Args: {
+          p_new_slug: string
+          p_site_id: string
+        }
+        Returns: Json
+      }
       verify_email_token: { Args: { p_token_hash: string }; Returns: boolean }
     }
     Enums: {

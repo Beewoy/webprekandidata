@@ -1,6 +1,6 @@
 # Stav implementácie
 
-Aktualizované: 18. august 2026
+Aktualizované: 21. august 2026
 
 Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Produktový plán môže obsahovať aj budúci rozsah.
 
@@ -27,15 +27,18 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 
 ### Marketingová landing page
 
-- samostatná responzívna landing page pre slovenských kandidátov v komunálnych a župných voľbách 2026,
+- samostatná responzívna landing page pre slovenských kandidátov v komunálnych a župných voľbách 2026, implementovaná ako indexovateľný React Server Component s malými klientskými ostrovmi,
 - SEO a konverzný obsah pre frázy „web pre kandidáta“, „volebný web“ a súvisiace typy kandidatúry,
 - canonical, Open Graph a Twitter metadata bez odkazov na neexistujúce obrázky,
 - JSON-LD pre organizáciu, webovú aplikáciu, ponuky Basic/Plus a viditeľné FAQ,
 - hlavné výzvy smerujú priamo na registráciu a presne oddeľujú bezplatný súkromný náhľad od platenej publikácie,
 - samostatný SEO audit s odporúčaniami pre obsah, meranie a ostré nasadenie,
 - landing je integrovaný do Next.js rootu `/`, používa spoločný statický Open Graph obrázok 1536 × 1024 px, favicon, `robots.txt`, sitemapu a funkčné odkazy na právne routy,
+- redizajnovaný root používa výraznú typografickú hero kompozíciu, stabilný trojkrokový proces s obsahom viditeľným bez interakcie a asymetrickú sekciu budúcich používateľských referencií; dočasné citáty sú výslovne označené ako ilustračný obsah a pred spustením ich majú nahradiť overené skúsenosti z pilotnej prevádzky; navy/teal/Inter systém, 44 px dotykové ciele a focus stavy zostávajú zachované,
+- produktový príbeh používa na desktope natívny CSS sticky text, ktorý zostáva pri obsahu až po poslednú kartu; GSAP ScrollTrigger iba jemne škáluje vizuály pri rolovaní a pri `prefers-reduced-motion` sa animácie nevykonajú,
 - hero na root landing page zobrazuje kompaktný odpočet celých kalendárnych dní do volieb 24. októbra 2026, obnovovaný cez hodinové ISR; v deň volieb použije neutrálny text a po termíne sa skryje,
 - root landing page obsahuje responzívnu inline MP4 ukážku administrácie s posterom, natívnymi ovládacími prvkami, prístupným zväčšením vo focus-trap modálnom dialógu a priamym CTA na hotový ukážkový web cez verejnú cestu `/ukazka`,
+- hero aj výsledná karta produktového príbehu používajú reálny mobilný náhľad kandidátskeho webu; výsledná karta ho kombinuje s desktopovým náhľadom toho istého webu,
 - landing page kompaktne predstavuje všetky štyri dostupné šablóny cez živý náhľad hero layoutu (rovnaký `CampaignTemplatePreview` ako v editore, s demo portrétom a logom); karty otvárajú verejné ukážky `/ukazka/horizont`, `/ukazka/impulz`, `/ukazka/dovera` a `/ukazka/vizia`, spodné CTA vedie na prehľad `/sablony`,
 - päť samostatných indexovateľných kampanových stránok pre starostu, primátora, poslanca, komunálne voľby 2026 a spoločnú kandidatúru na predsedu kraja alebo poslanca VÚC; stránky zdieľajú responzívny marketingový komponent, ceny, interné prepojenia, metadata a JSON-LD,
 - sezónne stránky uvádzajú oficiálny termín komunálnych a krajských volieb 24. októbra 2026 a prístupný živý odpočet s bezpečným stavom po volebnom dni,
@@ -107,7 +110,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - výber a ukladanie tematických občianskych ikoniek pre hodnoty, dôvody a program vrátane zobrazenia v náhľade,
 - základná databázová schéma a RLS politiky,
 - lokálny Supabase stack (Docker) pre vývoj; produkčný cloud projekt `Webprekandidata` (`iozvohajbtzxviytpufp`) s credentials iba vo Vercel a GitHub Secrets,
-- migrácie `0001` až `0030` v repozitári; produkčné nasadenie migrácií cez GitHub Actions workflow `Supabase migrations` pri pushi do `main`,
+- migrácie `0001` až `0032` v repozitári; produkčné nasadenie migrácií cez GitHub Actions workflow `Supabase migrations` pri pushi do `main`,
 - `.env.local.example` a aktualizovaný `.env.example` pre lokálny vývoj na `127.0.0.1:54321`,
 - politika zero prod from Mac: na vývojárskom Macu sa nespúšťa `supabase link` ani `db push` proti produkcii,
 - reálna produkčná Supabase konfigurácia vo Vercel env; lokálny `.env.local` smeruje na Docker stack,
@@ -162,7 +165,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - Basic aj Plus používajú platformovú adresu `https://{ROOT}/{slug}` (bez wildcard DNS),
 - pri vytvorení projektu sa rezervuje záznam `domains` typu subdomain so stavom `active`,
 - Plus s zaplatenou objednávkou môže pripojiť jednu vlastnú doménu cez Vercel Domains API,
-- editor Doména zobrazuje platformovú URL, DNS inštrukcie, stavy overenia a SSL,
+- editor Doména zobrazuje platformovú URL, umožňuje zmeniť slug platformovej cesty (`update_site_slug`), DNS inštrukcie, stavy overenia a SSL,
 - po pripojení custom domény UI vždy ukáže aspoň smerovací DNS záznam (A/CNAME); prázdne metadáta sa doplnia fallbackom alebo obnovou z Vercel API,
 - stav po attachi pri ešte nenastavenom DNS je `verifying` (nie okamžité `failed`),
 - editor obsahuje krok-za-krokom návod pre registrátora (Websupport) vrátane varovania o konfliktnom AAAA zázname pri root doméne a o zachovaní e-mailových záznamov,
@@ -170,6 +173,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - `proxy.ts` prepisuje aktívny custom hostname na internú cestu `/{slug}`; app cesty na custom hoste idú na platformovú app URL,
 - canonical a Open Graph URL preferujú aktívnu primary custom doménu, inak platformovú cestu,
 - migrácia `0014_domain_management.sql`,
+- migrácia `0032_update_site_slug.sql` (RPC `update_site_slug` — zmena platformovej cesty; stará adresa nepresmerováva),
 - demo režim Vercel nevolá; bez `VERCEL_TOKEN` / `VERCEL_PROJECT_ID` produkčné pripojenie custom domény odmietne.
 ### Kontakt (dočasne mailto)
 

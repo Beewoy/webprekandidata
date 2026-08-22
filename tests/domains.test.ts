@@ -8,6 +8,7 @@ import {
 import {
   getCanonicalPlatformHostname,
   getCanonicalPublicUrl,
+  getPlatformPathHostname,
   getPlatformSiteLabel,
   isPlatformHostname,
   isPlatformWwwHostname,
@@ -40,6 +41,7 @@ describe("domain hostname helpers", () => {
   it("zobrazí verejnú adresu ako platformovú cestu, nie subdoménu", () => {
     expect(getPlatformSiteLabel("tibor-antal")).toMatch(/\/tibor-antal$/);
     expect(getPlatformSiteLabel("tibor-antal")).not.toMatch(/tibor-antal\./);
+    expect(getPlatformPathHostname("localhost:3000")).toBe("webprekandidata.sk");
   });
 
   it("preferuje aktívnu custom doménu pre canonical", () => {

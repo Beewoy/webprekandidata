@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
+  AlertTriangle,
   ArrowRight,
   Check,
   Copy,
@@ -19,10 +20,13 @@ import {
   checkCustomDomainAction,
   removeCustomDomainAction,
   setPrimaryDomainAction,
+  updateSiteSlugAction,
 } from "@/app/actions/domains";
 import { PageHeading } from "@/components/ui/page-heading";
 import { DomainDnsGuide } from "@/components/editor/domain-dns-guide";
+import { getPlatformPathHostname, getPlatformSiteDisplayUrl } from "@/lib/domains/platform";
 import type { SiteDomainRecord, SiteDomainState } from "@/lib/data/domains";
+import { slugifyCandidate } from "@/lib/validation/slug";
 
 function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);
@@ -89,6 +93,8 @@ function DnsTable({ records }: { records: SiteDomainRecord["dns"] }) {
 export function DomainEditor({ siteId, state }: { siteId: string; state: SiteDomainState }) {
   const [mode, setMode] = useState<"platform" | "custom">(state.customDomain ? "custom" : "platform");
   const [hostname, setHostname] = useState(state.customDomain?.hostname ?? "");
+  const [slug, setSlug] = useState(state.slug);
+  const [slugFieldError, setSlugFieldError] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [fieldError, setFieldError] = useState("");
@@ -96,10 +102,14 @@ export function DomainEditor({ siteId, state }: { siteId: string; state: SiteDom
   const router = useRouter();
   const custom = state.customDomain;
   const locked = !state.canUseCustomDomain;
+  const platformLabel = getPlatformPathHostname();
+  const previewUrl = getPlatformSiteDisplayUrl(slug.trim() || state.slug);
+  const slugChanged = slug.trim().toLowerCase() !== state.slug;
 
-  function refresh(nextMessage: string) {
+  function refresh(nextMessage: string, nextSlug?: string) {
     setMessage(nextMessage);
     setError("");
+    if (nextSlug !== undefined) setSlug(nextSlug);
     router.refresh();
   }
 
@@ -160,6 +170,25 @@ export function DomainEditor({ siteId, state }: { siteId: string; state: SiteDom
     });
   }
 
+  function savePlatformSlug() {
+    setError("");
+    setSlugFieldError("");
+    setMessage("");
+    startTransition(async () => {
+      const result = await updateSiteSlugAction({ siteId, slug });
+      if (!result.ok) {
+        setError(result.message);
+        setSlugFieldError(result.fieldErrors?.slug?.[0] ?? "");
+        return;
+      }
+      refresh(result.message ?? "Adresa webu bola uložená.", slug.trim().toLowerCase());
+    });
+  }
+
+  function normalizeSlugInput(value: string) {
+    return slugifyCandidate(value).slice(0, 80);
+  }
+
   return (
     <div className="page-container">
       <PageHeading
@@ -199,20 +228,63 @@ export function DomainEditor({ siteId, state }: { siteId: string; state: SiteDom
 
         {mode === "platform" ? (
           <div className="domain-form">
+            <label className="field">
+              <span>Adresa webu</span>
+              <div className="slug-input">
+                <span>{platformLabel}/</span>
+                <input
+                  autoComplete="off"
+                  aria-describedby={slugFieldError ? "platform-slug-error" : "platform-slug-help"}
+                  aria-invalid={Boolean(slugFieldError)}
+                  disabled={isPending}
+                  id="platform-slug"
+                  onChange={(event) => setSlug(normalizeSlugInput(event.target.value))}
+                  value={slug}
+                />
+              </div>
+              {slugFieldError
+                ? <small className="field-error" id="platform-slug-error" role="alert">{slugFieldError}</small>
+                : <small id="platform-slug-help">Používajte malé písmená, číslice a pomlčky. Adresa sa zmení okamžite po uložení.</small>}
+            </label>
+
             <div className="domain-result">
               <Globe2 size={20} />
               <span>
-                <small>Verejná adresa na našej platforme</small>
-                <strong>{state.platformUrl}</strong>
+                <small>Náhľad verejnej adresy</small>
+                <strong>{previewUrl}</strong>
               </span>
-              <CopyButton label="Kopírovať adresu" value={state.platformUrl} />
+              <CopyButton label="Kopírovať adresu" value={previewUrl} />
             </div>
+
+            {state.siteStatus === "published" && slugChanged && (
+              <div className="info-box" role="note">
+                <AlertTriangle size={18} />
+                <span>
+                  <strong>Stará adresa prestane fungovať</strong>
+                  <small>Odkazy, ktoré ste už zdieľali, bude treba aktualizovať. Presmerovanie zo starej adresy neposkytujeme.</small>
+                </span>
+              </div>
+            )}
+
             <div className="info-box">
               <Info size={18} />
               <span>
                 <strong>Funguje po zverejnení webu</strong>
                 <small>HTTPS a hosting zabezpečujeme my. Vlastnú doménu môžete doplniť neskôr v balíku Plus.</small>
               </span>
+            </div>
+
+            <div className="editor-card__footer domain-form-footer">
+              <span><ShieldCheck size={16} /> HTTPS certifikát a bezpečné pripojenie zabezpečíme automaticky.</span>
+              <button
+                className="button button--primary"
+                disabled={isPending || !slug.trim() || !slugChanged}
+                onClick={savePlatformSlug}
+                type="button"
+              >
+                {isPending ? <LoaderCircle className="spin" size={17} /> : null}
+                Uložiť adresu
+              </button>
             </div>
           </div>
         ) : (
@@ -302,11 +374,6 @@ export function DomainEditor({ siteId, state }: { siteId: string; state: SiteDom
           </div>
         )}
 
-        {mode === "platform" && (
-          <div className="editor-card__footer">
-            <span><ShieldCheck size={16} /> HTTPS certifikát a bezpečné pripojenie zabezpečíme automaticky.</span>
-          </div>
-        )}
       </section>
     </div>
   );

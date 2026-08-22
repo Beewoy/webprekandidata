@@ -96,7 +96,7 @@ app/
   app/                    chránená aplikácia kandidáta
   auth/callback/          výmena Supabase auth kódu za reláciu
 components/
-  marketing/              zdieľaný kampanový web, odpočet a izolované štýly
+  marketing/              landing interakcie, zdieľaný kampanový web, odpočet a izolované štýly
   admin/                  shell, tabuľky a dialóg admin hold
   app-shell/              sidebar, mobilná navigácia a horná lišta
   auth/                   interaktívne auth formuláre
@@ -115,7 +115,7 @@ supabase/migrations/      verzovaná databázová schéma a RPC
 tests/                    jednotkové testy
 ```
 
-Root `/` sa staticky generuje zo zdrojového dokumentu `landing-page/index.html`, ale metadata, robots a sitemap používa Next.js Metadata API. Spoločný statický Open Graph a Twitter vizuál v `public/images/webprekandidata-og.png` sa dedí na platformových routach a slúži ako fallback publikovaných kandidátskych webov; vlastný sociálny obrázok z nemenného publikačného snapshotu má prednosť. Produktové placeholdery cenníka sa pri generovaní napĺňajú z `lib/payments/plans.ts`; rovnaký katalóg používajú kampanové stránky a klientský editor Objednávok, takže cena, opis a funkcie balíka sa nemenia oddelene. `/app` a `/admin` zostávajú samostatné chránené stromy. Platformové `www` sa v `proxy.ts` presmeruje 308 na apex; custom hostname sa naďalej prepisuje iba na publikovaný snapshot.
+Root `/` sa staticky generuje priamo z React Server Componentu v `app/page.tsx`; vizuálne pravidlá sú izolované v `app/landing-redesign.module.css`. Metadata, robots, sitemap aj JSON-LD používa Next.js API a serverový obsah zostáva indexovateľný bez JavaScriptu. Malé Client Components zabezpečujú iba GSAP pohyb a prístupný video dialóg. Produktový text používa na desktopoch natívne CSS sticky správanie ohraničené story sekciou; GSAP ScrollTrigger sa spúšťa len pri povolenom pohybe a animuje výhradne vizuály kariet. Všetky animácie sú progresívne vylepšenie bez vplyvu na obsah alebo navigáciu. Spoločný statický Open Graph a Twitter vizuál v `public/images/webprekandidata-og.png` sa dedí na platformových routach a slúži ako fallback publikovaných kandidátskych webov; vlastný sociálny obrázok z nemenného publikačného snapshotu má prednosť. Cenník číta údaje priamo z `lib/payments/plans.ts`; rovnaký katalóg používajú kampanové stránky a klientský editor Objednávok, takže cena, opis a funkcie balíka sa nemenia oddelene. `/app` a `/admin` zostávajú samostatné chránené stromy. Platformové `www` sa v `proxy.ts` presmeruje 308 na apex; custom hostname sa naďalej prepisuje iba na publikovaný snapshot.
 
 Výnimkou z autentifikácie stromu `/app` je verejná ukážka `/app/web/demo` a `/app/web/demo/{slug}`. `proxy.ts` ich na platformovom hoste interne prepisuje na noindex cesty `/ukazka` a `/ukazka/{slug}`, takže odkaz z prihlasovacej stránky funguje bez účtu a nedotýka sa produkčných konceptov ani publikovaných snapshotov. `/ukazka` ostáva šablóna Horizont; `/ukazka/horizont`, `/ukazka/impulz`, `/ukazka/dovera` a `/ukazka/vizia` zobrazia ten istý vyplnený demo obsah v príslušnej šablóne. Indexovateľný prehľad `/sablony` nie je súčasťou `MARKETING_ROUTES`, ale je v sitemap a robots.
 
@@ -307,13 +307,13 @@ Plus kandidát
   → proxy.ts rewrite Host → /{slug}
 ```
 
-Pri vytvorení projektu `create_candidate_site` rezervuje subdomain hostname `{slug}.webprekandidata.sk` so stavom `active` (rezervácia pre budúci wildcard). Verejná kanonická Basic adresa je však platformová cesta. `proxy.ts` na platformovom hoste nemení správanie; na custom hoste prepisuje `/` na `/{slug}` a app cesty (`/app`, `/admin`, auth) redirectuje na `NEXT_PUBLIC_APP_URL`.
+Pri vytvorení projektu `create_candidate_site` rezervuje subdomain hostname `{slug}.webprekandidata.sk` so stavom `active` (rezervácia pre budúci wildcard). Verejná kanonická Basic adresa je však platformová cesta. Vlastník projektu môže slug neskôr zmeniť cez RPC `update_site_slug` v sekcii Doména; zmena aktualizuje `sites.slug` aj platformový záznam v `domains`, stará URL však nepresmerováva. `proxy.ts` na platformovom hoste nemení správanie; na custom hoste prepisuje `/` na `/{slug}` a app cesty (`/app`, `/admin`, auth) redirectuje na `NEXT_PUBLIC_APP_URL`.
 
 Vercel tajomstvá (`VERCEL_TOKEN`, `VERCEL_PROJECT_ID`, voliteľne `VERCEL_TEAM_ID`) sú iba serverové. Demo režim Vercel nevolá. Canonical/OG URL berie aktívnu primary custom doménu, inak platformovú cestu.
 
 Po attachi alebo kontrole sa DNS inštrukcie vždy uložia (minimálne apex A `76.76.21.21` alebo CNAME na `cname.vercel-dns.com`). Ak metadáta v DB chýbajú, načítanie editora ich doplní z Vercel API alebo fallbackom. Nesprávne DNS pred dokončením u registrátora zostáva v stave `verifying`, nie okamžité `failed`.
 
-Hlavné súbory: `lib/domains/*`, `lib/data/domains.ts`, `app/actions/domains.ts`, `components/editor/domain-editor.tsx`, `proxy.ts`, migrácia `0014_domain_management.sql`.
+Hlavné súbory: `lib/domains/*`, `lib/data/domains.ts`, `lib/validation/slug.ts`, `app/actions/domains.ts`, `components/editor/domain-editor.tsx`, `proxy.ts`, migrácie `0014_domain_management.sql` a `0032_update_site_slug.sql`.
 
 Zverejňovací tok má dve hlboko odkazovateľné routy. `objednavky` načíta balík, checkout stav a históriu platieb; pri Free stave ponúka nákupný výber a fakturačný formulár, pri Basic/Plus iba aktívny balík a doklady. `publikovanie` načíta pripravenosť a stav poslednej verejnej verzie. Oprávnenia platených funkcií naďalej overuje databáza, nie vizuálny stav navigácie.
 

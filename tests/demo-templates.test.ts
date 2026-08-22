@@ -42,13 +42,13 @@ describe("public campaign template demos", () => {
   });
 
   it("links homepage and catalog cards to each public demo", () => {
-    const landing = readFileSync(join(process.cwd(), "landing-page/index.html"), "utf8");
+    const landing = readFileSync(join(process.cwd(), "app/page.tsx"), "utf8");
     const cards = readFileSync(
       join(process.cwd(), "components/marketing/template-showcase-cards.tsx"),
       "utf8",
     );
 
-    expect(landing).toContain("<!-- TEMPLATE_SHOWCASE_SECTION -->");
+    expect(landing).toContain('<TemplateShowcaseCards titleTag="h3" />');
     expect(cards).toContain('href={`/ukazka/${item.slug}`}');
     expect(cards).toContain('href="/sablony"');
     expect(cards).toContain("CampaignTemplatePreview");

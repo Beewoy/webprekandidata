@@ -62,9 +62,11 @@ describe("campaign marketing routes", () => {
     expect(PLAN_FEATURES.plus).toContain("Pripojenie jednej existujúcej vlastnej domény");
     expect(PLAN_FEATURES.plus).toContain("Najviac 20 AI návrhov článkov");
 
-    const landing = readFileSync(join(process.cwd(), "landing-page/index.html"), "utf8");
-    expect(landing).toContain("<!-- BASIC_PLAN_FEATURES -->");
-    expect(landing).toContain("<!-- PLUS_PLAN_FEATURES -->");
+    const landing = readFileSync(join(process.cwd(), "app/page.tsx"), "utf8");
+    expect(landing).toContain("PLAN_FEATURES.basic.map");
+    expect(landing).toContain("PLAN_FEATURES.plus.map");
+    expect(landing).toContain("PLAN_PRICE_LABELS.basic");
+    expect(landing).toContain("PLAN_PRICE_LABELS.plus");
     expect(landing).not.toContain("Aktuality, galéria a kontaktný formulár");
   });
 

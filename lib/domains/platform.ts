@@ -7,6 +7,15 @@ export function getCanonicalPlatformHostname(rootDomain = getRootDomain()) {
   return hostWithoutPort(rootDomain).toLowerCase().replace(/^www\./, "");
 }
 
+/** Product-facing hostname for platform path URLs (never localhost in editor copy). */
+export function getPlatformPathHostname(rootDomain = getRootDomain()) {
+  const canonical = getCanonicalPlatformHostname(rootDomain);
+  if (canonical.startsWith("localhost") || canonical.startsWith("127.0.0.1")) {
+    return PLATFORM_APEX;
+  }
+  return canonical;
+}
+
 export function isPlatformWwwHostname(hostname: string, rootDomain = getRootDomain()) {
   const canonical = getCanonicalPlatformHostname(rootDomain);
   return !canonical.startsWith("localhost") && hostname === `www.${canonical}`;
@@ -34,7 +43,16 @@ export function getPlatformSiteUrl(slug: string) {
 
 /** Display label for the canonical path URL (e.g. webprekandidata.sk/tibor-antal). */
 export function getPlatformSiteLabel(slug: string) {
-  return `${getCanonicalPlatformHostname()}/${slug}`;
+  return `${getPlatformPathHostname()}/${slug}`;
+}
+
+export function getPlatformSiteDisplayUrl(slug: string) {
+  const hostname = getPlatformPathHostname();
+  const root = getRootDomain();
+  if (root.startsWith("localhost") || root.startsWith("127.0.0.1")) {
+    return `https://${hostname}/${slug}`;
+  }
+  return getPlatformSiteUrl(slug);
 }
 
 export function getPlatformHostnames() {

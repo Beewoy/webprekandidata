@@ -15,6 +15,7 @@ import {
 } from "@/lib/domains/vercel";
 import { normalizeHostname } from "@/lib/domains/hostname";
 import { attachCustomDomainSchema, domainIdActionSchema } from "@/lib/validation/domains";
+import { updateSiteSlugSchema } from "@/lib/validation/slug";
 import { createClient } from "@/lib/supabase/server";
 
 export type DomainActionResult =
@@ -30,6 +31,10 @@ function mapRpcError(error: { code?: string; message?: string } | null, fallback
   if (message.includes("site_access_denied")) return "K tomuto projektu nemáte prístup.";
   if (message.includes("domain_not_found")) return "Doména sa nenašla.";
   if (message.includes("domain_not_active")) return "Za hlavnú možno nastaviť iba aktívnu doménu.";
+  if (message.includes("slug_taken")) return "Táto adresa je už použitá iným webom.";
+  if (message.includes("slug_reserved")) return "Táto adresa je rezervovaná pre platformu.";
+  if (message.includes("invalid_slug")) return "Adresa môže obsahovať iba malé písmená, číslice a pomlčky.";
+  if (message.includes("admin_hold_active")) return "Web je dočasne pozastavený administrátorom. Adresu teraz nemôžete meniť.";
   return fallback;
 }
 
@@ -45,9 +50,10 @@ async function syncSnapshot(domainId: string, snapshot: VercelDomainSnapshot, ma
   return status;
 }
 
-async function revalidateDomainPaths(siteId: string, slug?: string | null, hostname?: string | null) {
+async function revalidateDomainPaths(siteId: string, slug?: string | null, hostname?: string | null, previousSlug?: string | null) {
   revalidatePath(`/app/web/${siteId}`, "layout");
   revalidatePath(`/app/web/${siteId}/domena`);
+  if (previousSlug) revalidatePath(`/${previousSlug}`);
   if (slug) revalidatePath(`/${slug}`);
   if (hostname) revalidatePath("/", "layout");
 }
@@ -232,4 +238,56 @@ export async function setPrimaryDomainAction(input: unknown): Promise<DomainActi
 
   await revalidateDomainPaths(parsed.data.siteId, site?.slug, domain.hostname);
   return { ok: true, message: "Hlavná adresa webu bola aktualizovaná." };
+}
+
+export async function updateSiteSlugAction(input: unknown): Promise<DomainActionResult> {
+  if (isDemoMode()) {
+    return { ok: false, message: "Zmena adresy nie je v demo režime dostupná." };
+  }
+
+  const parsed = updateSiteSlugSchema.safeParse(input);
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string[]> = {};
+    for (const issue of parsed.error.issues) {
+      const key = issue.path.join(".") || "form";
+      fieldErrors[key] = [...(fieldErrors[key] ?? []), issue.message];
+    }
+    return { ok: false, message: "Skontrolujte zadanú adresu.", fieldErrors };
+  }
+
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return { ok: false, message: "Pred úpravou adresy sa musíte prihlásiť." };
+
+  const { data: site } = await supabase
+    .from("sites")
+    .select("slug")
+    .eq("id", parsed.data.siteId)
+    .maybeSingle();
+  if (!site) return { ok: false, message: "Projekt sa nenašiel." };
+
+  const previousSlug = site.slug;
+  const { data, error } = await supabase.rpc("update_site_slug", {
+    p_site_id: parsed.data.siteId,
+    p_new_slug: parsed.data.slug,
+  });
+
+  if (error || !data || typeof data !== "object" || Array.isArray(data)) {
+    const rpcMessage = mapRpcError(error, "Adresu sa nepodarilo uložiť.");
+    const fieldErrors = error?.message?.includes("slug_taken") || error?.message?.includes("slug_reserved") || error?.message?.includes("invalid_slug")
+      ? { slug: [rpcMessage] }
+      : undefined;
+    return { ok: false, message: rpcMessage, fieldErrors };
+  }
+
+  const payload = data as Record<string, unknown>;
+  if (payload.ok !== true || typeof payload.slug !== "string") {
+    return { ok: false, message: "Adresu sa nepodarilo uložiť." };
+  }
+
+  await revalidateDomainPaths(parsed.data.siteId, payload.slug, null, previousSlug);
+  return {
+    ok: true,
+    message: previousSlug === payload.slug ? "Adresa zostala nezmenená." : "Adresa webu bola uložená.",
+  };
 }
