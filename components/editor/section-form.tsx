@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } fr
 import dynamic from "next/dynamic";
 import { AlertCircle, Check, ChevronDown, CirclePlus, GripVertical, Save, Trash2 } from "lucide-react";
 import { saveSectionAction } from "@/app/actions/sites";
+import { SaveSuccessNotice } from "@/components/editor/save-success-notice";
+import { useSaveSuccessNotice } from "@/components/editor/use-save-success-notice";
 import { useRegisterDirty } from "@/components/editor/unsaved-changes";
 import { PageHeading } from "@/components/ui/page-heading";
 import { editorFields, getSection } from "@/lib/site-sections";
@@ -34,6 +36,7 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
   const [saveMessage, setSaveMessage] = useState("");
   const [revisionConflict, setRevisionConflict] = useState(false);
   const repeatable = repeatableContent[section.slug];
+  const maxItems = repeatable?.maxItems ?? 12;
   const [items, setItems] = useState<RepeatableItem[]>(() => buildRepeatableItems(repeatable?.items ?? [], initialValues));
   const itemsRef = useRef(items);
   const [expandedDetailIds, setExpandedDetailIds] = useState<Set<string>>(
@@ -52,6 +55,7 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
   const dirtySourceId = `section:${sectionSlug}`;
 
   useRegisterDirty(dirtySourceId, saveState === "dirty" || saveState === "error");
+  const { noticeVisible, noticeMessage } = useSaveSuccessNotice(saveState);
 
   useEffect(() => {
     itemsRef.current = items;
@@ -146,7 +150,7 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
 
   function addItem() {
     const current = itemsRef.current;
-    if (current.length >= 12) return;
+    if (current.length >= maxItems) return;
     const id = `new-${newItemSequenceRef.current++}`;
     replaceItems([...current, { id, icon: repeatable?.defaultIcon ?? "governance", title: "", text: "", ...(repeatable?.supportsDetails ? { detail: "" } : {}) }]);
     pendingFocusIdRef.current = id;
@@ -271,6 +275,8 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
         </div>
       )}
 
+      <SaveSuccessNotice message={noticeMessage} visible={noticeVisible} />
+
       <form ref={formRef} className="editor-card" onChange={markDirty} onSubmit={(event) => { event.preventDefault(); void flushChanges(); }}>
         <div className="editor-card__intro">
           <span className="section-symbol"><section.icon size={21} /></span>
@@ -320,7 +326,7 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
 
         {repeatable && (
           <div className="repeatable-section">
-            <div className="repeatable-heading"><div><h3>{repeatable.label}</h3><p id={`${section.slug}-reorder-help`}>Položky presuňte úchytom alebo na ňom použite šípky hore a dole.</p></div><button className="button button--secondary button--small" disabled={items.length >= 12} onClick={addItem} type="button"><CirclePlus size={16} /> Pridať</button></div>
+            <div className="repeatable-heading"><div><h3>{repeatable.label}</h3><p id={`${section.slug}-reorder-help`}>Položky presuňte úchytom alebo na ňom použite šípky hore a dole.</p></div><button className="button button--secondary button--small" disabled={items.length >= maxItems} onClick={addItem} type="button"><CirclePlus size={16} /> Pridať</button></div>
             <input name="items_count" type="hidden" value={items.length} />
             <span className="sr-only" aria-live="polite">{reorderMessage}</span>
             <div className="repeatable-list">
@@ -407,13 +413,23 @@ export function SectionForm({ siteId, sectionSlug, initialValues, initialRevisio
                   })()}
                 </div>
               ))}
+              {items.length > 0 && items.length < maxItems && (
+                <div className="repeatable-add">
+                  <button className="button button--secondary button--small" onClick={addItem} type="button"><CirclePlus size={16} /> Pridať</button>
+                </div>
+              )}
               {items.length === 0 && <div className="repeatable-empty"><p>Zatiaľ tu nie je žiadna položka.</p><button className="button button--secondary button--small" onClick={addItem} type="button"><CirclePlus size={16} /> Pridať prvú položku</button></div>}
             </div>
           </div>
         )}
 
         <div className="editor-card__footer">
-          <span>Zmeny sa neukladajú samy — pred odchodom ich uložte.</span>
+          <span className="save-state save-state--footer" aria-live="polite">
+            {saveState === "saved" && <><Check size={15} /> Zmeny boli uložené</>}
+            {saveState === "dirty" && <>Zmeny sa neukladajú samy — pred odchodom ich uložte.</>}
+            {saveState === "saving" && <><Save size={15} /> Ukladám…</>}
+            {saveState === "error" && <><AlertCircle size={15} /> Nepodarilo sa uložiť</>}
+          </span>
           <button
             className="button button--primary button--small"
             disabled={busy || revisionConflict || saveState === "saved"}

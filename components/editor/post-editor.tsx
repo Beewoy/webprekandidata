@@ -7,6 +7,8 @@ import { useEffect, useRef, useState, useTransition, type ChangeEvent } from "re
 import { AlertCircle, ArrowLeft, Check, ExternalLink, EyeOff, Globe, ImagePlus, LoaderCircle, LockKeyhole, Save, Sparkles, Trash2, Upload, WandSparkles, X } from "lucide-react";
 import { deletePostAction, deletePostCoverAction, generateArticleAction, registerPostCoverAction, savePostAction } from "@/app/actions/posts";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
+import { SaveSuccessNotice } from "@/components/editor/save-success-notice";
+import { useSaveSuccessNotice } from "@/components/editor/use-save-success-notice";
 import { GuardedLink, useRegisterDirty } from "@/components/editor/unsaved-changes";
 import { prepareGalleryImage } from "@/lib/gallery-image";
 import type { PostAiEntitlement, PostDetail, PostStatus } from "@/lib/posts";
@@ -57,6 +59,7 @@ export function PostEditor({ ai, initialPost, siteId }: { ai: PostAiEntitlement;
   const stateRef = useRef(state);
 
   useRegisterDirty(`post:${initialPost.id}`, state === "dirty" || state === "error");
+  const { noticeVisible, noticeMessage } = useSaveSuccessNotice(state);
 
   useEffect(() => {
     postRef.current = post;
@@ -274,6 +277,7 @@ export function PostEditor({ ai, initialPost, siteId }: { ai: PostAiEntitlement;
         </div>
       </div>
 
+      <SaveSuccessNotice message={noticeMessage} visible={noticeVisible} />
       {message && <div className={messageIsError ? "autosave-error" : "post-editor-notice"} role={messageIsError ? "alert" : "status"}>{message}</div>}
 
       <div className="post-editor-layout">

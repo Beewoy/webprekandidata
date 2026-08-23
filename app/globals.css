@@ -261,6 +261,7 @@ svg { flex: 0 0 auto; }
 .repeatable-detail__panel { padding: 5px 0 4px; }
 .repeatable-empty { align-items: center; background: var(--slate-50); border: 1px dashed var(--slate-300); border-radius: 11px; display: flex; flex-direction: column; gap: 12px; padding: 26px; text-align: center; }
 .repeatable-empty p { color: var(--slate-600); font-size: 11px; margin: 0; }
+.repeatable-add { display: flex; justify-content: center; margin-top: 12px; }
 
 .appearance-grid { align-items: start; display: grid; gap: 24px; grid-template-columns: minmax(0, 1fr) 420px; }
 .appearance-controls { display: grid; gap: 20px; padding: 26px; }

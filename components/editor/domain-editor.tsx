@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -23,6 +23,7 @@ import {
   updateSiteSlugAction,
 } from "@/app/actions/domains";
 import { PageHeading } from "@/components/ui/page-heading";
+import { SaveSuccessNotice } from "@/components/editor/save-success-notice";
 import { DomainDnsGuide } from "@/components/editor/domain-dns-guide";
 import { getPlatformPathHostname, getPlatformSiteDisplayUrl } from "@/lib/domains/platform";
 import type { SiteDomainRecord, SiteDomainState } from "@/lib/data/domains";
@@ -96,6 +97,7 @@ export function DomainEditor({ siteId, state }: { siteId: string; state: SiteDom
   const [slug, setSlug] = useState(state.slug);
   const [slugFieldError, setSlugFieldError] = useState("");
   const [message, setMessage] = useState("");
+  const messageTimeoutRef = useRef<number | null>(null);
   const [error, setError] = useState("");
   const [fieldError, setFieldError] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -109,6 +111,11 @@ export function DomainEditor({ siteId, state }: { siteId: string; state: SiteDom
   function refresh(nextMessage: string, nextSlug?: string) {
     setMessage(nextMessage);
     setError("");
+    if (messageTimeoutRef.current !== null) window.clearTimeout(messageTimeoutRef.current);
+    messageTimeoutRef.current = window.setTimeout(() => {
+      setMessage("");
+      messageTimeoutRef.current = null;
+    }, 4000);
     if (nextSlug !== undefined) setSlug(nextSlug);
     router.refresh();
   }
@@ -197,7 +204,7 @@ export function DomainEditor({ siteId, state }: { siteId: string; state: SiteDom
         description="Vyberte, na akej adrese návštevníci váš web nájdu."
       />
 
-      {message && <div className="autosave-success" role="status">{message}</div>}
+      {message && <SaveSuccessNotice message={message} visible={!!message} />}
       {error && <div className="autosave-error" role="alert">{error}</div>}
 
       <section className="editor-card">

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { AlertCircle, Check, ImagePlus, Images, LoaderCircle, Move, Upload, X, ZoomIn } from "lucide-react";
 import { registerMediaAssetAction } from "@/app/actions/sites";
+import { SaveSuccessNotice } from "@/components/editor/save-success-notice";
 import { PageHeading } from "@/components/ui/page-heading";
 import { calculateCropGeometry, fitOutputSize } from "@/lib/image-crop";
 import { createClient } from "@/lib/supabase/client";
@@ -64,6 +65,16 @@ export function ImageEditor({ initialAssets, siteId }: { initialAssets: SiteMedi
   const [uploadState, setUploadState] = useState<UploadState>("idle");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const noticeTimeoutRef = useRef<number | null>(null);
+
+  function showSuccessNotice(nextNotice: string) {
+    setNotice(nextNotice);
+    if (noticeTimeoutRef.current !== null) window.clearTimeout(noticeTimeoutRef.current);
+    noticeTimeoutRef.current = window.setTimeout(() => {
+      setNotice("");
+      noticeTimeoutRef.current = null;
+    }, 4000);
+  }
   const isBusy = uploadState !== "idle";
 
   const assetByKind = useMemo(() => new Map(assets.map((asset) => [asset.kind, asset])), [assets]);
@@ -153,6 +164,10 @@ export function ImageEditor({ initialAssets, siteId }: { initialAssets: SiteMedi
     setSelectedSlot(slot);
     setError("");
     setNotice("");
+    if (noticeTimeoutRef.current !== null) {
+      window.clearTimeout(noticeTimeoutRef.current);
+      noticeTimeoutRef.current = null;
+    }
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
       fileInputRef.current.click();
@@ -304,7 +319,7 @@ export function ImageEditor({ initialAssets, siteId }: { initialAssets: SiteMedi
             width: output.width,
           },
         ]);
-        setNotice("Obrázok je pripravený v ukážke. V demo režime sa do cloudu neukladá.");
+        showSuccessNotice("Obrázok je pripravený v ukážke. V demo režime sa do cloudu neukladá.");
         setUploadState("idle");
         finishCropper();
         return;
@@ -349,7 +364,7 @@ export function ImageEditor({ initialAssets, siteId }: { initialAssets: SiteMedi
       const previewUrl = result.asset.previewUrl || URL.createObjectURL(blob);
       if (!result.asset.previewUrl) demoObjectUrlsRef.current.push(previewUrl);
       setAssets((current) => [...current.filter((asset) => asset.kind !== result.asset.kind), { ...result.asset, previewUrl }]);
-      setNotice("Obrázok bol orezaný a bezpečne uložený.");
+      showSuccessNotice("Obrázok bol orezaný a bezpečne uložený.");
       setUploadState("idle");
       finishCropper();
       router.refresh();
@@ -379,7 +394,7 @@ export function ImageEditor({ initialAssets, siteId }: { initialAssets: SiteMedi
       />
 
       {error && !draft && <div className="form-message form-message--error media-message" role="alert"><AlertCircle size={18} />{error}</div>}
-      {notice && <div className="form-message form-message--success media-message" role="status"><Check size={18} />{notice}</div>}
+      <SaveSuccessNotice message={notice} visible={!!notice} />
 
       <section className="editor-card">
         <div className="editor-card__intro"><span className="section-symbol"><Images size={21} /></span><div><h2>Obrázky webu</h2><p>Obrázky orežeme na správny pomer, zmenšíme a uložíme ako optimalizovaný WebP.</p></div></div>

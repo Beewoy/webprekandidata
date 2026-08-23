@@ -4,6 +4,8 @@ import { AlertCircle, Check, Eye, RotateCcw, Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { saveThemeAction } from "@/app/actions/sites";
 import { CampaignTemplatePreview } from "@/components/editor/campaign-template-preview";
+import { SaveSuccessNotice } from "@/components/editor/save-success-notice";
+import { useSaveSuccessNotice } from "@/components/editor/use-save-success-notice";
 import { useRegisterDirty } from "@/components/editor/unsaved-changes";
 import { cn } from "@/lib/cn";
 import {
@@ -45,6 +47,7 @@ export function AppearanceEditor({ initialRevision, initialTheme, siteId }: Appe
   const isDefaultTheme = color === defaultCampaignTheme.color && template === defaultCampaignTheme.template;
 
   useRegisterDirty("appearance", saveState === "dirty" || saveState === "error");
+  const { noticeVisible, noticeMessage } = useSaveSuccessNotice(saveState, "Vzhľad bol uložený.");
 
   async function flushTheme() {
     if (revisionConflictRef.current || savingRef.current) return;
@@ -174,6 +177,7 @@ export function AppearanceEditor({ initialRevision, initialTheme, siteId }: Appe
           )}
         </div>
       )}
+      <SaveSuccessNotice message={noticeMessage} visible={noticeVisible} />
       <div className="appearance-grid">
         <section className="editor-card appearance-controls">
           <div className="appearance-section-heading">

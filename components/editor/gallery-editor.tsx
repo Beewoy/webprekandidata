@@ -9,6 +9,8 @@ import {
   reorderGalleryAssetsAction,
   updateGalleryAssetAction,
 } from "@/app/actions/sites";
+import { SaveSuccessNotice } from "@/components/editor/save-success-notice";
+import { useSaveSuccessNotice } from "@/components/editor/use-save-success-notice";
 import { useRegisterDirty } from "@/components/editor/unsaved-changes";
 import { PageHeading } from "@/components/ui/page-heading";
 import { createClient } from "@/lib/supabase/client";
@@ -48,6 +50,7 @@ export function GalleryEditor({ initialAssets, initialStorageUsedBytes, siteId }
   const saveState: SaveState = status === "saving" ? "saving" : status === "error" ? "error" : captionsDirty ? "dirty" : "saved";
 
   useRegisterDirty("gallery", captionsDirty || status === "error");
+  const { noticeVisible, noticeMessage } = useSaveSuccessNotice(saveState);
 
   function replaceAssets(next: GalleryMediaAsset[]) {
     assetsRef.current = next;
@@ -236,6 +239,7 @@ export function GalleryEditor({ initialAssets, initialStorageUsedBytes, siteId }
         </div>
       )} />
 
+      <SaveSuccessNotice message={noticeMessage} visible={noticeVisible} />
       {saveState === "error" && <div className="autosave-error" role="alert"><AlertCircle size={18} /><span>{message}</span></div>}
       <section className="editor-card gallery-editor">
         <div className="editor-card__intro">

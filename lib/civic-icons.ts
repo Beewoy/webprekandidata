@@ -1,9 +1,12 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Accessibility,
+  Baby,
   BadgeEuro,
+  BookOpen,
   BriefcaseBusiness,
   BusFront,
+  Droplets,
   GraduationCap,
   Handshake,
   HeartPulse,
@@ -11,11 +14,14 @@ import {
   Landmark,
   Leaf,
   Lightbulb,
+  Megaphone,
   MessageCircleMore,
+  Recycle,
   Scale,
   ShieldCheck,
   Sparkles,
   Trees,
+  Trophy,
   UsersRound,
   Wifi,
   Wrench,
@@ -23,6 +29,7 @@ import {
 
 export type CivicIconName =
   | "accessibility"
+  | "culture"
   | "economy"
   | "education"
   | "environment"
@@ -36,11 +43,16 @@ export type CivicIconName =
   | "infrastructure"
   | "innovation"
   | "jobs"
+  | "participation"
+  | "recycling"
   | "safety"
   | "services"
+  | "sports"
   | "transport"
   | "trees"
-  | "together";
+  | "together"
+  | "water"
+  | "youth";
 
 export type CivicIconOption = {
   Icon: LucideIcon;
@@ -69,6 +81,12 @@ export const civicIconOptions: CivicIconOption[] = [
   { key: "innovation", label: "Digitalizácia", Icon: Wifi },
   { key: "ideas", label: "Nové riešenia", Icon: Lightbulb },
   { key: "economy", label: "Čistota a poriadok", Icon: Sparkles },
+  { key: "culture", label: "Kultúra", Icon: BookOpen },
+  { key: "sports", label: "Šport a voľný čas", Icon: Trophy },
+  { key: "youth", label: "Deti a mládež", Icon: Baby },
+  { key: "water", label: "Voda a kanalizácia", Icon: Droplets },
+  { key: "recycling", label: "Recyklácia a odpad", Icon: Recycle },
+  { key: "participation", label: "Participácia občanov", Icon: Megaphone },
 ];
 
 export const defaultCivicIcon: CivicIconName = "governance";

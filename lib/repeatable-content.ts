@@ -3,6 +3,7 @@ import type { CivicIconName } from "./civic-icons";
 export type RepeatableContentConfig = {
   defaultIcon: CivicIconName;
   label: string;
+  maxItems?: number;
   supportsDetails?: boolean;
   items: Array<{ detail?: string; icon: CivicIconName; title: string; text: string }>;
 };
@@ -29,6 +30,7 @@ export const repeatableContent: Record<string, RepeatableContentConfig> = {
   program: {
     defaultIcon: "ideas",
     label: "Body programu",
+    maxItems: 15,
     supportsDetails: true,
     items: [
       { icon: "transport", title: "Bezpečná doprava", text: "Opravy ciest, prehľadné značenie a lepšie spojenia MHD." },
