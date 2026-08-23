@@ -7,39 +7,8 @@ import {
   isPlatformHostname,
   isPlatformWwwHostname,
 } from "@/lib/domains/platform";
-import { clearSupabaseAuthCookies } from "@/lib/supabase/auth-cookies";
+import { attachInvokePath, refreshAuthSession } from "@/lib/proxy/auth-session";
 import { isPlatformOnlyPath, shouldRefreshAuthSession } from "@/lib/proxy/session-routes";
-
-async function refreshAuthSession(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) return NextResponse.next({ request });
-
-  let response = NextResponse.next({ request });
-  const supabase = createServerClient(url, key, {
-    cookies: {
-      getAll: () => request.cookies.getAll(),
-      setAll: (cookiesToSet) => {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
-      },
-    },
-  });
-
-  try {
-    const { error } = await supabase.auth.getUser();
-    if (error) {
-      clearSupabaseAuthCookies(request, response);
-    }
-  } catch {
-    const fallback = NextResponse.next({ request });
-    clearSupabaseAuthCookies(request, fallback);
-    return fallback;
-  }
-
-  return response;
-}
 
 async function resolveCustomDomainSlug(hostname: string): Promise<string | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -102,10 +71,10 @@ export async function proxy(request: NextRequest) {
   }
 
   if (shouldRefreshAuthSession(pathname)) {
-    return refreshAuthSession(request);
+    return attachInvokePath(await refreshAuthSession(request), pathname, search);
   }
 
-  return NextResponse.next({ request });
+  return attachInvokePath(NextResponse.next({ request }), pathname, search);
 }
 
 export const config = {

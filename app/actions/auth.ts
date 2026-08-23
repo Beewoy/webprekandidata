@@ -8,6 +8,7 @@ import {
   authRateLimitMessage,
   consumeAuthEmailRateLimit,
 } from "@/lib/rate-limit";
+import { sanitizeInternalPath } from "@/lib/auth/safe-redirect";
 import { createClient } from "@/lib/supabase/server";
 import {
   loginSchema,
@@ -40,7 +41,7 @@ export async function loginAction(_previousState: AuthActionState, formData: For
     return { status: "error", message: "E-mail alebo heslo nie je správne. Skontrolujte údaje a skúste to znova." };
   }
 
-  redirect("/app");
+  redirect(sanitizeInternalPath(formData.get("next")));
 }
 
 export async function registerAction(_previousState: AuthActionState, formData: FormData): Promise<AuthActionState> {

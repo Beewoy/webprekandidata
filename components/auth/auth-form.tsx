@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { sanitizeInternalPath } from "@/lib/auth/safe-redirect";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { AlertCircle, ArrowRight, CheckCircle2, Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { loginAction, registerAction, resetPasswordAction, updatePasswordAction } from "@/app/actions/auth";
@@ -60,8 +61,9 @@ function PasswordField({ name, label, error, newPassword = false }: { name: stri
   );
 }
 
-export function AuthForm({ mode, notice }: { mode: AuthMode; notice?: { type: "success" | "error"; text: string } }) {
+export function AuthForm({ mode, nextPath, notice }: { mode: AuthMode; nextPath?: string; notice?: { type: "success" | "error"; text: string } }) {
   const current = config[mode];
+  const loginNext = mode === "login" ? sanitizeInternalPath(nextPath) : undefined;
   const [state, formAction, pending] = useActionState(current.action, initialAuthState);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -78,6 +80,7 @@ export function AuthForm({ mode, notice }: { mode: AuthMode; notice?: { type: "s
       {notice && <div className={notice.type === "success" ? "form-message form-message--success auth-notice" : "form-message form-message--error auth-notice"} role="status">{notice.type === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}<span>{notice.text}</span></div>}
 
       <form ref={formRef} className="auth-form" action={formAction} noValidate>
+        {mode === "login" && loginNext !== "/app" && <input name="next" type="hidden" value={loginNext} />}
         {mode === "register" && (
           <label className="auth-field">
             <span>Meno a priezvisko</span>

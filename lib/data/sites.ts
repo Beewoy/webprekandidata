@@ -1,5 +1,8 @@
 import { cache } from "react";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { sanitizeInternalPath } from "@/lib/auth/safe-redirect";
+import { INVOKE_PATH_HEADER } from "@/lib/proxy/auth-session";
 import { isDemoMode } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { contentSections, editorFields, publishSections } from "@/lib/site-sections";
@@ -47,7 +50,11 @@ export const getCurrentUser = cache(async () => {
 
 export async function requireCurrentUser() {
   const user = await getCurrentUser();
-  if (!user) redirect("/prihlasenie");
+  if (!user) {
+    const headerList = await headers();
+    const next = sanitizeInternalPath(headerList.get(INVOKE_PATH_HEADER));
+    redirect(next === "/app" ? "/prihlasenie" : `/prihlasenie?next=${encodeURIComponent(next)}`);
+  }
   return user;
 }
 
