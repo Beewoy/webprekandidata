@@ -7,6 +7,7 @@ import {
   isPlatformHostname,
   isPlatformWwwHostname,
 } from "@/lib/domains/platform";
+import { clearSupabaseAuthCookies } from "@/lib/supabase/auth-cookies";
 
 const APP_PATH_PREFIXES = [
   "/app",
@@ -40,7 +41,17 @@ async function refreshAuthSession(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getClaims();
+  try {
+    const { error } = await supabase.auth.getUser();
+    if (error) {
+      clearSupabaseAuthCookies(request, response);
+    }
+  } catch {
+    const fallback = NextResponse.next({ request });
+    clearSupabaseAuthCookies(request, fallback);
+    return fallback;
+  }
+
   return response;
 }
 
@@ -104,7 +115,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.rewrite(new URL(`/ukazka${pathname.slice("/app/web/demo".length)}`, request.url));
   }
 
-  return refreshAuthSession(request);
+  if (isAppPath(pathname)) {
+    return refreshAuthSession(request);
+  }
+
+  return NextResponse.next({ request });
 }
 
 export const config = {
