@@ -270,6 +270,97 @@ export type Database = {
           },
         ]
       }
+      content_reports: {
+        Row: {
+          content_url: string
+          decided_at: string | null
+          decided_by: string | null
+          decision: string | null
+          decision_basis: string | null
+          good_faith: boolean
+          id: string
+          political_ad_snapshot_id: string
+          priority: string
+          reason: string
+          received_at: string
+          report_type: string
+          reporter_email: string
+          reporter_name: string
+          reporter_notified_at: string | null
+          site_id: string
+          source_fingerprint: string
+          sponsor_notified_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          content_url: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision?: string | null
+          decision_basis?: string | null
+          good_faith: boolean
+          id?: string
+          political_ad_snapshot_id: string
+          priority?: string
+          reason: string
+          received_at?: string
+          report_type: string
+          reporter_email: string
+          reporter_name: string
+          reporter_notified_at?: string | null
+          site_id: string
+          source_fingerprint: string
+          sponsor_notified_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          content_url?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision?: string | null
+          decision_basis?: string | null
+          good_faith?: boolean
+          id?: string
+          political_ad_snapshot_id?: string
+          priority?: string
+          reason?: string
+          received_at?: string
+          report_type?: string
+          reporter_email?: string
+          reporter_name?: string
+          reporter_notified_at?: string | null
+          site_id?: string
+          source_fingerprint?: string
+          sponsor_notified_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_reports_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_reports_political_ad_snapshot_id_fkey"
+            columns: ["political_ad_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "political_ad_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_reports_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       domains: {
         Row: {
           created_at: string
@@ -374,6 +465,66 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "email_verification_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feedback_submissions: {
+        Row: {
+          comment: string | null
+          consent_public: boolean
+          created_at: string
+          editor_rating: number
+          email: string | null
+          highlights: string[]
+          id: string
+          improvements: string[]
+          overall_rating: number
+          request_fingerprint: string | null
+          site_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          comment?: string | null
+          consent_public?: boolean
+          created_at?: string
+          editor_rating: number
+          email?: string | null
+          highlights?: string[]
+          id?: string
+          improvements?: string[]
+          overall_rating: number
+          request_fingerprint?: string | null
+          site_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          comment?: string | null
+          consent_public?: boolean
+          created_at?: string
+          editor_rating?: number
+          email?: string | null
+          highlights?: string[]
+          id?: string
+          improvements?: string[]
+          overall_rating?: number
+          request_fingerprint?: string | null
+          site_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_submissions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_submissions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -859,6 +1010,244 @@ export type Database = {
         }
         Relationships: []
       }
+      political_ad_profiles: {
+        Row: {
+          ad_id: string
+          amount_cents: number
+          art_5_2_confirmed: boolean
+          art_5_2_eligibility: string | null
+          controlling_entity_address: string | null
+          controlling_entity_email: string | null
+          controlling_entity_name: string | null
+          controlling_entity_settlement: string | null
+          created_at: string
+          data_truthful: boolean
+          declaration_version: string
+          declared_at: string
+          declared_by: string
+          election_date: string
+          election_name: string
+          election_official_url: string | null
+          election_territory: string
+          election_type: string
+          finance_methodology: string
+          funding_origin: string
+          funding_source: string
+          is_political_ad: boolean
+          other_benefits: string | null
+          payer_address: string | null
+          payer_email: string | null
+          payer_is_different: boolean
+          payer_name: string | null
+          payer_settlement: string | null
+          publication_ends_on: string
+          publication_starts_on: string
+          signer_name: string
+          site_id: string
+          sponsor_address: string
+          sponsor_country_code: string
+          sponsor_email: string
+          sponsor_name: string
+          sponsor_registration_id: string | null
+          sponsor_settlement: string
+          sponsor_type: string
+          updated_at: string
+        }
+        Insert: {
+          ad_id?: string
+          amount_cents: number
+          art_5_2_confirmed?: boolean
+          art_5_2_eligibility?: string | null
+          controlling_entity_address?: string | null
+          controlling_entity_email?: string | null
+          controlling_entity_name?: string | null
+          controlling_entity_settlement?: string | null
+          created_at?: string
+          data_truthful?: boolean
+          declaration_version: string
+          declared_at?: string
+          declared_by: string
+          election_date: string
+          election_name: string
+          election_official_url?: string | null
+          election_territory: string
+          election_type: string
+          finance_methodology: string
+          funding_origin: string
+          funding_source: string
+          is_political_ad?: boolean
+          other_benefits?: string | null
+          payer_address?: string | null
+          payer_email?: string | null
+          payer_is_different?: boolean
+          payer_name?: string | null
+          payer_settlement?: string | null
+          publication_ends_on: string
+          publication_starts_on: string
+          signer_name: string
+          site_id: string
+          sponsor_address: string
+          sponsor_country_code?: string
+          sponsor_email: string
+          sponsor_name: string
+          sponsor_registration_id?: string | null
+          sponsor_settlement: string
+          sponsor_type: string
+          updated_at?: string
+        }
+        Update: {
+          ad_id?: string
+          amount_cents?: number
+          art_5_2_confirmed?: boolean
+          art_5_2_eligibility?: string | null
+          controlling_entity_address?: string | null
+          controlling_entity_email?: string | null
+          controlling_entity_name?: string | null
+          controlling_entity_settlement?: string | null
+          created_at?: string
+          data_truthful?: boolean
+          declaration_version?: string
+          declared_at?: string
+          declared_by?: string
+          election_date?: string
+          election_name?: string
+          election_official_url?: string | null
+          election_territory?: string
+          election_type?: string
+          finance_methodology?: string
+          funding_origin?: string
+          funding_source?: string
+          is_political_ad?: boolean
+          other_benefits?: string | null
+          payer_address?: string | null
+          payer_email?: string | null
+          payer_is_different?: boolean
+          payer_name?: string | null
+          payer_settlement?: string | null
+          publication_ends_on?: string
+          publication_starts_on?: string
+          signer_name?: string
+          site_id?: string
+          sponsor_address?: string
+          sponsor_country_code?: string
+          sponsor_email?: string
+          sponsor_name?: string
+          sponsor_registration_id?: string | null
+          sponsor_settlement?: string
+          sponsor_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "political_ad_profiles_declared_by_fkey"
+            columns: ["declared_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "political_ad_profiles_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      political_ad_snapshots: {
+        Row: {
+          ad_id: string
+          created_at: string
+          created_by: string
+          first_published_at: string
+          id: string
+          last_published_at: string
+          notice_hash: string
+          publication_hash: string
+          publication_id: string
+          publication_version: number
+          repository_checked_at: string
+          repository_payload: Json
+          repository_payload_hash: string
+          repository_public_url: string | null
+          repository_source_url: string
+          repository_status: string
+          retained_until: string
+          site_id: string
+          transparency_data: Json
+          transparency_hash: string
+          transparency_version: string
+        }
+        Insert: {
+          ad_id: string
+          created_at?: string
+          created_by: string
+          first_published_at: string
+          id?: string
+          last_published_at: string
+          notice_hash: string
+          publication_hash: string
+          publication_id: string
+          publication_version: number
+          repository_checked_at: string
+          repository_payload: Json
+          repository_payload_hash: string
+          repository_public_url?: string | null
+          repository_source_url: string
+          repository_status: string
+          retained_until: string
+          site_id: string
+          transparency_data: Json
+          transparency_hash: string
+          transparency_version: string
+        }
+        Update: {
+          ad_id?: string
+          created_at?: string
+          created_by?: string
+          first_published_at?: string
+          id?: string
+          last_published_at?: string
+          notice_hash?: string
+          publication_hash?: string
+          publication_id?: string
+          publication_version?: number
+          repository_checked_at?: string
+          repository_payload?: Json
+          repository_payload_hash?: string
+          repository_public_url?: string | null
+          repository_source_url?: string
+          repository_status?: string
+          retained_until?: string
+          site_id?: string
+          transparency_data?: Json
+          transparency_hash?: string
+          transparency_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "political_ad_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "political_ad_snapshots_publication_id_fkey"
+            columns: ["publication_id"]
+            isOneToOne: true
+            referencedRelation: "site_publications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "political_ad_snapshots_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           author_user_id: string
@@ -1318,6 +1707,17 @@ export type Database = {
     Functions: {
       activate_deferred_orders: { Args: { p_limit?: number }; Returns: Json }
       admin_dashboard_metrics: { Args: never; Returns: Json }
+      admin_decide_content_report: {
+        Args: {
+          p_decision: string
+          p_decision_basis: string
+          p_report_id: string
+          p_reporter_notified: boolean
+          p_sponsor_notified: boolean
+          p_status: string
+        }
+        Returns: Json
+      }
       admin_grant_site_plan: {
         Args: {
           p_plan_code: Database["public"]["Enums"]["plan_code"]
@@ -1418,6 +1818,26 @@ export type Database = {
         }
         Returns: Json
       }
+      publish_candidate_site_compliant: {
+        Args: {
+          p_content: Json
+          p_correlation_id: string
+          p_media_manifest: Json
+          p_notice_hash: string
+          p_posts: Json
+          p_publication_id: string
+          p_repository_checked_at: string
+          p_repository_source_url: string
+          p_repository_status: string
+          p_schema_version: number
+          p_seo: Json
+          p_site_id: string
+          p_source_fingerprint: string
+          p_source_revision: number
+          p_theme: Json
+        }
+        Returns: Json
+      }
       purge_expired_operational_data: { Args: never; Returns: Json }
       record_stripe_invoice: {
         Args: {
@@ -1483,10 +1903,7 @@ export type Database = {
         Returns: Json
       }
       update_site_slug: {
-        Args: {
-          p_new_slug: string
-          p_site_id: string
-        }
+        Args: { p_new_slug: string; p_site_id: string }
         Returns: Json
       }
       verify_email_token: { Args: { p_token_hash: string }; Returns: boolean }
@@ -1645,3 +2062,4 @@ export const Constants = {
     },
   },
 } as const
+

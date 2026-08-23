@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MessageSquareHeart,
   Shield,
   Users,
   X,
@@ -31,6 +32,7 @@ const navItems: Array<{
   { href: "/admin/objednavky", label: "Objednávky", icon: CreditCard },
   { href: "/admin/domeny", label: "Domény", icon: Globe2 },
   { href: "/admin/ai-pouzitie", label: "AI použitie", icon: Bot },
+  { href: "/admin/spatna-vazba", label: "Spätná väzba", icon: MessageSquareHeart },
   { href: "/admin/audit", label: "Audit", icon: ClipboardList },
 ];
 

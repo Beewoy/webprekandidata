@@ -1,6 +1,6 @@
 # Stav implementácie
 
-Aktualizované: 21. august 2026
+Aktualizované: 23. august 2026
 
 Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Produktový plán môže obsahovať aj budúci rozsah.
 
@@ -73,6 +73,13 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - dvojkrokový uvítací dialóg po registrácii s možnosťou preskočenia,
 - editovateľná kontrola prvého návrhu pred vytvorením webu,
 - dialóg Pomoc a podpora v sidebare editora s telefónom +421 948 473 255 a formulárom, ktorý cez Brevo SMTP pošle správu na podporné e-maily.
+
+### Spätná väzba (pilot)
+
+- verejný formulár `/spatna-vazba` (noindex): dve hviezdičkové hodnotenia, voliteľné chips, komentár a voliteľný e-mail,
+- ukladanie do `feedback_submissions`, e-mailová notifikácia podpore a admin prehľad `/admin/spatna-vazba`,
+- migrácia `0033_site_feedback.sql` (rezervácia slug `spatna-vazba`, rate limit 2 odoslania / 24 h na IP fingerprint),
+- pri prihlásenom používateľovi s jedným webom sa odpoveď automaticky prepojí na `user_id` a `site_id`.
 
 ### AI onboarding
 

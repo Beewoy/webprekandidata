@@ -1,6 +1,7 @@
 import "server-only";
 
 import nodemailer from "nodemailer";
+import { formatFeedbackChipLabels } from "@/lib/feedback/options";
 import { getAppUrl } from "@/lib/env";
 
 type VerificationEmail = {
@@ -313,6 +314,90 @@ export async function sendOrderConfirmationEmail({
             &nbsp;·&nbsp;
             <a href="${safeComplaintsUrl}" style="color:#0f766e;text-decoration:none">Reklamačný poriadok</a>
           </p>
+        </div>
+      </div>
+    `,
+  });
+}
+
+type FeedbackNotificationEmail = {
+  comment?: string;
+  consentPublic: boolean;
+  createdAtIso: string;
+  editorRating: number;
+  email?: string;
+  highlights: string[];
+  improvements: string[];
+  overallRating: number;
+  recipientEmails: readonly string[];
+  siteId: string | null;
+  siteLabel: string | null;
+  submissionId: string;
+  userId: string | null;
+};
+
+function formatFeedbackStars(rating: number) {
+  return `${rating}/5`;
+}
+
+export async function sendFeedbackNotificationEmail(input: FeedbackNotificationEmail) {
+  const transporter = createTransporter();
+  const submittedLocal = new Intl.DateTimeFormat("sk-SK", {
+    dateStyle: "long",
+    timeStyle: "medium",
+    timeZone: "Europe/Bratislava",
+  }).format(new Date(input.createdAtIso));
+
+  const highlightLabels = input.highlights.length > 0 ? formatFeedbackChipLabels(input.highlights).join(", ") : "—";
+  const improvementLabels = input.improvements.length > 0 ? formatFeedbackChipLabels(input.improvements).join(", ") : "—";
+  const safeComment = input.comment ? escapeHtml(input.comment).replaceAll("\n", "<br>") : null;
+  const safeEmail = input.email ? escapeHtml(input.email) : null;
+  const safeSite = input.siteLabel ? escapeHtml(input.siteLabel) : null;
+  const safeWhen = escapeHtml(submittedLocal);
+  const safeId = escapeHtml(input.submissionId);
+
+  await transporter.sendMail({
+    from: { name: "Web pre kandidáta", address: "noreply@webprekandidata.sk" },
+    replyTo: input.email || undefined,
+    to: [...input.recipientEmails],
+    subject: "Nová spätná väzba – WebPreKandidata.sk",
+    text: [
+      "Nová spätná väzba z formulára /spatna-vazba",
+      "",
+      `ID: ${input.submissionId}`,
+      `Dátum: ${submittedLocal}`,
+      `Celková spokojnosť: ${formatFeedbackStars(input.overallRating)}`,
+      `Jednoduchosť editora: ${formatFeedbackStars(input.editorRating)}`,
+      `Páčilo sa: ${highlightLabels}`,
+      `Zlepšiť: ${improvementLabels}`,
+      input.comment ? `Komentár: ${input.comment}` : null,
+      input.email ? `E-mail: ${input.email}` : null,
+      input.userId ? `ID používateľa: ${input.userId}` : null,
+      input.siteId ? `ID webu: ${input.siteId}` : null,
+      input.siteLabel ? `Web: ${input.siteLabel}` : null,
+      `Súhlas s referenciou: ${input.consentPublic ? "áno" : "nie"}`,
+    ]
+      .filter((line): line is string => line !== null)
+      .join("\n"),
+    html: `
+      <div style="background:#f7f9fb;padding:32px 16px;font-family:Inter,Arial,sans-serif;color:#17212d">
+        <div style="max-width:600px;margin:0 auto;background:#fff;border:1px solid #e2e8ef;border-radius:16px;padding:32px">
+          <div style="font-size:19px;font-weight:800;color:#163b65;margin-bottom:24px">WebPreKandidata.sk</div>
+          <h1 style="font-size:25px;line-height:1.25;margin:0 0 22px">Nová spätná väzba</h1>
+          <div style="background:#f7f9fb;border:1px solid #e2e8ef;border-radius:12px;padding:18px;margin-bottom:22px">
+            <p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>ID:</strong> ${safeId}</p>
+            <p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>Dátum:</strong> ${safeWhen}</p>
+            <p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>Celková spokojnosť:</strong> ${formatFeedbackStars(input.overallRating)}</p>
+            <p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>Jednoduchosť editora:</strong> ${formatFeedbackStars(input.editorRating)}</p>
+            <p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>Páčilo sa:</strong> ${escapeHtml(highlightLabels)}</p>
+            <p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>Zlepšiť:</strong> ${escapeHtml(improvementLabels)}</p>
+            ${safeEmail ? `<p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>E-mail:</strong> ${safeEmail}</p>` : ""}
+            ${input.userId ? `<p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>ID používateľa:</strong> ${escapeHtml(input.userId)}</p>` : ""}
+            ${input.siteId ? `<p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>ID webu:</strong> ${escapeHtml(input.siteId)}</p>` : ""}
+            ${safeSite ? `<p style="font-size:14px;line-height:1.6;margin:0 0 6px"><strong>Web:</strong> ${safeSite}</p>` : ""}
+            <p style="font-size:14px;line-height:1.6;margin:0"><strong>Súhlas s referenciou:</strong> ${input.consentPublic ? "áno" : "nie"}</p>
+          </div>
+          ${safeComment ? `<p style="font-size:14px;line-height:1.65;margin:0"><strong>Komentár</strong><br>${safeComment}</p>` : ""}
         </div>
       </div>
     `,

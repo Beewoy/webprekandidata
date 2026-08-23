@@ -172,6 +172,8 @@ Serverové akcie sú v `app/actions/auth.ts`. UI je v `components/auth/auth-form
 
 Obnovu hesla a ďalšie vstavané Auth e-maily odosiela Supabase cez Brevo SMTP. Aplikačný overovací e-mail odosiela server cez rovnaké Brevo SMTP spojenie (`smtp-relay.brevo.com:587`). SMTP prihlasovacie údaje sú iba v serverovom prostredí. Doména `webprekandidata.sk` je autentifikovaná overovacím TXT a dvomi DKIM CNAME záznamami vo Websupport DNS. Odosielateľ je `Web pre kandidáta <noreply@webprekandidata.sk>`. Existujúci SPF záznam Websupportu a DMARC politika `p=quarantine` sa pri tejto integrácii nemenia. Dialóg Pomoc a podpora v dashboarde odosiela podporné správy cez rovnaké Brevo SMTP na pevné interné inboxy; vyžaduje prihláseného používateľa (okrem demo režimu) a má limity na počet odoslaní.
 
+Pilotný formulár spätnej väzby je na `/spatna-vazba` (noindex). Verejný POST ide cez `submitFeedbackForm` → Zod validácia → rate limit podľa hash IP → insert do `feedback_submissions` cez service role → Brevo notifikácia podpore. Tabuľku číta iba platform admin cez RLS; pri prihlásenom používateľovi s jediným webom sa doplní `user_id` a `site_id`. Slug `spatna-vazba` je rezervovaný v `create_candidate_site` a `update_site_slug`.
+
 Ochrana nesmie byť iba v proxy alebo UI. Každá mutácia musí samostatne overiť používateľa a databázová operácia musí byť chránená RLS alebo bezpečnou RPC funkciou.
 
 ### Uvítací AI onboarding
@@ -256,6 +258,7 @@ Kľúčové tabuľky:
 - `orders` a `payment_events` — objednávky a idempotentné webhooky,
 - `posts` — aktuality,
 - `contact_submissions` — správy s retenčnou lehotou,
+- `feedback_submissions` — pilotná spätná väzba z `/spatna-vazba`,
 - `ai_generations` — minimalizovaný AI audit bez plného promptu,
 - `audit_logs` — citlivé prevádzkové operácie.
 
