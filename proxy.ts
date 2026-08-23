@@ -8,21 +8,7 @@ import {
   isPlatformWwwHostname,
 } from "@/lib/domains/platform";
 import { clearSupabaseAuthCookies } from "@/lib/supabase/auth-cookies";
-
-const APP_PATH_PREFIXES = [
-  "/app",
-  "/admin",
-  "/api",
-  "/prihlasenie",
-  "/registracia",
-  "/obnova-hesla",
-  "/zabudnute-heslo",
-  "/auth",
-];
-
-function isAppPath(pathname: string) {
-  return APP_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-}
+import { isPlatformOnlyPath, shouldRefreshAuthSession } from "@/lib/proxy/session-routes";
 
 async function refreshAuthSession(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -87,7 +73,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (hostname && !isPlatformHostname(hostname)) {
-    if (isAppPath(pathname)) {
+    if (isPlatformOnlyPath(pathname)) {
       const destination = new URL(`${pathname}${search}`, getAppUrl());
       return NextResponse.redirect(destination, 308);
     }
@@ -115,7 +101,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.rewrite(new URL(`/ukazka${pathname.slice("/app/web/demo".length)}`, request.url));
   }
 
-  if (isAppPath(pathname)) {
+  if (shouldRefreshAuthSession(pathname)) {
     return refreshAuthSession(request);
   }
 
