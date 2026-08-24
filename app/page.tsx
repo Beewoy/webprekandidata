@@ -11,9 +11,11 @@ import {
   Menu,
   MonitorSmartphone,
   PencilLine,
+  Quote,
   SearchCheck,
   ShieldCheck,
   Sparkles,
+  Star,
   X,
 } from "lucide-react";
 import brandMarkImage from "@/landing-page/assets/favicon.svg";
@@ -23,6 +25,7 @@ import { LandingVideoDialog } from "@/components/marketing/landing-video-dialog"
 import { TemplateShowcaseCards } from "@/components/marketing/template-showcase-cards";
 import { getDaysUntilElection } from "@/lib/marketing/election-countdown";
 import { PLATFORM_OPEN_GRAPH_IMAGE } from "@/lib/marketing/metadata";
+import { TESTIMONIALS, type Testimonial } from "@/lib/marketing/testimonials";
 import {
   BASIC_UNAVAILABLE_FEATURES,
   PLAN_DESCRIPTIONS,
@@ -37,8 +40,6 @@ const canonicalUrl = "https://webprekandidata.sk/";
 const title = "Web pre kandidáta na voľby 2026 | WebPreKandidata.sk";
 const description =
   "Vytvorte si profesionálny volebný web pre komunálne a župné voľby 2026. Bez programátora, s náhľadom zdarma a platbou až pri zverejnení.";
-
-const SHOW_TESTIMONIALS = false;
 
 const FAQ_ITEMS = [
   {
@@ -304,59 +305,73 @@ function Hero() {
   );
 }
 
-function Testimonials() {
+function ReviewRating({ score }: { score: number }) {
   return (
-    <section
-      aria-describedby="referencie-upozornenie"
-      className={`${styles.section} ${styles.testimonials}`}
-      id="referencie"
-    >
+    <p className={styles.reviewRating} aria-label={`Hodnotenie ${score} z 5`}>
+      {Array.from({ length: 5 }, (_, index) => (
+        <Star
+          aria-hidden="true"
+          fill={index < score ? "currentColor" : "none"}
+          key={index}
+          size={15}
+          strokeWidth={index < score ? 0 : 1.6}
+        />
+      ))}
+      <span>{score}/5</span>
+    </p>
+  );
+}
+
+function TestimonialAuthor({ testimonial }: { testimonial: Testimonial }) {
+  const roleLine = [testimonial.role, testimonial.municipality].filter(Boolean).join(" · ");
+
+  return (
+    <footer className={styles.testimonialAuthor}>
+      {testimonial.image ? (
+        <Image
+          alt=""
+          className={styles.testimonialAvatar}
+          height={56}
+          src={testimonial.image}
+          width={56}
+        />
+      ) : null}
+      <div>
+        <strong>{testimonial.author}</strong>
+        {roleLine ? <span>{roleLine}</span> : null}
+      </div>
+    </footer>
+  );
+}
+
+function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
+  return (
+    <article className={testimonial.featured ? styles.testimonialPrimary : styles.testimonialSecondary}>
+      <Quote aria-hidden="true" className={styles.quoteMark} strokeWidth={1.5} />
+      <ReviewRating score={testimonial.rating} />
+      <blockquote>{testimonial.text}</blockquote>
+      <TestimonialAuthor testimonial={testimonial} />
+    </article>
+  );
+}
+
+function Testimonials() {
+  const featured = TESTIMONIALS.filter((item) => item.featured);
+  const supporting = TESTIMONIALS.filter((item) => !item.featured);
+
+  return (
+    <section className={`${styles.section} ${styles.testimonials}`} id="referencie">
       <div className={styles.testimonialsHeading}>
-        <div>
-          <p className={styles.kicker}>Budúce skúsenosti používateľov</p>
-          <h2>Čo má kandidát cítiť pri príprave svojho webu.</h2>
-        </div>
-        <aside className={styles.testimonialsNotice} id="referencie-upozornenie">
-          <strong>Pripravujeme pilotné referencie</strong>
-          <p>
-            Nasledujúce citáty sú zatiaľ ilustračné texty pre návrh sekcie. Pred spustením ich
-            nahradia overené skúsenosti používateľov z pilotnej prevádzky.
-          </p>
-        </aside>
+        <p className={styles.kicker}>Recenzie kandidátov</p>
+        <h2>Čo hovoria kandidáti, ktorí už svoj web vytvorili.</h2>
       </div>
       <div className={styles.testimonialsGrid}>
-        <article className={styles.testimonialPrimary}>
-          <span aria-hidden="true" className={styles.quoteMark}>“</span>
-          <blockquote>
-            Najviac mi pomohlo, že som pri každom kroku videl, čo mám doplniť. Nemusel som
-            rozmýšľať nad štruktúrou webu a mohol som sa sústrediť na obsah kampane.
-          </blockquote>
-          <footer>
-            <strong>Ukážková referencia</strong>
-            <span>Kandidát na starostu · ilustračný obsah</span>
-          </footer>
-        </article>
-        <article className={styles.testimonialSecondary}>
-          <span aria-hidden="true" className={styles.quoteMark}>“</span>
-          <blockquote>
-            Náhľad na mobile mi hneď ukázal, ktoré texty treba skrátiť a kde chýba fotografia.
-          </blockquote>
-          <footer>
-            <strong>Ukážková referencia</strong>
-            <span>Kandidátka do zastupiteľstva · ilustračný obsah</span>
-          </footer>
-        </article>
-        <article className={styles.testimonialSecondary}>
-          <span aria-hidden="true" className={styles.quoteMark}>“</span>
-          <blockquote>
-            Rozpracovaný obsah zostal súkromný. Web som zverejnil až vtedy, keď som mal všetko
-            skontrolované.
-          </blockquote>
-          <footer>
-            <strong>Ukážková referencia</strong>
-            <span>Kandidát na primátora · ilustračný obsah</span>
-          </footer>
-        </article>
+        {featured.map((testimonial) => (
+          <TestimonialCard key={`${testimonial.author}-${testimonial.role}`} testimonial={testimonial} />
+        ))}
+        {supporting.map((testimonial) => (
+          <TestimonialCard key={`${testimonial.author}-${testimonial.role}`} testimonial={testimonial} />
+        ))}
       </div>
     </section>
   );
@@ -679,7 +694,7 @@ export default function Home() {
           <SiteHeader />
           <Hero />
           <AudienceRail />
-          {SHOW_TESTIMONIALS ? <Testimonials /> : null}
+          <Testimonials />
           <ProcessAccordion />
           <ProductStory />
           <Templates />

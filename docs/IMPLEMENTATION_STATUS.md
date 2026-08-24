@@ -1,6 +1,6 @@
 # Stav implementácie
 
-Aktualizované: 23. august 2026
+Aktualizované: 24. august 2026
 
 Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Produktový plán môže obsahovať aj budúci rozsah.
 
@@ -34,7 +34,7 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - hlavné výzvy smerujú priamo na registráciu a presne oddeľujú bezplatný súkromný náhľad od platenej publikácie,
 - samostatný SEO audit s odporúčaniami pre obsah, meranie a ostré nasadenie,
 - landing je integrovaný do Next.js rootu `/`, používa spoločný statický Open Graph obrázok 1536 × 1024 px, favicon, `robots.txt`, sitemapu a funkčné odkazy na právne routy,
-- redizajnovaný root používa výraznú typografickú hero kompozíciu, stabilný trojkrokový proces s obsahom viditeľným bez interakcie a asymetrickú sekciu budúcich používateľských referencií; dočasné citáty sú výslovne označené ako ilustračný obsah a pred spustením ich majú nahradiť overené skúsenosti z pilotnej prevádzky; navy/teal/Inter systém, 44 px dotykové ciele a focus stavy zostávajú zachované,
+- redizajnovaný root používa výraznú typografickú hero kompozíciu, stabilný trojkrokový proces s obsahom viditeľným bez interakcie a asymetrickú sekciu recenzií kandidátov; prvá živá referencia je od Michala Barana, ďalšie karty zatiaľ používajú neutrálny placeholder pilotného používateľa a dáta sú pripravené na doplnenie mena, fotografie, obce a typu kandidatúry; navy/teal/Inter systém, 44 px dotykové ciele a focus stavy zostávajú zachované,
 - produktový príbeh používa na desktope natívny CSS sticky text, ktorý zostáva pri obsahu až po poslednú kartu; GSAP ScrollTrigger iba jemne škáluje vizuály pri rolovaní a pri `prefers-reduced-motion` sa animácie nevykonajú,
 - hero na root landing page zobrazuje kompaktný odpočet celých kalendárnych dní do volieb 24. októbra 2026, obnovovaný cez hodinové ISR; v deň volieb použije neutrálny text a po termíne sa skryje,
 - root landing page obsahuje responzívnu inline MP4 ukážku administrácie s posterom, natívnymi ovládacími prvkami, prístupným zväčšením vo focus-trap modálnom dialógu a priamym CTA na hotový ukážkový web cez verejnú cestu `/ukazka`,
