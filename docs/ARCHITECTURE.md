@@ -87,7 +87,7 @@ app/
   kampanovy-web-pre-*/    statické SEO stránky podľa typu komunálnej kandidatúry
   komunalne-volby-2026/   sezónna komunálna SEO stránka
   volby-do-vuc-2026/      spoločná SEO stránka pre predsedu kraja a poslanca VÚC
-  sablony/                indexovateľný prehľad štyroch verejných šablón
+  sablony/                indexovateľný prehľad šiestich verejných šablón
   ukazka/                 verejné ukážky šablón (Horizont na /ukazka, ostatné na /ukazka/{slug})
   [slug]/                 verejný web z aktuálneho publikovaného snapshotu
   (auth)/                 prihlasovacie a obnovovacie obrazovky
@@ -117,7 +117,7 @@ tests/                    jednotkové testy
 
 Root `/` sa staticky generuje priamo z React Server Componentu v `app/page.tsx`; vizuálne pravidlá sú izolované v `app/landing-redesign.module.css`. Metadata, robots, sitemap aj JSON-LD používa Next.js API a serverový obsah zostáva indexovateľný bez JavaScriptu. Malé Client Components zabezpečujú iba GSAP pohyb a prístupný video dialóg. Produktový text používa na desktopoch natívne CSS sticky správanie ohraničené story sekciou; GSAP ScrollTrigger sa spúšťa len pri povolenom pohybe a animuje výhradne vizuály kariet. Všetky animácie sú progresívne vylepšenie bez vplyvu na obsah alebo navigáciu. Spoločný statický Open Graph a Twitter vizuál v `public/images/webprekandidata-og.png` sa dedí na platformových routach a slúži ako fallback publikovaných kandidátskych webov; vlastný sociálny obrázok z nemenného publikačného snapshotu má prednosť. Cenník číta údaje priamo z `lib/payments/plans.ts`; rovnaký katalóg používajú kampanové stránky a klientský editor Objednávok, takže cena, opis a funkcie balíka sa nemenia oddelene. `/app` a `/admin` zostávajú samostatné chránené stromy. Platformové `www` sa v `proxy.ts` presmeruje 308 na apex; custom hostname sa naďalej prepisuje iba na publikovaný snapshot.
 
-Výnimkou z autentifikácie stromu `/app` je verejná ukážka `/app/web/demo` a `/app/web/demo/{slug}`. `proxy.ts` ich na platformovom hoste interne prepisuje na noindex cesty `/ukazka` a `/ukazka/{slug}`, takže odkaz z prihlasovacej stránky funguje bez účtu a nedotýka sa produkčných konceptov ani publikovaných snapshotov. `/ukazka` ostáva šablóna Horizont; `/ukazka/horizont`, `/ukazka/impulz`, `/ukazka/dovera` a `/ukazka/vizia` zobrazia ten istý vyplnený demo obsah v príslušnej šablóne. Indexovateľný prehľad `/sablony` nie je súčasťou `MARKETING_ROUTES`, ale je v sitemap a robots.
+Výnimkou z autentifikácie stromu `/app` je verejná ukážka `/app/web/demo` a `/app/web/demo/{slug}`. `proxy.ts` ich na platformovom hoste interne prepisuje na noindex cesty `/ukazka` a `/ukazka/{slug}`, takže odkaz z prihlasovacej stránky funguje bez účtu a nedotýka sa produkčných konceptov ani publikovaných snapshotov. `/ukazka` ostáva šablóna Horizont; `/ukazka/horizont`, `/ukazka/impulz`, `/ukazka/dovera`, `/ukazka/vizia`, `/ukazka/odvaha` a `/ukazka/blizkost` zobrazia ten istý vyplnený demo obsah v príslušnej šablóne. Indexovateľný prehľad `/sablony` nie je súčasťou `MARKETING_ROUTES`, ale je v sitemap a robots.
 
 Päť kampanových SEO ciest je implementovaných ako explicitné statické segmenty, ktoré zdieľajú serverový komponent a dátovú konfiguráciu v `lib/marketing/campaign-pages.ts`. Každá cesta má vlastný obsah, canonical, Open Graph metadata a JSON-LD zhodné s viditeľným FAQ. Explicitné segmenty majú pred dynamickým `[slug]` prednosť, preto migrácie `0016_reserve_marketing_slugs.sql` a `0030_reserve_template_preview_slugs.sql` pridávajú marketingové, ukážkové a ostatné systémové cesty do rezervovaného zoznamu `create_candidate_site`. Sitemap, robots a interné odkazy kampanových stránok používajú spoločný zoznam `MARKETING_ROUTES`; `/sablony` je doplnená samostatne.
 
@@ -346,7 +346,7 @@ Náhľad webu sa neskladá z ukážkového JSX. Serverová funkcia `getSitePrevi
 
 Prehľad projektu načítava rovnaký `SitePreviewData` a jeho kompaktná karta z neho preberá adresu, kandidáta, hero texty, zvolenú šablónu, farbu, znak kampane a portrét. Karta preto nesmie obsahovať samostatné natvrdo zapísané ukážkové dáta, ktoré by sa mohli rozísť s úplným náhľadom.
 
-Editor vzhľadu načítava `theme` a spoločnú `revision` z `site_drafts`. Podporované stabilné identifikátory šablón sú `modern` (Horizont), `bold` (Impulz), `classic` (Dôvera) a `vision` (Vízia). Serverová akcia ukladá normalizovaný objekt `{ layout, primaryColor }` priamym vlastnícky chráneným update-om s podmienkou na očakávanú revíziu. Zmena šablóny alebo platnej HEX farby sa uloží až po stlačení Uložiť; pri súbežnej úprave sa update nevykoná a klient zobrazí konflikt. Po úspechu sa revaliduje layout projektu aj úplný náhľad.
+Editor vzhľadu načítava `theme` a spoločnú `revision` z `site_drafts`. Podporované stabilné identifikátory šablón sú `modern` (Horizont), `bold` (Impulz), `classic` (Dôvera), `vision` (Vízia), `courage` (Odvaha) a `closeness` (Blízkosť). Serverová akcia ukladá normalizovaný objekt `{ layout, primaryColor }` priamym vlastnícky chráneným update-om s podmienkou na očakávanú revíziu. Zmena šablóny alebo platnej HEX farby sa uloží až po stlačení Uložiť; pri súbežnej úprave sa update nevykoná a klient zobrazí konflikt. Po úspechu sa revaliduje layout projektu aj úplný náhľad.
 
 Sekcie editorov:
 

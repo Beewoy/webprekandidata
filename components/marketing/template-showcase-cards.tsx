@@ -53,7 +53,7 @@ export function LandingTemplateShowcase() {
     <section className="section template-showcase" id="sablony" aria-labelledby="template-showcase-title">
       <div className="section-heading template-showcase__heading">
         <p className="eyebrow"><span /> Vzhľad vašej kampane</p>
-        <h2 id="template-showcase-title">Vyberte si zo štyroch profesionálnych šablón.</h2>
+        <h2 id="template-showcase-title">Vyberte si zo šiestich profesionálnych šablón.</h2>
         <p>Každá má vlastný charakter, no všetky obsahujú rovnaké sekcie a automaticky sa prispôsobia mobilu aj počítaču.</p>
       </div>
       <TemplateShowcaseCards titleTag="h3" />

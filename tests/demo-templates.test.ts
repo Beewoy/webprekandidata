@@ -16,10 +16,14 @@ describe("public campaign template demos", () => {
       { id: "bold", slug: "impulz" },
       { id: "classic", slug: "dovera" },
       { id: "vision", slug: "vizia" },
+      { id: "courage", slug: "odvaha" },
+      { id: "closeness", slug: "blizkost" },
     ]);
     expect(isDemoTemplateSlug("horizont")).toBe(true);
     expect(isDemoTemplateSlug("modern")).toBe(false);
     expect(getDemoTemplateBySlug("impulz")?.id).toBe("bold");
+    expect(getDemoTemplateBySlug("odvaha")?.id).toBe("courage");
+    expect(getDemoTemplateBySlug("blizkost")?.id).toBe("closeness");
     expect(getDemoTemplateBySlug("neznama")).toBeUndefined();
   });
 
