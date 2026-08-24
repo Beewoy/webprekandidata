@@ -23,7 +23,7 @@ export function TemplatesCatalog() {
       <main id="hlavny-obsah">
         <section className={styles.intro} aria-labelledby="sablony-title">
           <p className={campaign.eyebrow}>Vzhľad vašej kampane</p>
-          <h1 id="sablony-title">Štyri profesionálne šablóny pre volebný web.</h1>
+          <h1 id="sablony-title">Šesť profesionálnych šablón pre volebný web.</h1>
           <p>
             Každá má vlastný charakter, no všetky obsahujú rovnaké sekcie, fungujú na mobile
             aj počítači a sú dostupné v balíkoch Basic aj Plus.

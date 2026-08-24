@@ -5,7 +5,7 @@ import { PLATFORM_OPEN_GRAPH_IMAGE } from "@/lib/marketing/metadata";
 const canonicalUrl = "https://webprekandidata.sk/sablony";
 const title = "Šablóny volebného webu | WebPreKandidata.sk";
 const description =
-  "Vyberte si zo štyroch profesionálnych šablón pre volebný web. Horizont, Impulz, Dôvera a Vízia. Rovnaké sekcie, mobil aj počítač, náhľad zdarma.";
+  "Vyberte si zo šiestich profesionálnych šablón pre volebný web: Horizont, Impulz, Dôvera, Vízia, Odvaha a Blízkosť. Rovnaké sekcie, mobil aj počítač, náhľad zdarma.";
 
 export const dynamic = "force-static";
 

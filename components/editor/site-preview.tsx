@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, CalendarDays, ChevronLeft, ChevronRight, ExternalLink, Mail, Menu, Monitor, Phone, RefreshCw, Smartphone, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, Camera, ChevronLeft, ChevronRight, ExternalLink, Mail, Menu, MessageCircle, Monitor, Phone, RefreshCw, Smartphone, X } from "lucide-react";
 import { PageHeading } from "@/components/ui/page-heading";
 import { ContactForm } from "@/components/public-site/contact-form";
 import { cn } from "@/lib/cn";
@@ -33,6 +33,8 @@ function getAppMobileSnapshot() {
 }
 
 export function SitePreview({ contactFormPreview = false, data, publicMode = false, siteId }: SitePreviewProps) {
+  const isCourage = data.theme.template === "courage";
+  const isCloseness = data.theme.template === "closeness";
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const isAppMobile = useSyncExternalStore(subscribeAppMobile, getAppMobileSnapshot, () => true);
   const previewDevice = publicMode ? "desktop" : isAppMobile ? "mobile" : device;
@@ -51,6 +53,10 @@ export function SitePreview({ contactFormPreview = false, data, publicMode = fal
   const activeGalleryItem = activeGalleryIndex === null ? null : data.gallery.items[activeGalleryIndex];
   const activePost = activePostId ? data.news.items.find((post) => post.id === activePostId) ?? null : null;
   const showMobileMenu = usesMobileNav && mobileMenuOpen;
+  const aboutValueItems = data.about.values.map((item, index) => {
+    const Icon = getCivicIconOption(item.icon).Icon;
+    return <article key={`${item.title}-${index}`}><span className="candidate-preview__item-icon"><Icon aria-hidden="true" size={19} /></span><div><h3>{item.title}</h3><p>{item.text}</p></div></article>;
+  });
 
   useEffect(() => {
     if (!showMobileMenu) return;
@@ -150,12 +156,22 @@ export function SitePreview({ contactFormPreview = false, data, publicMode = fal
               </header>
 
               <section className="candidate-preview__hero" id="uvod">
+                {isCourage && (
+                  <div aria-hidden="true" className="candidate-preview__courage-poster">
+                    <span>ODVAHA</span><span>PRE MESTO</span><span>2026</span>
+                  </div>
+                )}
+                {isCloseness && (
+                  <div aria-hidden="true" className="candidate-preview__closeness-orbit">
+                    <i /><i /><i /><span>SPOLU</span>
+                  </div>
+                )}
                 <div className="candidate-preview__container candidate-preview__hero-inner">
                   <div className="candidate-preview__hero-copy">
                     <p className="candidate-preview__eyebrow">{data.candidate.position}</p>
                     {data.candidate.politicalAffiliation && <p className="candidate-preview__affiliation">{data.candidate.politicalAffiliation}</p>}
                     <h1>
-                      {data.hero.headlineBefore}
+                      {data.hero.headlineBefore && <span className="candidate-preview__headline-before">{data.hero.headlineBefore}</span>}
                       {data.hero.highlight && <em>{data.hero.highlight}</em>}
                       {data.hero.headlineAfter}
                     </h1>
@@ -174,18 +190,42 @@ export function SitePreview({ contactFormPreview = false, data, publicMode = fal
                 </div>
               </section>
 
+              {isCourage && (
+                <div aria-label="Hlavné piliere kampane" className="candidate-preview__courage-marquee">
+                  <div>
+                    {[...data.reasons.items, ...data.reasons.items].map((item, index) => (
+                      <span key={`${item.title}-${index}`}><b>0{(index % data.reasons.items.length) + 1}</b>{item.title}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {isCloseness && (
+                <aside aria-label="Charakter kampane" className="candidate-preview__community-ribbon">
+                  <div className="candidate-preview__container">
+                    <p><span>01</span><strong>{data.candidate.city || "Naše mesto"}</strong><small>Miesto, ktoré spoločne tvoríme</small></p>
+                    <p><span>02</span><strong>{data.about.values.length} hodnoty</strong><small>Základ otvorenej kampane</small></p>
+                    <p><span>03</span><strong>{data.program.items.length} priority</strong><small>Konkrétne kroky pre ľudí</small></p>
+                  </div>
+                </aside>
+              )}
+
               <section className="candidate-preview__section candidate-preview__about" id="o-mne">
                 <div className="candidate-preview__container">
                   <div className="candidate-preview__section-heading"><p>{data.about.eyebrow}</p><h2>{data.about.headline}</h2></div>
                   <div className={data.media.about ? "candidate-preview__about-grid candidate-preview__about-grid--with-image" : "candidate-preview__about-grid"}>
                     {data.media.about && <div aria-label={data.media.about.altText} className="candidate-preview__about-photo" role="img" style={{ backgroundImage: `url("${data.media.about.url}")` }} />}
-                    <div className="candidate-preview__rich-text" dangerouslySetInnerHTML={{ __html: data.about.bodyHtml }} />
-                    <div className="candidate-preview__values">
-                      {data.about.values.map((item, index) => {
-                        const Icon = getCivicIconOption(item.icon).Icon;
-                        return <article key={`${item.title}-${index}`}><span className="candidate-preview__item-icon"><Icon aria-hidden="true" size={19} /></span><div><h3>{item.title}</h3><p>{item.text}</p></div></article>;
-                      })}
-                    </div>
+                    {isCourage ? (
+                      <div className="candidate-preview__about-copy">
+                        <div className="candidate-preview__rich-text" dangerouslySetInnerHTML={{ __html: data.about.bodyHtml }} />
+                        <div className="candidate-preview__values">{aboutValueItems}</div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="candidate-preview__rich-text" dangerouslySetInnerHTML={{ __html: data.about.bodyHtml }} />
+                        <div className="candidate-preview__values">{aboutValueItems}</div>
+                      </>
+                    )}
                   </div>
                   {data.about.signature && <p className="candidate-preview__signature">{data.about.signature}</p>}
                 </div>
@@ -256,32 +296,41 @@ export function SitePreview({ contactFormPreview = false, data, publicMode = fal
 
               <section className="candidate-preview__contact" id="kontakt">
                 <div className="candidate-preview__container">
-                  <div className="candidate-preview__contact-heading">
-                    <p className="candidate-preview__eyebrow">Kontakt</p>
-                    <h2>Ozvite sa mi</h2>
-                    <span>
-                      {data.contact.formEnabled
-                        ? "Máte otázku alebo podnet? Napíšte mi."
-                        : "Máte otázku alebo podnet? Napíšte mi e-mail."}
-                    </span>
-                  </div>
-                  <div className={`candidate-preview__contact-grid${data.contact.formEnabled ? "" : " candidate-preview__contact-grid--links-only"}`}>
-                    <div className="candidate-preview__contact-links">
-                      {data.contact.email && (
-                        <a className="candidate-preview__mailto-cta" href={`mailto:${data.contact.email}`}>
-                          <Mail size={20} />
-                          <span>
-                            <small>Napísať e-mail</small>
-                            {data.contact.email}
-                          </span>
-                        </a>
-                      )}
-                      {data.contact.phone && <a href={`tel:${data.contact.phone.replace(/[^+\d]/g, "")}`}><Phone size={20} /><span><small>Telefón</small>{data.contact.phone}</span></a>}
-                      {data.contact.facebook && <a href={data.contact.facebook} rel="noreferrer" target="_blank">Facebook <ExternalLink size={16} /></a>}
-                      {data.contact.instagram && <a href={data.contact.instagram} rel="noreferrer" target="_blank">Instagram <ExternalLink size={16} /></a>}
+                  {isCloseness || isCourage ? (
+                    <div className={cn("candidate-preview__contact-cta", isCourage && "candidate-preview__contact-cta--courage")}>
+                      <div className="candidate-preview__contact-heading">
+                        <p className="candidate-preview__eyebrow">{isCourage ? "Máte slovo" : "Buďme v kontakte"}</p>
+                        <h2>{isCourage ? "Poďme pohnúť mestom." : "Máte nápad pre naše mesto?"}</h2>
+                        <span>{isCourage ? "Podnet, otázka alebo konkrétny problém? Ozvite sa priamo." : "Napíšte mi. Dobré rozhodnutia vznikajú v otvorenom rozhovore s ľuďmi."}</span>
+                      </div>
+                      <div className="candidate-preview__contact-cta-actions">
+                        {data.contact.email && <a className="candidate-preview__contact-cta-primary" href={`mailto:${data.contact.email}`}><Mail aria-hidden="true" size={21} /><span><small>Napísať e-mail</small><strong>{data.contact.email}</strong></span><ArrowRight aria-hidden="true" size={18} /></a>}
+                        {data.contact.phone && <a className="candidate-preview__contact-cta-secondary" href={`tel:${data.contact.phone.replace(/[^+\d]/g, "")}`}><Phone aria-hidden="true" size={21} /><span><small>Zavolať</small><strong>{data.contact.phone}</strong></span><ArrowRight aria-hidden="true" size={18} /></a>}
+                        <div className="candidate-preview__contact-socials">
+                          {data.contact.facebook && <a aria-label="Facebook" href={data.contact.facebook} rel="noreferrer" target="_blank"><MessageCircle aria-hidden="true" size={22} /><span>Facebook</span></a>}
+                          {data.contact.instagram && <a aria-label="Instagram" href={data.contact.instagram} rel="noreferrer" target="_blank"><Camera aria-hidden="true" size={22} /><span>Instagram</span></a>}
+                        </div>
+                      </div>
+                      <span aria-hidden="true" className="candidate-preview__contact-cta-word">{isCourage ? "TERAZ" : "SPOLU"}</span>
                     </div>
-                    {data.contact.formEnabled && <ContactForm preview={!publicMode || contactFormPreview} siteId={siteId} />}
-                  </div>
+                  ) : (
+                    <>
+                      <div className="candidate-preview__contact-heading">
+                        <p className="candidate-preview__eyebrow">Kontakt</p>
+                        <h2>Ozvite sa mi</h2>
+                        <span>{data.contact.formEnabled ? "Máte otázku alebo podnet? Napíšte mi." : "Máte otázku alebo podnet? Napíšte mi e-mail."}</span>
+                      </div>
+                      <div className={`candidate-preview__contact-grid${data.contact.formEnabled ? "" : " candidate-preview__contact-grid--links-only"}`}>
+                        <div className="candidate-preview__contact-links">
+                          {data.contact.email && <a className="candidate-preview__mailto-cta" href={`mailto:${data.contact.email}`}><Mail size={20} /><span><small>Napísať e-mail</small>{data.contact.email}</span></a>}
+                          {data.contact.phone && <a href={`tel:${data.contact.phone.replace(/[^+\d]/g, "")}`}><Phone size={20} /><span><small>Telefón</small>{data.contact.phone}</span></a>}
+                          {data.contact.facebook && <a href={data.contact.facebook} rel="noreferrer" target="_blank">Facebook <ExternalLink size={16} /></a>}
+                          {data.contact.instagram && <a href={data.contact.instagram} rel="noreferrer" target="_blank">Instagram <ExternalLink size={16} /></a>}
+                        </div>
+                        {data.contact.formEnabled && <ContactForm preview={!publicMode || contactFormPreview} siteId={siteId} />}
+                      </div>
+                    </>
+                  )}
                 </div>
               </section>
 

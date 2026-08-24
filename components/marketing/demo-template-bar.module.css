@@ -84,7 +84,14 @@
 
 @media (max-width: 820px) {
   .bar {
+    align-items: flex-start;
+    flex-direction: column;
     padding: 10px 16px 12px;
+  }
+
+  .nav {
+    min-width: 0;
+    width: 100%;
   }
 
   .cta {

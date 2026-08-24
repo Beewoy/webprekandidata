@@ -23,6 +23,18 @@ export const campaignTemplates = [
     description: "Svieža moderná šablóna s dominantným portrétom, jemným farebným tónom a jasným posolstvom.",
     bestFor: "Pre osobnú a optimistickú kampaň",
   },
+  {
+    id: "courage",
+    name: "Odvaha",
+    description: "Sebavedomá kampaň s monumentálnou typografiou, ostrým kontrastom a výrazným portrétom.",
+    bestFor: "Pre rozhodnú a programovo silnú kampaň",
+  },
+  {
+    id: "closeness",
+    name: "Blízkosť",
+    description: "Ľudská komunitná šablóna s mäkkými plochami, priateľským rytmom a dôrazom na kontakt.",
+    bestFor: "Pre osobnú a komunitnú kampaň",
+  },
 ] as const;
 
 export type CampaignTemplateId = (typeof campaignTemplates)[number]["id"];

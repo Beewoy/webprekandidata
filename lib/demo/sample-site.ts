@@ -29,6 +29,20 @@ export const demoTemplateCatalog = [
     name: "Vízia",
     slug: "vizia",
     shortDescription: "Dominantný portrét a svieži optimistický vizuál.",
+    badge: null,
+  },
+  {
+    id: "courage",
+    name: "Odvaha",
+    slug: "odvaha",
+    shortDescription: "Monumentálna typografia, ostrý kontrast a rozhodný vizuál.",
+    badge: "Nová",
+  },
+  {
+    id: "closeness",
+    name: "Blízkosť",
+    slug: "blizkost",
+    shortDescription: "Mäkký komunitný charakter a osobný kontakt s ľuďmi.",
     badge: "Nová",
   },
 ] as const;

@@ -88,7 +88,7 @@ export function CampaignTemplatePreview({ catalog = false, color, compact = fals
                   fill
                   sizes={catalog ? "420px" : dashboard ? "96px" : "235px"}
                   src={content.heroImage.url}
-                  style={template === "vision" ? { objectPosition: "center top" } : undefined}
+                  style={["vision", "courage", "closeness"].includes(template) ? { objectPosition: "center top" } : undefined}
                   unoptimized
                 />
               )

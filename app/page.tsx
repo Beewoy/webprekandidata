@@ -502,7 +502,7 @@ function Templates() {
       <div className={styles.templatesHeading}>
         <div>
           <p className={styles.kicker}>Charakter kampane bez rizika zlého dizajnu</p>
-          <h2>Štyri šablóny. Jeden profesionálny štandard.</h2>
+          <h2>Šesť šablón. Jeden profesionálny štandard.</h2>
         </div>
         <p>
           Každá má vlastný charakter, no všetky obsahujú rovnaké sekcie a automaticky sa
