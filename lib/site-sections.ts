@@ -87,7 +87,7 @@ export const editorFields: Record<string, Array<{ label: string; name: string; t
   "o-mne": [
     { label: "Malý nadpis", name: "eyebrow", value: "O mne" },
     { label: "Nadpis", name: "headline", value: "Spoznajte ma a moje skúsenosti" },
-    { label: "Text o vás", name: "body", type: "richtext", value: "V našom meste žijem viac ako dvadsať rokov. Poznám jeho silné stránky aj problémy, ktoré potrebujeme riešiť otvorene a spolu.", hint: "Môžete použiť medzinadpisy, tučné písmo a zoznamy." },
+    { label: "Text o vás", name: "body", type: "richtext", value: "V našom meste žijem viac ako dvadsať rokov. Poznám jeho silné stránky aj problémy, ktoré potrebujeme riešiť otvorene a spolu.", hint: "Môžete použiť medzinadpisy, tučné písmo, zoznamy a odkazy." },
     { label: "Podpis", name: "signature", value: "— Martin" },
   ],
   "preco-kandidujem": [

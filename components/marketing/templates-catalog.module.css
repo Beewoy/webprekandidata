@@ -1,55 +1,54 @@
 .intro {
   margin: 0 auto;
-  max-width: 760px;
-  padding: 72px 32px 28px;
+  max-width: 46rem;
+  padding: clamp(4.5rem, 8vw, 6.5rem) 2rem 1.75rem;
   text-align: center;
 }
 
+.intro :global(p):first-child {
+  justify-content: center;
+}
+
 .intro h1 {
-  color: var(--campaign-navy-dark, #0b2745);
-  font-size: clamp(36px, 4.6vw, 58px);
-  letter-spacing: -0.05em;
-  line-height: 1.04;
-  margin-bottom: 18px;
+  color: var(--campaign-ink, #10243f);
+  font-size: clamp(2.4rem, 5vw, 3.5rem);
+  font-weight: 680;
+  letter-spacing: -0.06em;
+  line-height: 1.02;
+  margin-bottom: 1.15rem;
   text-wrap: balance;
 }
 
 .intro p:last-child {
-  color: var(--campaign-copy, #526178);
-  font-size: 18px;
+  color: var(--campaign-copy, #52677f);
+  font-size: 1.1rem;
   line-height: 1.68;
   margin: 0 auto;
-  max-width: 640px;
+  max-width: 40rem;
 }
 
 .showcase {
-  padding: 24px 32px 72px;
+  padding: 1.5rem 2rem 4.5rem;
 }
 
 @media (max-width: 800px) {
   .intro,
   .showcase {
-    padding-left: 22px;
-    padding-right: 22px;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
   }
 
   .intro {
-    padding-top: 48px;
+    padding-top: 3.5rem;
   }
 }
 
 @media (max-width: 560px) {
-  .intro,
-  .showcase {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
   .intro h1 {
-    font-size: 32px;
+    font-size: clamp(2.15rem, 10vw, 2.7rem);
   }
 
   .intro p:last-child {
-    font-size: 16px;
+    font-size: 1rem;
   }
 }

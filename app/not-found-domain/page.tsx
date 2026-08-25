@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
+import { PlatformNotFound } from "@/components/marketing/platform-not-found";
+
+export const metadata: Metadata = {
+  title: "Doména nie je pripojená",
+  description:
+    "Táto adresa nie je aktívne prepojená s publikovaným kandidátskym webom na WebPreKandidata.sk.",
+  robots: { index: false, follow: false },
+};
+
 export default function NotFoundDomainPage() {
-  return (
-    <main className="page-container" style={{ paddingTop: 80, paddingBottom: 80 }}>
-      <h1>Doména nie je pripojená</h1>
-      <p>Táto adresa nie je aktívne prepojená s publikovaným kandidátskym webom.</p>
-    </main>
-  );
+  return <PlatformNotFound variant="domain" />;
 }
