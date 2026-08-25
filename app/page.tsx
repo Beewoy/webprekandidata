@@ -329,7 +329,7 @@ function TestimonialAuthor({ testimonial }: { testimonial: Testimonial }) {
     <footer className={styles.testimonialAuthor}>
       {testimonial.image ? (
         <Image
-          alt=""
+          alt={`Portrét: ${testimonial.author}`}
           className={styles.testimonialAvatar}
           height={56}
           src={testimonial.image}
@@ -367,10 +367,10 @@ function Testimonials() {
       </div>
       <div className={styles.testimonialsGrid}>
         {featured.map((testimonial) => (
-          <TestimonialCard key={`${testimonial.author}-${testimonial.role}`} testimonial={testimonial} />
+          <TestimonialCard key={testimonial.id} testimonial={testimonial} />
         ))}
         {supporting.map((testimonial) => (
-          <TestimonialCard key={`${testimonial.author}-${testimonial.role}`} testimonial={testimonial} />
+          <TestimonialCard key={testimonial.id} testimonial={testimonial} />
         ))}
       </div>
     </section>

@@ -7,6 +7,14 @@ describe("rich text", () => {
       .toBe("<h3>Nadpis</h3><p><strong>Text</strong></p>");
   });
 
+  it("zachová bezpečné odkazy a odstráni nebezpečné schémy", () => {
+    expect(
+      sanitizeRichText(
+        '<p><a href="https://www.facebook.com/events/1" onclick="alert(1)">Event</a><a href="javascript:alert(1)">X</a></p>',
+      ),
+    ).toBe('<p><a href="https://www.facebook.com/events/1" rel="noopener noreferrer" target="_blank">Event</a>X</p>');
+  });
+
   it("sanitizuje iba polia označené ako formátovaný text", () => {
     expect(sanitizeSectionRichText("o-mne", {
       body: '<p onmouseover="alert(1)">Bezpečný text</p>',

@@ -1,6 +1,6 @@
 # Stav implementácie
 
-Aktualizované: 24. august 2026
+Aktualizované: 25. august 2026
 
 Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Produktový plán môže obsahovať aj budúci rozsah.
 
@@ -39,8 +39,9 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - hero na root landing page zobrazuje kompaktný odpočet celých kalendárnych dní do volieb 24. októbra 2026, obnovovaný cez hodinové ISR; v deň volieb použije neutrálny text a po termíne sa skryje,
 - root landing page obsahuje responzívnu inline MP4 ukážku administrácie s posterom, natívnymi ovládacími prvkami, prístupným zväčšením vo focus-trap modálnom dialógu a priamym CTA na hotový ukážkový web cez verejnú cestu `/ukazka`,
 - hero aj výsledná karta produktového príbehu používajú reálny mobilný náhľad kandidátskeho webu; výsledná karta ho kombinuje s desktopovým náhľadom toho istého webu,
+- vlastná značková 404 stránka (`app/not-found.tsx`) nahrádza predvolenú Next.js obrazovku: navy/teal chrome, slovenské znenie a odkazy na úvod, registráciu, šablóny, ukážku a prihlásenie; rovnaký vizuál používa aj `/not-found-domain` pre nepripojenú vlastnú doménu, pričom odkazy idú na platformovú URL,
 - landing page kompaktne predstavuje všetkých šesť dostupných šablón cez živý náhľad hero layoutu (rovnaký `CampaignTemplatePreview` ako v editore, s demo portrétom a logom); karty otvárajú verejné ukážky Horizont, Impulz, Dôvera, Vízia, Odvaha a Blízkosť, spodné CTA vedie na prehľad `/sablony`,
-- päť samostatných indexovateľných kampanových stránok pre starostu, primátora, poslanca, komunálne voľby 2026 a spoločnú kandidatúru na predsedu kraja alebo poslanca VÚC; stránky zdieľajú responzívny marketingový komponent, ceny, interné prepojenia, metadata a JSON-LD,
+- päť samostatných indexovateľných kampanových stránok pre starostu, primátora, poslanca, komunálne voľby 2026 a spoločnú kandidatúru na predsedu kraja alebo poslanca VÚC; stránky zdieľajú responzívny marketingový komponent, ceny, interné prepojenia, metadata a JSON-LD; vizuálny chrome (lepivý sklenený header, hamburger, CTA, pätička a tokeny) je zjednotený s redizajnom root landing page, obsah ostáva pôvodný,
 - sezónne stránky uvádzajú oficiálny termín komunálnych a krajských volieb 24. októbra 2026 a prístupný živý odpočet s bezpečným stavom po volebnom dni,
 - právne routy sú implementované ako pracovné znenie; obchodné podmienky pokrývajú reálny bezplatný náhľad, balíky, Stripe platbu, publikovanie, vlastnú doménu, AI a spotrebiteľské práva, samostatný reklamačný poriadok upravuje oznámenie vady, lehoty, spôsoby vybavenia a ARS, pričom dokumenty zostávajú `noindex`, kým právnik nepotvrdí obsah a produkcia nenastaví `LEGAL_DOCUMENTS_APPROVED=true`.
 
@@ -51,9 +52,9 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - prehľad projektu a stav dokončenia odvodený z aktuálne uloženého konceptu,
 - 15 navigačných sekcií vrátane samostatnej Galérie a Objednávok,
 - obsahové formuláre,
-- prístupný WYSIWYG editor pre dlhý text „O mne“ a voliteľné podrobné popisy bodov programu s manuálnym uložením a serverovou sanitizáciou,
+- prístupný WYSIWYG editor pre dlhý text „O mne“ a voliteľné podrobné popisy bodov programu s manuálnym uložením, odkazmi a serverovou sanitizáciou,
 - UI pre vzhľad, obrázky, aktuality, SEO, doménu, objednávky a publikovanie,
-- plnohodnotný zoznam aktualít a editor článku pre Basic aj Plus: koncept, zverejnenie, skrytie, mazanie, krátky popis, TipTap obsah a titulný obrázok,
+- plnohodnotný zoznam aktualít a editor článku pre Basic aj Plus: koncept, zverejnenie, skrytie, mazanie, krátky popis, TipTap obsah s odkazmi a titulný obrázok,
 - verejný model aktualít bez samostatných URL: karty v náhľade otvárajú detail v modálnej vrstve bez zmeny adresy,
 - Plus AI návrh článku z podkladov kandidáta s kvótou 20 návrhov na projekt; návrh sa iba vloží do editora a nikdy sa automaticky neuloží ani nezverejní,
 - výber zo šiestich responzívnych celostránkových šablón s prístupnými stavmi a živým náhľadom: občiansko-editoriálny Horizont, dynamický Impulz, reprezentatívna Dôvera, portrétovo orientovaná Vízia, kontrastná typografická Odvaha a komunitná Blízkosť,
