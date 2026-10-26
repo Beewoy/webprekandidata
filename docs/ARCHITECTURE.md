@@ -34,6 +34,10 @@ Vyžaduje Supabase premenné a `DEMO_MODE=false`.
 - RLS filtruje údaje podľa `auth.uid()`,
 - vytvorenie projektu a uloženie konceptu používajú databázové RPC funkcie.
 
+### Globálne pozastavenie prevádzky
+
+Keď je `PLATFORM_MAINTENANCE=true`, `proxy.ts` na začiatku spracovania prepíše všetky nevýnimkové požiadavky na `/prevadzka-pozastavena` so stavom 503 (`Cache-Control: no-store`). Platí pre apex, `www`, dashboard, admin, verejné `/:slug` aj Plus custom domény. Výnimky: `/api/health` a `/api/webhooks/stripe`. Retenčný cron nie je výnimkou. Zdroj: `lib/platform-maintenance.ts`.
+
 ## 2.1 Prostredia a databáza
 
 ```mermaid

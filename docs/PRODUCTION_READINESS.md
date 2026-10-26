@@ -112,8 +112,8 @@ Neblokuje MVP launch; naplánovať do backlogu.
 **Scenár:** „Zajtra zmažeme databázu — ako obnovíme službu?“
 
 ### 1. Zastaviť zápisy (voliteľné)
-- Vo Vercel dočasne vypnúť deploy alebo nastaviť maintenance (ak existuje) **(manuálne)**
-- Overiť, že Stripe webhooky môžu chvíľu retryovať (Stripe opakuje pri 5xx)
+- Vo Vercel nastaviť `PLATFORM_MAINTENANCE=true` a redeploy — celá platforma vráti 503 info stránku; `/api/health` a Stripe webhook ostávajú **(manuálne)**
+- Overiť, že Stripe webhooky môžu chvíľu retryovať (Stripe opakuje pri 5xx), alebo webhook dočasne vypnúť v Stripe Dashboard
 
 ### 2. Obnoviť databázu
 1. V Supabase Dashboard obnoviť z posledného **Point-in-Time Recovery** alebo denného backupu **(manuálne — overiť, že PITR je zapnuté pred incidentom)**

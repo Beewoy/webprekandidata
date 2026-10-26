@@ -256,7 +256,8 @@ Tento dokument je operatívny prehľad skutočne implementovaných funkcií. Pro
 - globálna chybová obrazovka obnovuje celú stránku a pri dostupnom Next.js digest zobrazí bezpečný referenčný kód; Sentry záznam zachová digest, cestu a pôvodnú príčinu zlyhaného načítania dashboardu,
 - Firebase Analytics je zapojené pre celý web cez GA4 stream `G-0LPPHZCVXB`; SDK sa načíta až po dobrovoľnom súhlase a návštevník môže uloženú voľbu kedykoľvek zmeniť cez nastavenia cookies v pätičke landing page alebo cez dostupné náhradné tlačidlo na ostatných routach,
 - denný Vercel Cron volá autorizovaný retenčný endpoint a maže expirované kontaktné a AI záznamy cez service-role RPC,
-- checkout sa fail-closed nezapne bez live Stripe secretu, webhook secretu, kompletných údajov predávajúceho a schválených právnych dokumentov.
+- checkout sa fail-closed nezapne bez live Stripe secretu, webhook secretu, kompletných údajov predávajúceho a schválených právnych dokumentov,
+- globálne pozastavenie prevádzky: `PLATFORM_MAINTENANCE=true` vo Vercel + redeploy; `proxy.ts` vráti `/prevadzka-pozastavena` so 503 pre celú platformu (vrátane kandidátskych webov a custom domén); výnimky `/api/health` a `/api/webhooks/stripe`; cron retention je zablokovaný; vypnutie = `false` / odstránenie premennej + redeploy.
 
 ## Pripravené v UI, ale ešte bez produkčného backendu
 

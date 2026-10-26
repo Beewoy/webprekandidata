@@ -168,6 +168,10 @@ Projekt je pripravený pre Vercel s Node.js 24 a Next.js presetom. Produkcia pou
 - `CRON_SECRET` pre denný retenčný job `/api/cron/retention`,
 - voliteľný Sentry projekt cez `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT` a `SENTRY_AUTH_TOKEN`.
 
+### Globálne pozastavenie prevádzky
+
+Na Vercel Production nastavte `PLATFORM_MAINTENANCE=true` a redeploy. `proxy.ts` potom všetky požiadavky (marketing, `/app`, `/admin`, kandidátske `/:slug` aj custom domény) prepíše na `/prevadzka-pozastavena` so stavom **503**. Výnimky: `/api/health` a `/api/webhooks/stripe`. Retenčný cron je zablokovaný. Obnova: `PLATFORM_MAINTENANCE=false` (alebo premennú odstráňte) a redeploy. DNS/Websupport a mail záznamy nemeníte. Ak nechcete ani background Stripe fulfillment, vo Stripe Dashboard dočasne vypnite webhook endpoint.
+
 Checkout sa zámerne nezapne, kým chýba live Stripe secret/webhook, kompletné `SELLER_*` údaje alebo `LEGAL_DOCUMENTS_APPROVED=true`. Túto poistku neobchádzajte do právnej a fakturačnej kontroly.
 
 Po pripojení apexu a `www` nastavte DNS podľa výstupu `vercel domains inspect`; poštové TXT, DKIM, SPF a DMARC záznamy vo Websupporte musia zostať zachované. `www` sa v `proxy.ts` presmeruje stavom 308 na apex.

@@ -7,6 +7,11 @@ import {
   isPlatformHostname,
   isPlatformWwwHostname,
 } from "@/lib/domains/platform";
+import {
+  isPlatformMaintenance,
+  isPlatformMaintenanceExemptPath,
+  PLATFORM_MAINTENANCE_PATH,
+} from "@/lib/platform-maintenance";
 import { attachInvokePath, refreshAuthSession } from "@/lib/proxy/auth-session";
 import { isPlatformOnlyPath, shouldRefreshAuthSession } from "@/lib/proxy/session-routes";
 
@@ -33,6 +38,16 @@ async function resolveCustomDomainSlug(hostname: string): Promise<string | null>
 export async function proxy(request: NextRequest) {
   const hostname = hostWithoutPort(request.headers.get("host") ?? "").toLowerCase();
   const { pathname, search } = request.nextUrl;
+
+  if (isPlatformMaintenance() && !isPlatformMaintenanceExemptPath(pathname)) {
+    return NextResponse.rewrite(new URL(PLATFORM_MAINTENANCE_PATH, request.url), {
+      status: 503,
+      headers: {
+        "Cache-Control": "no-store",
+        "Retry-After": "3600",
+      },
+    });
+  }
 
   if (isPlatformWwwHostname(hostname)) {
     return NextResponse.redirect(
